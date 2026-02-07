@@ -1,0 +1,24 @@
+{
+  "name": "@uni-perks/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@uni-perks/db": "workspace:*",
+    "@uni-perks/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@uni-perks/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

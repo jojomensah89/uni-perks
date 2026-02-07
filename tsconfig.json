@@ -1,0 +1,3 @@
+{
+  "extends": "@uni-perks/config/tsconfig.base.json"
+}
