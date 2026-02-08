@@ -9,6 +9,7 @@ import geoRouter from "./routes/geo.routes";
 import perksRouter from "./routes/perks.routes";
 import categoriesRouter from "./routes/categories.routes";
 import clicksRouter from "./routes/clicks.routes";
+import seedRouter from "./routes/seed.routes";
 
 const app = new Hono();
 
@@ -35,6 +36,7 @@ app.route("/api/geo", geoRouter);
 app.route("/api/perks", perksRouter);
 app.route("/api/categories", categoriesRouter);
 app.route("/api/clicks", clicksRouter);
+app.route("/api/seed", seedRouter);
 
 // Health check
 app.get("/", (c) => {

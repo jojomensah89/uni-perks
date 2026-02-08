@@ -6,8 +6,65 @@ import { fetchAPI } from "@/lib/api";
 import type { Perk, Category } from "@/types";
 import { cn } from "@/lib/utils";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
 export const runtime = "edge";
+
+interface PerkPageProps {
+    params: Promise<{ slug: string }>;
+    searchParams: Promise<{ country?: string }>;
+}
+
+interface PerkDetailResponse {
+    perk: Perk;
+    category: Category;
+    meta: {
+        country: string;
+        available: boolean;
+    };
+}
+
+export async function generateMetadata({ params }: PerkPageProps): Promise<Metadata> {
+    const { slug } = await params;
+
+    let data: PerkDetailResponse | null = null;
+    try {
+        data = await fetchAPI<PerkDetailResponse>(`api/perks/${slug}`, { cache: 'force-cache' });
+    } catch (e) {
+        return {
+            title: "Perk Not Found",
+            description: "The requested perk could not be found.",
+        };
+    }
+
+    if (!data || !data.perk) {
+        return {
+            title: "Perk Not Found",
+            description: "The requested perk could not be found.",
+        };
+    }
+
+    const { perk, category } = data;
+    const title = `${perk.title} - ${perk.company}`;
+    const description = perk.shortDescription || `Get exclusive student discounts on ${perk.company}. ${perk.longDescription?.substring(0, 100)}...`;
+
+    return {
+        title,
+        description,
+        keywords: [perk.company, perk.title, category?.name || '', 'student discount', 'student perk'],
+        openGraph: {
+            title,
+            description,
+            type: "website",
+            url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://uni-perks.com'}/perks/${slug}`,
+        },
+        twitter: {
+            card: "summary_large_image",
+            title,
+            description,
+        },
+    };
+}
 
 interface PerkPageProps {
     params: Promise<{ slug: string }>;

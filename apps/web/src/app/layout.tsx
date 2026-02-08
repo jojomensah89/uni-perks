@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "../index.css";
 import Header from "@/components/header";
 import Providers from "@/components/providers";
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,8 +18,25 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "uni-perks",
-  description: "uni-perks",
+  title: {
+    default: "uni-perks - Student Discounts & Perks",
+    template: "%s | uni-perks",
+  },
+  description: "Discover exclusive student discounts, perks, and credits from top companies. Save money on software, services, and more with your student status.",
+  keywords: ["student discounts", "student perks", "university discounts", "student deals", "education discounts"],
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: process.env.NEXT_PUBLIC_BASE_URL || "https://uni-perks.com",
+    siteName: "uni-perks",
+    title: "uni-perks - Student Discounts & Perks",
+    description: "Discover exclusive student discounts, perks, and credits from top companies.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "uni-perks - Student Discounts & Perks",
+    description: "Discover exclusive student discounts, perks, and credits from top companies.",
+  },
 };
 
 export default function RootLayout({
@@ -29,12 +47,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Providers>
-          <div className="grid grid-rows-[auto_1fr] h-svh">
-            <Header />
-            {children}
-          </div>
-        </Providers>
+        <NuqsAdapter>
+          <Providers>
+            <div className="grid grid-rows-[auto_1fr] min-h-screen">
+              <Header />
+              {children}
+            </div>
+          </Providers>
+        </NuqsAdapter>
       </body>
     </html>
   );
