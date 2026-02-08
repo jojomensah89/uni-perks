@@ -59,6 +59,11 @@ export function PerkCard({ perk, userCountry }: PerkCardProps) {
                         <Globe className="h-3 w-3" />
                         Global
                     </span>
+                ) : perk.region ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                        <Globe className="h-3 w-3" />
+                        {perk.region}
+                    </span>
                 ) : isAvailableLocally ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
                         <MapPin className="h-3 w-3" />

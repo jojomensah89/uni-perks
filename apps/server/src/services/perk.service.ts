@@ -12,6 +12,7 @@ export interface GetPerksOptions {
     categorySlug?: string;
     featured?: boolean;
     globalOnly?: boolean;
+    region?: string;
 }
 
 export interface PerkDetailOptions {
@@ -30,10 +31,12 @@ export async function getPerks(options: GetPerksOptions) {
         categorySlug,
         featured,
         isActive: true,
+        region: options.region,
     });
 
     // Filter by country availability
     const filteredPerks = results.filter(({ perk }) => {
+        if (options.region) return true; // Skip country check if specific region requested
         if (globalOnly) return perk.isGlobal;
         return isPerkAvailableInCountry(perk, country);
     });

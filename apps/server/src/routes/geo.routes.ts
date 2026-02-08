@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getGeoData } from "../services/geo.service";
+import { getGeoData, getRegions } from "../services/geo.service";
 
 const app = new Hono();
 
@@ -10,6 +10,15 @@ const app = new Hono();
 app.get("/", (c) => {
     const geoData = getGeoData(c.req.raw);
     return c.json(geoData);
+});
+
+/**
+ * GET /api/geo/regions
+ * Get all available regions
+ */
+app.get("/regions", async (c) => {
+    const regions = await getRegions();
+    return c.json({ regions });
 });
 
 export default app;

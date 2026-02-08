@@ -15,6 +15,7 @@ app.get("/", async (c) => {
     const requestedCountry = c.req.query("country") || geoData.country;
     const categorySlug = c.req.query("category");
     const featured = c.req.query("featured") === "true";
+    const region = c.req.query("region");
     const showGlobalOnly = c.req.query("global") === "true";
 
     const perks = await getPerks({
@@ -22,6 +23,7 @@ app.get("/", async (c) => {
         categorySlug,
         featured,
         globalOnly: showGlobalOnly,
+        region,
     });
 
     return c.json({

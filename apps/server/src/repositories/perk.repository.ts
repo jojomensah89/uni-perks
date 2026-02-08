@@ -7,6 +7,7 @@ export interface PerkFilters {
     featured?: boolean;
     isActive?: boolean;
     slug?: string;
+    region?: string;
 }
 
 /**
@@ -22,6 +23,10 @@ export async function findManyPerks(filters: PerkFilters = {}) {
 
         if (filters.categorySlug) {
             conditions.push(eq(categories.slug, filters.categorySlug));
+        }
+
+        if (filters.region) {
+            conditions.push(eq(perks.region, filters.region));
         }
 
         if (filters.featured) {

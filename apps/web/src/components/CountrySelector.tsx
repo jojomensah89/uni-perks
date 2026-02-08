@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { ChevronDown, Globe, Check } from 'lucide-react';
-import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -14,6 +13,8 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { fetchAPI } from "@/lib/api";
 import type { GeoData } from "@/types";
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 interface Country {
     code: string;
@@ -26,93 +27,127 @@ export function CountrySelector() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [countries, setCountries] = useState<Country[]>([]);
+    const [regions, setRegions] = useState<{ id: string; name: string; slug: string }[]>([]);
     const [userCountry, setUserCountry] = useState<string>('');
     const [selectedCountry, setSelectedCountry] = useState<string>('ALL');
 
-    // Fetch countries and user geo on mount
+    // Fetch countries, regions and user geo on mount
     useEffect(() => {
-        // Determine selected country from URL or default to ALL
+        // Determine selected item from URL
         const countryParam = searchParams.get('country');
+        const regionParam = searchParams.get('region');
+
         if (countryParam) {
             setSelectedCountry(countryParam);
+        } else if (regionParam) {
+            setSelectedCountry(`REGION:${regionParam}`);
+        } else {
+            setSelectedCountry('ALL');
         }
 
         const fetchData = async () => {
             try {
-                // Parallel fetch for Geo and Countries
-                const [geoData, countriesData] = await Promise.all([
+                // Parallel fetch for Geo, Countries and Regions
+                const [geoData, countriesData, regionsData] = await Promise.all([
                     fetchAPI<GeoData>('api/geo').catch(err => {
                         console.error('Geo fetch failed', err);
                         return null;
                     }),
-                    // return mock for now if endpoint fails or doesn't exist yet
-                    Promise.resolve({
-                        countries: [
-                            { code: 'US', name: 'United States', flag: '🇺🇸', perkCount: 0 },
-                            { code: 'UK', name: 'United Kingdom', flag: '🇬🇧', perkCount: 0 },
-                            { code: 'CA', name: 'Canada', flag: '🇨🇦', perkCount: 0 },
-                            { code: 'AU', name: 'Australia', flag: '🇦🇺', perkCount: 0 },
-                        ]
-                    })
+                    fetchAPI<{ countries: Country[] }>('api/countries').catch(() => ({ countries: [] })),
+                    fetchAPI<{ regions: { id: string; name: string; slug: string }[] }>('api/geo/regions').catch(() => ({ regions: [] }))
                 ]);
 
-                if (geoData) {
+                if (geoData && !countryParam && !regionParam) {
                     setUserCountry(geoData.country);
                 }
 
-                if (countriesData && countriesData.countries) {
+                if (countriesData?.countries) {
                     setCountries(countriesData.countries);
                 }
+
+                if (regionsData?.regions) {
+                    setRegions(regionsData.regions);
+                }
             } catch (err) {
-                console.error("Failed to fetch geo/country data", err);
+                console.error("Failed to fetch geo data", err);
             }
         };
 
         fetchData();
     }, [searchParams]);
 
-    const handleSelect = (code: string) => {
-        setSelectedCountry(code);
+    const handleSelect = (value: string) => {
         const params = new URLSearchParams(searchParams.toString());
 
-        if (code === 'ALL') {
+        if (value === 'ALL') {
             params.delete('country');
+            params.delete('region');
+            setSelectedCountry('ALL');
+        } else if (value.startsWith('REGION:')) {
+            const regionSlug = value.split(':')[1];
+            params.delete('country');
+            params.set('region', regionSlug);
+            setSelectedCountry(value);
         } else {
-            params.set('country', code);
+            params.delete('region');
+            params.set('country', value);
+            setSelectedCountry(value);
         }
 
         router.push(`?${params.toString()}`);
     };
 
     const currentCountry = countries.find(c => c.code === selectedCountry);
+    const currentRegion = selectedCountry.startsWith('REGION:')
+        ? regions.find(r => r.slug === selectedCountry.split(':')[1])
+        : null;
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                    {selectedCountry === 'ALL' ? (
-                        <>
-                            <Globe className="h-4 w-4" />
-                            <span>Global</span>
-                        </>
-                    ) : (
-                        <>
-                            <span className="text-lg leading-none">{currentCountry?.flag}</span>
-                            <span>{currentCountry?.code}</span>
-                        </>
-                    )}
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                </Button>
+            <DropdownMenuTrigger className={cn(buttonVariants({ variant: "outline" }), "gap-2 px-4 py-2 flex items-center")}>
+                {selectedCountry === 'ALL' ? (
+                    <>
+                        <Globe className="h-4 w-4" />
+                        <span>Global</span>
+                    </>
+                ) : currentRegion ? (
+                    <>
+                        <Globe className="h-4 w-4" />
+                        <span>{currentRegion.name}</span>
+                    </>
+                ) : (
+                    <>
+                        <span className="text-lg leading-none">{currentCountry?.flag}</span>
+                        <span>{currentCountry?.code || selectedCountry}</span>
+                    </>
+                )}
+                <ChevronDown className="h-4 w-4 opacity-50 ml-auto" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[200px]">
-                <DropdownMenuLabel>Select Country</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-[240px] max-h-[400px] overflow-y-auto">
+                <DropdownMenuLabel>Filter Location</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => handleSelect('ALL')}>
                     <Globe className="mr-2 h-4 w-4" />
-                    <span>All Countries</span>
+                    <span>All Locations</span>
                     {selectedCountry === 'ALL' && <Check className="ml-auto h-4 w-4" />}
                 </DropdownMenuItem>
+
+                {regions.length > 0 && (
+                    <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Regions</DropdownMenuLabel>
+                        {regions.map((region) => (
+                            <DropdownMenuItem key={region.slug} onClick={() => handleSelect(`REGION:${region.slug}`)}>
+                                <Globe className="mr-2 h-4 w-4 opacity-50" />
+                                <span>{region.name}</span>
+                                {selectedCountry === `REGION:${region.slug}` && <Check className="ml-auto h-4 w-4" />}
+                            </DropdownMenuItem>
+                        ))}
+                    </>
+                )}
+
                 <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Countries</DropdownMenuLabel>
                 {countries.map((country) => (
                     <DropdownMenuItem key={country.code} onClick={() => handleSelect(country.code)}>
                         <span className="mr-2 text-lg leading-none">{country.flag}</span>
