@@ -10,6 +10,7 @@ import perksRouter from "./routes/perks.routes";
 import categoriesRouter from "./routes/categories.routes";
 import clicksRouter from "./routes/clicks.routes";
 import seedRouter from "./routes/seed.routes";
+import adminRouter from "./routes/admin.routes";
 
 const app = new Hono();
 
@@ -22,7 +23,7 @@ app.use(
   "/*",
   cors({
     origin: env.CORS_ORIGIN,
-    allowMethods: ["GET", "POST", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   }),
@@ -37,6 +38,7 @@ app.route("/api/perks", perksRouter);
 app.route("/api/categories", categoriesRouter);
 app.route("/api/clicks", clicksRouter);
 app.route("/api/seed", seedRouter);
+app.route("/api/admin", adminRouter);
 
 // Health check
 app.get("/", (c) => {

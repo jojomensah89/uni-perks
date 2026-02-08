@@ -17,6 +17,7 @@ app.get("/", async (c) => {
     const featured = c.req.query("featured") === "true";
     const region = c.req.query("region");
     const showGlobalOnly = c.req.query("global") === "true";
+    const searchQuery = c.req.query("q");
 
     const perks = await getPerks({
         country: requestedCountry,
@@ -24,6 +25,7 @@ app.get("/", async (c) => {
         featured,
         globalOnly: showGlobalOnly,
         region,
+        searchQuery,
     });
 
     return c.json({

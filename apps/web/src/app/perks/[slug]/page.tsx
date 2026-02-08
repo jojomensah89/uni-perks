@@ -7,6 +7,7 @@ import type { Perk, Category } from "@/types";
 import { cn } from "@/lib/utils";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { ClaimButton } from "@/components/ClaimButton";
 
 export const runtime = "edge";
 
@@ -66,19 +67,7 @@ export async function generateMetadata({ params }: PerkPageProps): Promise<Metad
     };
 }
 
-interface PerkPageProps {
-    params: Promise<{ slug: string }>;
-    searchParams: Promise<{ country?: string }>;
-}
 
-interface PerkDetailResponse {
-    perk: Perk;
-    category: Category;
-    meta: {
-        country: string;
-        available: boolean;
-    };
-}
 
 export default async function PerkPage({ params, searchParams }: PerkPageProps) {
     const { slug } = await params;
@@ -167,6 +156,20 @@ export default async function PerkPage({ params, searchParams }: PerkPageProps) 
                     <div className="prose prose-gray dark:prose-invert max-w-none">
                         <h2 className="text-xl font-semibold mb-4">Description</h2>
                         <p className="whitespace-pre-wrap">{perk.longDescription || perk.shortDescription}</p>
+
+                        {perk.eligibilityNote && (
+                            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">Eligibility Requirements</h3>
+                                <p className="text-sm text-blue-700 dark:text-blue-300">{perk.eligibilityNote}</p>
+                            </div>
+                        )}
+
+                        {perk.regionNotes && (
+                            <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+                                <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-1">Regional Information</h3>
+                                <p className="text-sm text-amber-700 dark:text-amber-300">{perk.regionNotes}</p>
+                            </div>
+                        )}
                     </div>
 
                     {/* How to Claim */}
@@ -209,15 +212,11 @@ export default async function PerkPage({ params, searchParams }: PerkPageProps) 
                             </div>
                         )}
 
-                        <Link
-                            href={(perk.claimUrl || "#") as any}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={cn(buttonVariants({ size: "lg", variant: meta.available ? "default" : "secondary" }), "w-full gap-2")}
-                        >
-                            Get Deal
-                            <ExternalLink className="w-4 h-4" />
-                        </Link>
+                        <ClaimButton
+                            perkId={perk.id}
+                            claimUrl={perk.claimUrl}
+                            available={meta.available}
+                        />
 
                         {!meta.available && (
                             <p className="text-xs text-center text-muted-foreground">

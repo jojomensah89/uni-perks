@@ -44,7 +44,7 @@
         "@base-ui/react": "^1.1.0",
         "@libsql/client": "catalog:",
         "@opennextjs/cloudflare": "^1.14.6",
-        "@tanstack/react-form": "^1.27.3",
+        "@tanstack/react-form": "^1.28.0",
         "@uni-perks/auth": "workspace:*",
         "@uni-perks/env": "workspace:*",
         "babel-plugin-react-compiler": "^1.0.0",

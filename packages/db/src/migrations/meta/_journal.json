@@ -15,6 +15,13 @@
       "when": 1770470127127,
       "tag": "0001_pretty_mauler",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1770557635825,
+      "tag": "0002_zippy_retro_girl",
+      "breakpoints": true
     }
   ]
 }

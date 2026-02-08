@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { SearchInput } from "@/components/SearchInput";
 import Link from "next/link";
-import { useQueryStates, parseAsString, parseAsBoolean } from 'nuqs';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { Category } from "@/types";
 
 interface CategoryWithCount extends Category {
@@ -29,36 +29,44 @@ interface PerksFiltersProps {
 }
 
 export function PerksFilters({ categories, totalPerks, currentCategory, currentFeatured }: PerksFiltersProps) {
-    const [filters, setFilters] = useQueryStates({
-        category: parseAsString,
-        sortBy: parseAsString.withDefault('value_desc'),
-        featured: parseAsBoolean,
-    }, {
-        // Shallow routing to avoid full page reload
-        shallow: true,
-    });
+    const router = useRouter();
+    const searchParams = useSearchParams();
 
-    const handleCategoryChange = (value: string) => {
-        if (value === 'all') {
-            setFilters({ category: null });
+    // Get current values from URL
+    const currentSortBy = searchParams.get('sortBy') || 'value_desc';
+    const currentSearch = searchParams.get('search');
+
+    const updateFilter = (key: string, value: string | null) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (value === null) {
+            params.delete(key);
         } else {
-            setFilters({ category: value });
+            params.set(key, value);
+        }
+        router.push(`/perks?${params.toString()}` as any);
+    };
+
+    const handleCategoryChange = (value: string | null) => {
+        if (!value || value === 'all') {
+            updateFilter('category', null);
+        } else {
+            updateFilter('category', value);
         }
     };
 
-    const handleSortChange = (value: string) => {
-        setFilters({ sortBy: value });
+    const handleSortChange = (value: string | null) => {
+        updateFilter('sortBy', value || 'value_desc');
     };
 
     const handleFeaturedToggle = (checked: boolean) => {
-        setFilters({ featured: checked || null });
+        updateFilter('featured', checked ? 'true' : null);
     };
 
     const handleClearFilters = () => {
-        setFilters({ category: null, sortBy: 'value_desc', featured: null });
+        router.push('/perks' as any);
     };
 
-    const hasActiveFilters = currentCategory || currentFeatured;
+    const hasActiveFilters = currentCategory || currentFeatured || currentSearch;
 
     const sortOptions = [
         { value: 'value_desc', label: 'Highest Value' },
@@ -66,7 +74,7 @@ export function PerksFilters({ categories, totalPerks, currentCategory, currentF
         { value: 'popular', label: 'Most Popular' },
     ];
 
-    const currentSortLabel = sortOptions.find(opt => opt.value === filters.sortBy)?.label || 'Highest Value';
+    const currentSortLabel = sortOptions.find(opt => opt.value === currentSortBy)?.label || 'Highest Value';
 
     return (
         <div className="rounded-xl border bg-card p-4 shadow-sm mb-8 space-y-4">
@@ -102,7 +110,7 @@ export function PerksFilters({ categories, totalPerks, currentCategory, currentF
                         </SelectContent>
                     </Select>
 
-                    <Select value={filters.sortBy} onValueChange={handleSortChange}>
+                    <Select value={currentSortBy} onValueChange={handleSortChange}>
                         <SelectTrigger className="w-[180px] h-9">
                             <SelectValue>{currentSortLabel}</SelectValue>
                         </SelectTrigger>

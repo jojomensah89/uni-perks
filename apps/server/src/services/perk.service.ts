@@ -13,6 +13,7 @@ export interface GetPerksOptions {
     featured?: boolean;
     globalOnly?: boolean;
     region?: string;
+    searchQuery?: string;
 }
 
 export interface PerkDetailOptions {
@@ -24,7 +25,7 @@ export interface PerkDetailOptions {
  * Get filtered and sorted perks
  */
 export async function getPerks(options: GetPerksOptions) {
-    const { country, categorySlug, featured, globalOnly } = options;
+    const { country, categorySlug, featured, globalOnly, searchQuery } = options;
 
     // Fetch perks from repository
     const results = await findManyPerks({
@@ -32,6 +33,7 @@ export async function getPerks(options: GetPerksOptions) {
         featured,
         isActive: true,
         region: options.region,
+        searchQuery,
     });
 
     // Filter by country availability

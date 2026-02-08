@@ -8,17 +8,29 @@ export interface Perk {
     companyLogo?: string;
     valueAmount?: number;
     valueCurrency: string;
+    categoryId: string;
     availableCountries?: string[];
     excludedCountries?: string[];
     isGlobal: boolean;
     region?: string;
+    regionNotes?: string;
+    displayPriority?: number;
+    countryUrls?: Record<string, string>;
+    countryValues?: Record<string, number>;
     verificationMethod: string;
+    eligibilityNote?: string;
     claimUrl: string;
     affiliateUrl?: string;
     isFeatured: boolean;
     isActive: boolean;
-    createdAt: string; // ISO string from JSON
+    expirationDate?: string;
+    lastVerified?: string;
+    metaTitle?: string;
+    metaDescription?: string;
+    clickCount: number;
     viewCount: number;
+    createdAt: string; // ISO string from JSON
+    updatedAt: string;
 }
 
 export interface Category {

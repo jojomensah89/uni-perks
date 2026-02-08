@@ -1,4 +1,4 @@
-import { db, perks, categories, eq, and, sql } from "@uni-perks/db";
+import { db, perks, categories, eq, and, or, like, sql } from "@uni-perks/db";
 import { NotFoundError } from "../lib/errors";
 import { tryCatch } from "../lib/async-handler";
 
@@ -8,6 +8,7 @@ export interface PerkFilters {
     isActive?: boolean;
     slug?: string;
     region?: string;
+    searchQuery?: string;
 }
 
 /**
@@ -31,6 +32,18 @@ export async function findManyPerks(filters: PerkFilters = {}) {
 
         if (filters.featured) {
             conditions.push(eq(perks.isFeatured, filters.featured));
+        }
+
+        // Search by title, description, or company name
+        if (filters.searchQuery) {
+            const searchTerm = `%${filters.searchQuery.toLowerCase()}%`;
+            conditions.push(
+                or(
+                    like(sql`LOWER(${perks.title})`, searchTerm),
+                    like(sql`LOWER(${perks.shortDescription})`, searchTerm),
+                    like(sql`LOWER(${perks.company})`, searchTerm)
+                )!
+            );
         }
 
         const query = db
