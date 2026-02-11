@@ -1,12 +1,14 @@
 import { PerkCard } from "@/components/PerkCard";
 import { buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowRight, ArrowRightIcon, Sparkles, TrendingUp } from "lucide-react";
 import { CountrySelector } from "@/components/CountrySelector";
 import { fetchAPI } from "@/lib/api";
 import type { Perk } from "@/types";
 import { cn } from "@/lib/utils";
 import { CategoryGrid } from "@/components/CategoryGrid";
+import { AnimatedShinyText } from "@/components/animated-shiny-text";
+import { WordRotate } from "@/components/word-rotate";
 export const runtime = "edge";
 
 interface PerksResponse {
@@ -45,15 +47,22 @@ export default async function Home() {
 
         <div className="container mx-auto max-w-5xl space-y-8 relative">
           {/* Badge */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary text-sm font-medium backdrop-blur-sm">
-            <Sparkles className="w-4 h-4" />
-            <span>Over {totalPerks}+ verified student discounts</span>
+          <div
+            className={cn(
+              "group w-fit mx-auto rounded-full border border-black/5 bg-neutral-100 text-base text-white transition-all ease-in hover:cursor-pointer hover:bg-neutral-200 dark:border-white/5 dark:bg-neutral-900 dark:hover:bg-neutral-800"
+            )}
+          >
+
+            <AnimatedShinyText className="inline-flex items-center justify-center px-4 py-1 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400">
+              <span>✨ Over {totalPerks}+ verified student discounts</span>
+              <ArrowRightIcon className="ml-1 size-3 transition-transform duration-300 ease-in-out group-hover:translate-x-0.5" />
+            </AnimatedShinyText>
           </div>
 
           {/* Heading */}
           <h1 className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 text-6xl font-bold tracking-tighter sm:text-7xl md:text-8xl bg-gradient-to-b from-foreground to-foreground/60 bg-clip-text text-transparent">
-            Student Perks, <br />
-            <span className="text-primary inline-block bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">Reimagined.</span>
+            Student <WordRotate className="text-primary bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent" words={["Perks,", "Discounts,", "Offers,", "Deals,", "Freebies,"]} /> <br />
+            <span>Reimagined.</span>
           </h1>
 
           {/* Subtext */}
@@ -71,10 +80,6 @@ export default async function Home() {
               Browse Perks
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">or filter by</span>
-              {/* <CountrySelector /> */}
-            </div>
           </div>
         </div>
       </section>
