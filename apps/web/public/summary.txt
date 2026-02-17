@@ -1,0 +1,123 @@
+# Uni-Perks — Product & UX Summary
+
+> The best student perks. Zero sign-up.
+
+Uni-Perks is a perk aggregation platform that curates verified student discounts, freebies, and exclusive offers from brands worldwide — all in one place. Students browse and redeem deals without creating an account or sharing personal data. Verification is handled entirely on the brand's own site (via SheerID, UNiDAYS, or .edu email), making Uni-Perks a privacy-first, zero-friction directory.
+
+---
+
+## What the Website Does
+
+- Aggregates hundreds of verified student discounts across categories like software, streaming, food, fashion, travel, and health.
+- Lets students browse, search, filter, and redeem deals instantly — no login, no sign-up, no data collection.
+- Redirects students to the brand's own verification page when they click "Redeem," so all identity checks happen off-site.
+- Automatically detects the visitor's country and surfaces locally relevant perks first, while also showing globally available deals.
+- Provides curated collections (e.g. "The Freshman Starter Pack," "Finals Week Survival Kit") to guide discovery.
+- Accepts crowdsourced deal suggestions from anyone via a simple no-auth form.
+- Offers a protected admin dashboard for managing perks, tracking click analytics, reviewing user-submitted deals, and monitoring engagement by country.
+
+---
+
+## Core UX Principles
+
+1. **Hick's Law (Reduce Choices):** The homepage hero section shows only 3–5 top deals ("Killer Deals") to prevent decision paralysis. Categories are kept to 6 main groups.
+2. **Law of Proximity (Group Related Items):** Categories are visually grouped so users perceive them as cohesive units. Filter controls and sort options are visually distinct from category pills.
+3. **Visibility of System Status:** Every deal card explicitly states the verification method (e.g. "Verify via SheerID," "Requires .edu email"), so students know exactly what to expect before clicking.
+4. **Privacy-First / No-Auth Experience:** Browsing and redeeming deals requires zero personal information. Country preferences are stored via cookies, not accounts. Search history is stored in localStorage.
+
+---
+
+## Page-by-Page UX Overview
+
+### Homepage
+- **Sticky Top Bar:** Rotates a weekly "mega deal" banner (dismissible).
+- **Navigation:** Logo, category links, country selector (auto-detected via IP), expandable search, and "Suggest a Deal" button.
+- **Hero Section:** Bold headline ("The best student perks. Zero sign-up."), subheadline, and two CTAs: "Browse All Perks" and "How It Works."
+- **Featured Carousel ("Killer Deals"):** 3–5 highest-value deals in a horizontal carousel.
+- **Category Quick-Nav Grid:** 2×3 grid of icon-forward category cards (Tech, Food, Streaming, Fashion, Travel, Health) linking to filtered browse pages.
+- **Curated Collections:** Themed strips like "The Freshman Starter Pack" and "Finals Week Survival Kit" with 6–8 deal cards each.
+- **How It Works:** 3-step explainer (Browse → Click → Save) with a trust badge: "We never collect your personal data."
+- **Why Uni-Perks:** 3-column feature grid — No Sign-Up Required, Verified Deals Only, Privacy First.
+- **Newsletter / Suggest-a-Deal CTA:** Full-width banner for submitting deals or subscribing to weekly alerts.
+- **Footer:** 4-column grid with categories, resources, legal links, and social icons.
+
+### Perks Browse Page
+- **Dynamic Header:** Title adjusts by context — "Student Perks," "Tech & Software Deals," or "Deals in 🇺🇸 United States."
+- **Sticky Filter Bar:** Category pills, country selector, sort dropdown (Relevance, Highest Value, Most Popular, Newest), verification filter toggle, and search input.
+- **Active Filters:** Removable chips showing current filters with a "Clear all" option.
+- **Deal Cards Grid:** Responsive grid (3 cols desktop, 2 tablet, 1 mobile). Each card shows: brand logo, discount badge, title, short description, verification tag, category pill, country flags, and a "Redeem" CTA.
+- **Curated Banners:** Full-width collection banners interspersed every 9 cards.
+- **Pagination:** "Load More" button (not infinite scroll) showing "12 of 142 deals."
+- **Empty State:** Friendly illustration with suggestions to adjust filters or suggest a deal.
+- **SEO Sidebar:** Long-tail content for category/country pages (desktop only).
+
+### Perk Detail Page
+- **Breadcrumbs:** Home > Perks > [Category] > [Brand].
+- **Perk Hero:** Two-column layout with brand logo, discount badge, title, short description, verification tag, country availability list, category pill, and "Last verified" date. Large "Redeem This Deal →" CTA.
+- **How to Redeem:** Numbered 3-step timeline (Click Redeem → Verify Your Status → Enjoy the Discount) with a privacy note.
+- **Deal Details Panel:** Key-value grid showing value, eligibility, duration, verification provider, redemption type, expiration, and region notes.
+- **Related Deals Carousel:** 3–4 deals from the same category and country.
+- **"Was This Helpful?" Feedback:** Anonymous thumbs up/down to flag expired deals.
+- **SEO Content Block:** Long-form description below the fold.
+
+### Login Page
+- **Purpose:** Optional — only for admin access. Browsing requires no account.
+- **Split Layout (Desktop):** Login form on the left; brand illustration and value prop on the right.
+- **Trust Note:** "Browsing deals doesn't require an account. Continue browsing →"
+
+### Admin Dashboard
+- **Authenticated admin area** with stats overview (Total Perks, Total Clicks, Top Country, Featured Deals), top-performing perks table, clicks-by-country chart, recent activity feed, and a deal suggestions inbox for reviewing crowdsourced submissions.
+
+---
+
+## Shared Components
+
+- **Deal Card:** Consistent card used across homepage, browse, search, and related deals. Shows logo, discount badge, title, description, verification method, category pill, country flags, and "Redeem" CTA. States: default, hover (lift + shadow), featured (gold border), expired (greyed out).
+- **Country Selector:** Auto-detects country via Cloudflare headers. Dropdown with "All Countries," "Global Perks Only," detected country (highlighted), popular countries, then alphabetical list with perk counts. Persists via cookie. Updates URL with ?country=XX.
+- **Search:** Expandable input with autocomplete (top 5 brands + top 3 categories), recent searches from localStorage.
+- **Suggest a Deal Modal:** No-auth form — Brand name, discount description, URL (optional), category dropdown, country selector, email (optional). Rate-limited on backend.
+- **Footer:** 4-column grid (Uni-Perks, Categories, Resources, Legal) with social icons and compact country selector. Collapses to accordions on mobile.
+- **Toast Notifications:** Subtle slide-up toasts for actions like "Deal link copied!" or "Country updated."
+
+---
+
+## Geo-Location Features
+
+- **Automatic Country Detection:** Cloudflare headers (CF-IPCountry) detect the visitor's country at zero cost — no external API needed.
+- **Country-Aware Filtering:** Perks are filtered by availability per country. Local perks are prioritised, then global perks, then by popularity.
+- **Country-Specific URLs & Values:** Each perk can have different claim URLs and discount values per country (e.g. US Amazon vs UK Amazon).
+- **Regional SEO:** Each country gets its own SEO-optimised pages (e.g. "Student Discounts UK"), multiplying content 10x.
+- **International Support:** Regions include North America, Europe, Asia Pacific, Latin America, and Middle East & Africa. Currency and flag data accompany each country.
+
+---
+
+## Top Student Perks Highlighted
+
+- **Microsoft Office 365:** Free via .edu email — Word, Excel, PowerPoint, Teams.
+- **Adobe Creative Cloud:** 60%+ off ($19.99/mo instead of $54.99/mo).
+- **Spotify + Hulu Bundle:** $5.99/mo for Premium + Hulu (with ads).
+- **Amazon Prime Student:** 6-month free trial, then 50% off ($7.49/mo).
+- **GitHub Student Developer Pack:** Free Copilot, cloud credits, and developer tools.
+- **Apple Music:** $5.99/mo with Apple TV+ included.
+- **JetBrains IDEs:** Free for students (normally $249/year).
+- **Samsung:** Up to 30% off via Education Offers Program.
+- **Apple Education Pricing:** Discounted Macs & iPads + seasonal gift cards/AirPods.
+
+---
+
+## Monetisation (How the Site Earns)
+
+- **Affiliate Commissions:** Earn when students click affiliate links and sign up for services (primary revenue).
+- **Sponsored Listings:** Brands pay for featured placement in the homepage carousel or category pages.
+- **Email Newsletter:** Weekly deal alerts → monetised via affiliate promotions and sponsored content.
+- **Premium Features (Future):** Expiration alerts, personalised recommendations, Chrome extension, comparison tools.
+
+---
+
+## Key Differentiators
+
+1. **No sign-up required** — browse and redeem instantly.
+2. **Privacy-first** — personal data never collected; verification happens on the brand's site.
+3. **Verified deals only** — every perk is manually checked with clear verification instructions.
+4. **Country-aware** — automatically shows local deals with the option to browse globally.
+5. **Crowdsourced** — anyone can suggest a deal via a simple form, no account needed.

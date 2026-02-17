@@ -1,6 +1,5 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
-import { perks } from "./perks";
 
 // ===== SUBSCRIBERS =====
 export const subscribers = sqliteTable("subscribers", {
@@ -11,12 +10,12 @@ export const subscribers = sqliteTable("subscribers", {
 
     // Preferences
     frequency: text("frequency").default("weekly"),
+    audience: text("audience"), // "cs-students", "designers", "all"
 
-    // === GEO PREFERENCES ===
-    country: text("country"), // User's country (from signup or IP)
+    // Geo preferences
+    country: text("country"),
     preferredCountries: text("preferred_countries", { mode: "json" }).$type<string[]>(),
-    notifyGlobalPerks: integer("notify_global_perks", { mode: "boolean" }).default(true),
-    // === END GEO ===
+    notifyGlobalDeals: integer("notify_global_deals", { mode: "boolean" }).default(true),
 
     subscribedAt: integer("subscribed_at", { mode: "timestamp_ms" })
         .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
@@ -27,29 +26,53 @@ export const subscribers = sqliteTable("subscribers", {
 // ===== CLICKS =====
 export const clicks = sqliteTable("clicks", {
     id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-    perkId: text("perk_id").notNull(),
+    dealId: text("deal_id").notNull(),
+    brandId: text("brand_id"),
 
     // Tracking
+    source: text("source"), // "homepage", "category", "search", "collection"
     referrer: text("referrer"),
     userAgent: text("user_agent"),
+    device: text("device"), // "mobile", "desktop", "tablet"
 
-    // === GEO TRACKING ===
-    country: text("country"), // CF-IPCountry header
-    region: text("region"), // Derived from country
-    city: text("city"), // CF-IPCity header (optional)
-    // === END GEO ===
+    // Geo tracking
+    country: text("country"), // CF-IPCountry
+    regionCode: text("region_code"), // ISO region code
+    city: text("city"), // CF-IPCity
 
     clickedAt: integer("clicked_at", { mode: "timestamp_ms" })
         .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
         .notNull(),
 }, (table) => ({
+    dealIdx: index("clicks_deal_idx").on(table.dealId),
+    brandIdx: index("clicks_brand_idx").on(table.brandId),
     countryIdx: index("clicks_country_idx").on(table.country),
-    perkCountryIdx: index("clicks_perk_country_idx").on(table.perkId, table.country),
+    sourceIdx: index("clicks_source_idx").on(table.source),
 }));
 
-export const clicksRelations = relations(clicks, ({ one }) => ({
-    perk: one(perks, {
-        fields: [clicks.perkId],
-        references: [perks.id],
-    }),
+// ===== PAGE_VIEWS =====
+export const pageViews = sqliteTable("page_views", {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    path: text("path").notNull(),
+    dealId: text("deal_id"), // null for non-deal pages
+
+    // Tracking
+    referrer: text("referrer"),
+    userAgent: text("user_agent"),
+    device: text("device"),
+
+    // Geo
+    country: text("country"),
+
+    viewedAt: integer("viewed_at", { mode: "timestamp_ms" })
+        .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+        .notNull(),
+}, (table) => ({
+    dealIdx: index("page_views_deal_idx").on(table.dealId),
+    pathIdx: index("page_views_path_idx").on(table.path),
+    countryIdx: index("page_views_country_idx").on(table.country),
 }));
+
+export type Subscriber = typeof subscribers.$inferSelect;
+export type Click = typeof clicks.$inferSelect;
+export type PageView = typeof pageViews.$inferSelect;

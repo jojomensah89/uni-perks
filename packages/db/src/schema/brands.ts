@@ -1,0 +1,63 @@
+import { relations, sql } from "drizzle-orm";
+import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+
+// ===== BRANDS =====
+export const brands = sqliteTable("brands", {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    slug: text("slug").notNull().unique(),
+    name: text("name").notNull(),
+    tagline: text("tagline"),
+    description: text("description"),
+
+    // Images
+    logoUrl: text("logo_url"),
+    coverImageUrl: text("cover_image_url"),
+
+    // Links
+    website: text("website"),
+
+    // Status
+    isVerified: integer("is_verified", { mode: "boolean" }).default(false),
+
+    // SEO
+    metaTitle: text("meta_title"),
+    metaDescription: text("meta_description"),
+
+    // Analytics - denormalized
+    totalClickCount: integer("total_click_count").default(0),
+
+    // Timestamps
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+        .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+        .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+        .$onUpdate(() => new Date())
+        .notNull(),
+}, (table) => ({
+    slugIdx: index("brands_slug_idx").on(table.slug),
+}));
+
+// ===== CATEGORIES =====
+export const categories = sqliteTable("categories", {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    name: text("name").notNull(),
+    slug: text("slug").notNull().unique(),
+    icon: text("icon"), // lucide icon name
+    color: text("color"), // hex color for UI
+    coverImageUrl: text("cover_image_url"),
+    displayOrder: integer("display_order").default(0),
+
+    // SEO
+    metaTitle: text("meta_title"),
+    metaDescription: text("meta_description"),
+
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+        .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+        .notNull(),
+}, (table) => ({
+    slugIdx: index("categories_slug_idx").on(table.slug),
+    displayOrderIdx: index("categories_display_order_idx").on(table.displayOrder),
+}));
+
+export type Brand = typeof brands.$inferSelect;
+export type Category = typeof categories.$inferSelect;

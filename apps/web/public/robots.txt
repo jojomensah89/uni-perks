@@ -1,0 +1,19 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: Googlebot
+User-agent: Googlebot-Image
+User-agent: Mediapartners-Google
+User-agent: facebookexternalhit
+User-agent: Twitterbot
+User-agent: *
+Allow: /
+
+# Disallow admin and API paths
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /admin/
+
+# Explicitly allow llms.txt (though Allow: / covers it, this signals intent)
+Allow: /llms.txt
+
+# Sitemap
+Sitemap: https://uni-perks.com/sitemap.xml

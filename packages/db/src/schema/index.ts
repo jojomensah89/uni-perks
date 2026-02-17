@@ -1,4 +1,11 @@
 export * from "./auth";
-export * from "./perks";
+export * from "./brands";
+export * from "./deals";
+export * from "./tags";
+export * from "./collections";
 export * from "./geo";
 export * from "./analytics";
+export * from "./dealSuggestions";
+export * from "./relations";
+
+

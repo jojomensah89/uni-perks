@@ -1,0 +1,30 @@
+# Uni-Perks
+
+> The best student perks. Zero sign-up.
+
+Uni-Perks is a perk aggregation platform designed specifically for university students. We curate verified discounts, freebies, and special offers to help students save money on software, essential services, and lifestyle products.
+
+## Key Features
+
+- **No Sign-Up Required**: Browse and claim deals instantly without creating an account.
+- **Verified Deals**: All perks are manually verified to ensure they are active and valid.
+- **Privacy-First**: We do not collect personal data. Verification happens directly on the brand's website.
+- **Diverse Categories**: Tech & Software, Food & Delivery, Streaming, Fashion, Travel, and more.
+
+## Top Perks
+
+- **GitHub Student Developer Pack**: Free access to top developer tools.
+- **Adobe Creative Cloud**: 60%+ off for students.
+- **Spotify + Hulu**: Premium bundle for $5.99/mo.
+- **Amazon Prime Student**: 6-month free trial, then 50% off.
+
+## How It Works
+
+1. **Browse**: Find the best student deals in one place.
+2. **Click**: Hit 'Redeem' to go straight to the brand's verified student page.
+3. **Save**: Verify your student status (usually via .edu email) on the brand's site to unlock the discount.
+
+## Links
+
+- **Website**: https://uni-perks.com (Replace with actual production URL if different)
+- **Browse Perks**: https://uni-perks.com/perks

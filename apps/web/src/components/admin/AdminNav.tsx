@@ -2,9 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { LayoutDashboard, Package, LogOut } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    SidebarRail,
+} from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
+import UserMenu from "@/components/user-menu";
 
 const navItems = [
     {
@@ -23,41 +36,62 @@ export function AdminNav() {
     const pathname = usePathname();
 
     return (
-        <div className="flex h-full w-64 flex-col border-r bg-muted/40">
-            <div className="flex h-16 items-center border-b px-6">
-                <Link href={"/admin" as any} className="flex items-center gap-2 font-semibold">
-                    <Package className="h-6 w-6" />
-                    <span>Admin Panel</span>
-                </Link>
-            </div>
-            <nav className="flex-1 space-y-1 p-4">
-                {navItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href));
-
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href as any}
-                            className={cn(
-                                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                                isActive
-                                    ? "bg-primary text-primary-foreground"
-                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                            )}
-                        >
-                            <Icon className="h-4 w-4" />
-                            {item.title}
-                        </Link>
-                    );
-                })}
-            </nav>
-            <div className="border-t p-4">
-                <Link href="/" className={cn(buttonVariants({ variant: "ghost" }), "w-full justify-start gap-3")}>
-                    <LogOut className="h-4 w-4" />
-                    Back to Site
-                </Link>
-            </div>
-        </div>
+        <Sidebar collapsible="icon">
+            <SidebarHeader>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton size="lg" render={
+                            <Link href={"/" as any}>
+                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                                    <Package className="size-4" />
+                                </div>
+                                <div className="grid flex-1 text-left text-sm leading-tight">
+                                    <span className="truncate font-semibold">Uni Perks</span>
+                                    <span className="truncate text-xs">Admin Panel</span>
+                                </div>
+                            </Link>
+                        } />
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarHeader>
+            <SidebarContent>
+                <SidebarGroup>
+                    <SidebarGroupLabel>Menu</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            {navItems.map((item) => {
+                                const isActive = pathname === item.href || (item.href !== "/admin" && pathname?.startsWith(item.href));
+                                return (
+                                    <SidebarMenuItem key={item.href}>
+                                        <SidebarMenuButton isActive={isActive} tooltip={item.title} render={
+                                            <Link href={item.href as any}>
+                                                <item.icon />
+                                                <span>{item.title}</span>
+                                            </Link>
+                                        } />
+                                    </SidebarMenuItem>
+                                )
+                            })}
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
+            </SidebarContent>
+            <SidebarFooter>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton tooltip="Back to Site" render={
+                            <Link href={"/" as any}>
+                                <LogOut />
+                                <span>Back to Site</span>
+                            </Link>
+                        } />
+                    </SidebarMenuItem>
+                    <SidebarMenuItem className="p-2">
+                        <UserMenu />
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarFooter>
+            <SidebarRail />
+        </Sidebar>
     );
 }

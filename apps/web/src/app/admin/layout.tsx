@@ -2,6 +2,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { authClient } from "@/lib/auth-client";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 
 export default async function AdminLayout({
     children,
@@ -25,13 +27,19 @@ export default async function AdminLayout({
     // }
 
     return (
-        <div className="flex h-screen">
+        <SidebarProvider>
             <AdminNav />
-            <main className="flex-1 overflow-y-auto">
-                <div className="container mx-auto p-8">
-                    {children}
+            <SidebarInset>
+                <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+                    <SidebarTrigger className="-ml-1" />
+                    <Separator orientation="vertical" className="mr-2 h-4" />
+                </header>
+                <div className="flex-1 overflow-y-auto">
+                    <div className="container mx-auto p-8">
+                        {children}
+                    </div>
                 </div>
-            </main>
-        </div>
+            </SidebarInset>
+        </SidebarProvider>
     );
 }

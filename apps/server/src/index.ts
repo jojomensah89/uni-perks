@@ -6,9 +6,12 @@ import { logger } from "hono/logger";
 
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
 import geoRouter from "./routes/geo.routes";
-import perksRouter from "./routes/perks.routes";
+import dealsRouter from "./routes/deals.routes";
+import brandsRouter from "./routes/brands.routes";
+import collectionsRouter from "./routes/collections.routes";
 import categoriesRouter from "./routes/categories.routes";
 import clicksRouter from "./routes/clicks.routes";
+import suggestionsRouter from "./routes/suggestions.routes";
 import seedRouter from "./routes/seed.routes";
 import adminRouter from "./routes/admin.routes";
 
@@ -34,9 +37,12 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 // API routes
 app.route("/api/geo", geoRouter);
-app.route("/api/perks", perksRouter);
+app.route("/api/deals", dealsRouter);
+app.route("/api/brands", brandsRouter);
+app.route("/api/collections", collectionsRouter);
 app.route("/api/categories", categoriesRouter);
 app.route("/api/clicks", clicksRouter);
+app.route("/api/suggestions", suggestionsRouter);
 app.route("/api/seed", seedRouter);
 app.route("/api/admin", adminRouter);
 

@@ -39,6 +39,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -46,13 +48,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen overflow-hidden`}>
         <NuqsAdapter>
           <Providers>
-            <div className="grid grid-rows-[auto_1fr] min-h-screen">
-              <Header />
-              {children}
-            </div>
+            <ScrollArea className="h-full w-full" scrollBarClassName="mt-14 z-40">
+              <div className="grid grid-rows-[auto_1fr] min-h-screen">
+                <Header />
+                {children}
+              </div>
+            </ScrollArea>
           </Providers>
         </NuqsAdapter>
       </body>

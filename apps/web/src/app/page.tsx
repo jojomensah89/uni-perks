@@ -40,7 +40,7 @@ export default async function Home() {
   return (
     <div className="flex flex-col min-h-[calc(100vh-64px)]">
       {/* Premium Hero Section */}
-      <section className="relative px-4 py-32 text-center md:py-48 overflow-hidden">
+      <section className="relative px-4 pt-20 pb-16 text-center md:pt-32 md:pb-24 overflow-hidden">
         {/* Abstract Background */}
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background" />
         <div className="absolute inset-0 -z-10 bg-[url('/grid.svg')] opacity-20" />
@@ -85,7 +85,7 @@ export default async function Home() {
       </section>
 
       {/* Featured Perks */}
-      <section className="container mx-auto px-4 py-24 space-y-12">
+      <section className="container mx-auto px-4 py-12 space-y-12">
         <div className="flex items-center justify-between border-b pb-6">
           <div className="space-y-1">
             <h2 className="text-3xl font-bold tracking-tight">Featured Perks</h2>
