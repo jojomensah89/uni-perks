@@ -1,7 +1,7 @@
-import { Hono } from "hono";
-import { db, categories, perks, eq } from "@uni-perks/db";
+import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
+import { db, categories, deals, brands, eq } from "@uni-perks/db";
 
-const app = new Hono();
+const app = new OpenAPIHono();
 
 const SEED_CATEGORIES = [
     { name: 'Cloud Infrastructure', slug: 'cloud', icon: 'server' },
@@ -139,7 +139,39 @@ function slugify(text: string) {
         .replace(/^-+|-+$/g, '');
 }
 
-app.post("/", async (c) => {
+const seedRoute = createRoute({
+    method: "post",
+    path: "/",
+    tags: ["Seed"],
+    summary: "Seed Database",
+    description: "Seed the database with initial categories and deals.",
+    responses: {
+        200: {
+            description: "Seed successful",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        success: z.boolean(),
+                        message: z.string(),
+                    }),
+                },
+            },
+        },
+        500: {
+            description: "Seed failed",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        success: z.boolean(),
+                        error: z.string(),
+                    }),
+                },
+            },
+        }
+    },
+});
+
+app.openapi(seedRoute, async (c) => {
     try {
         console.log('🌱 Seeding database via API...');
 
@@ -162,11 +194,11 @@ app.post("/", async (c) => {
             }
         }
 
-        // 2. Perks
+        // 2. Deals (formerly perks)
         let insertedCount = 0;
         for (const perk of SEED_PERKS) {
             const slug = slugify(perk.title);
-            const existing = await db.select().from(perks).where(eq(perks.slug, slug)).limit(1);
+            const existing = await db.select().from(deals).where(eq(deals.slug, slug)).limit(1);
 
             // Check category first
             const catId = insertedCategories[perk.categorySlug];
@@ -178,32 +210,48 @@ app.post("/", async (c) => {
             if (existing.length > 0 && existing[0]) {
                 // Skip if exists
             } else {
-                const res = await db.insert(perks).values({
-                    title: perk.title,
-                    slug: slug,
-                    company: perk.company,
-                    shortDescription: perk.shortDescription,
-                    longDescription: perk.longDescription || perk.shortDescription,
-                    valueAmount: perk.valueAmount || 0,
-                    valueCurrency: perk.valueCurrency || 'USD',
-                    companyLogo: perk.companyLogo || '',
-                    claimUrl: perk.claimUrl || '',
-                    isFeatured: perk.isFeatured || false,
-                    isGlobal: true,
-                    isActive: true, // Fixed from status
-                    categoryId: catId,
-                    verificationMethod: 'manual',
-                    createdAt: new Date(),
-                    updatedAt: new Date()
-                }).returning();
+                // Ensure default brand exists
+                let brandId;
+                const brandSlug = "partner-brand";
+                const existingBrand = await db.select().from(brands).where(eq(brands.slug, brandSlug)).limit(1);
 
-                if (res[0]) {
+                if (existingBrand.length > 0 && existingBrand[0]) {
+                    brandId = existingBrand[0].id;
+                } else {
+                    const newBrand = await db.insert(brands).values({
+                        name: "Partner Brand",
+                        slug: brandSlug,
+                        description: "Default partner for seeded deals",
+                        website: "https://example.com",
+                        isVerified: true
+                    }).returning();
+                    if (newBrand[0]) brandId = newBrand[0].id;
+                }
+
+                if (brandId) {
+                    await db.insert(deals).values({
+                        title: perk.title,
+                        slug: slug,
+                        brandId: brandId,
+                        categoryId: catId,
+                        shortDescription: perk.shortDescription,
+                        longDescription: perk.longDescription,
+                        // Default values for required fields
+                        discountType: "percentage",
+                        discountLabel: "Special Offer",
+                        verificationMethod: "email",
+                        claimUrl: perk.claimUrl,
+                        isFeatured: perk.isFeatured,
+                        isActive: true
+                    } as any);
                     insertedCount++;
                 }
             }
         }
 
-        return c.json({ success: true, message: `Seeded ${insertedCount} perks and categories.` });
+        console.log(`✅ Seeded ${insertedCount} deals.`);
+
+        return c.json({ success: true, message: `Seeded categories and ${insertedCount} deals.` }, 200);
     } catch (e) {
         console.error(e);
         return c.json({ success: false, error: String(e) }, 500);

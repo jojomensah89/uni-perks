@@ -1,20 +1,45 @@
-import { Hono } from "hono";
+import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware";
 import { BadRequestError } from "../lib/errors";
 import { db, deals, brands, categories, eq, desc } from "@uni-perks/db";
 
-const app = new Hono();
+const app = new OpenAPIHono();
 
 // Apply auth middleware to all admin routes
 app.use("*", requireAuth, requireAdmin);
 
-/**
- * GET /api/admin/deals
- * Get all deals (including inactive) with pagination
- */
-app.get("/deals", async (c) => {
-    const page = parseInt(c.req.query("page") || "1");
-    const limit = parseInt(c.req.query("limit") || "50");
+const listDealsRoute = createRoute({
+    method: "get",
+    path: "/deals",
+    tags: ["Admin"],
+    summary: "List Deals (Admin)",
+    description: "Get all deals with pagination (Admin only).",
+    request: {
+        query: z.object({
+            page: z.string().optional().default("1"),
+            limit: z.string().optional().default("50"),
+        }),
+    },
+    responses: {
+        200: {
+            description: "List of deals",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        deals: z.array(z.any()), // Refine later
+                        page: z.number(),
+                        limit: z.number(),
+                    }),
+                },
+            },
+        },
+    },
+});
+
+app.openapi(listDealsRoute, async (c) => {
+    const query = c.req.valid("query");
+    const page = parseInt(query.page || "1");
+    const limit = parseInt(query.limit || "50");
     const offset = (page - 1) * limit;
 
     const results = await db
@@ -30,15 +55,34 @@ app.get("/deals", async (c) => {
         .limit(limit)
         .offset(offset);
 
-    return c.json({ deals: results, page, limit });
+    return c.json({ deals: results, page, limit }, 200);
 });
 
-/**
- * GET /api/admin/deals/:id
- * Get single deal by ID
- */
-app.get("/deals/:id", async (c) => {
-    const id = c.req.param("id");
+const getDealRoute = createRoute({
+    method: "get",
+    path: "/deals/{id}",
+    tags: ["Admin"],
+    summary: "Get Deal (Admin)",
+    description: "Get single deal by ID (Admin only).",
+    request: {
+        params: z.object({
+            id: z.string(),
+        }),
+    },
+    responses: {
+        200: {
+            description: "Deal details",
+            content: { "application/json": { schema: z.any() } }
+        },
+        400: {
+            description: "Not found",
+            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+        }
+    },
+});
+
+app.openapi(getDealRoute, async (c) => {
+    const { id } = c.req.valid("param");
 
     const result = await db
         .select({
@@ -56,16 +100,40 @@ app.get("/deals/:id", async (c) => {
         throw new BadRequestError("Deal not found");
     }
 
-    return c.json(result[0]);
+    return c.json(result[0], 200);
 });
 
-/**
- * POST /api/admin/deals
- * Create a new deal
- */
-app.post("/deals", async (c) => {
+const createDealRoute = createRoute({
+    method: "post",
+    path: "/deals",
+    tags: ["Admin"],
+    summary: "Create Deal (Admin)",
+    description: "Create a new deal (Admin only).",
+    request: {
+        body: {
+            content: {
+                "application/json": {
+                    schema: z.any(), // Refine later with CreateDealInputSchema
+                },
+            },
+        },
+    },
+    responses: {
+        201: {
+            description: "Deal created",
+            content: { "application/json": { schema: z.any() } }
+        },
+        400: {
+            description: "Invalid request",
+            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+        }
+    },
+});
+
+app.openapi(createDealRoute, async (c) => {
     const body = await c.req.json();
 
+    // Basic validation (zod should handle this if we define schema, but keeping legacy check for now)
     if (!body.title || !body.brandId || !body.categoryId || !body.claimUrl || !body.verificationMethod) {
         throw new BadRequestError("Missing required fields");
     }
@@ -74,12 +142,38 @@ app.post("/deals", async (c) => {
     return c.json(result[0], 201);
 });
 
-/**
- * PATCH /api/admin/deals/:id
- * Update a deal
- */
-app.patch("/deals/:id", async (c) => {
-    const id = c.req.param("id");
+const updateDealRoute = createRoute({
+    method: "patch",
+    path: "/deals/{id}",
+    tags: ["Admin"],
+    summary: "Update Deal (Admin)",
+    description: "Update a deal (Admin only).",
+    request: {
+        params: z.object({
+            id: z.string(),
+        }),
+        body: {
+            content: {
+                "application/json": {
+                    schema: z.any(), // Refine later
+                },
+            },
+        },
+    },
+    responses: {
+        200: {
+            description: "Deal updated",
+            content: { "application/json": { schema: z.any() } }
+        },
+        400: {
+            description: "Not found",
+            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+        }
+    },
+});
+
+app.openapi(updateDealRoute, async (c) => {
+    const { id } = c.req.valid("param");
     const body = await c.req.json();
 
     const result = await db
@@ -92,15 +186,34 @@ app.patch("/deals/:id", async (c) => {
         throw new BadRequestError("Deal not found");
     }
 
-    return c.json(result[0]);
+    return c.json(result[0], 200);
 });
 
-/**
- * DELETE /api/admin/deals/:id
- * Soft delete a deal
- */
-app.delete("/deals/:id", async (c) => {
-    const id = c.req.param("id");
+const deleteDealRoute = createRoute({
+    method: "delete",
+    path: "/deals/{id}",
+    tags: ["Admin"],
+    summary: "Delete Deal (Admin)",
+    description: "Soft delete a deal (Admin only).",
+    request: {
+        params: z.object({
+            id: z.string(),
+        }),
+    },
+    responses: {
+        200: {
+            description: "Deal deleted",
+            content: { "application/json": { schema: z.any() } }
+        },
+        400: {
+            description: "Not found",
+            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+        }
+    },
+});
+
+app.openapi(deleteDealRoute, async (c) => {
+    const { id } = c.req.valid("param");
 
     const result = await db
         .update(deals)
@@ -112,23 +225,62 @@ app.delete("/deals/:id", async (c) => {
         throw new BadRequestError("Deal not found");
     }
 
-    return c.json(result[0]);
+    return c.json(result[0], 200);
 });
 
-/**
- * GET /api/admin/brands
- * Get all brands
- */
-app.get("/brands", async (c) => {
+const listBrandsRoute = createRoute({
+    method: "get",
+    path: "/brands",
+    tags: ["Admin"],
+    summary: "List Brands (Admin)",
+    description: "Get all brands (Admin only).",
+    responses: {
+        200: {
+            description: "List of brands",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        brands: z.array(z.any()), // Refine later
+                    }),
+                },
+            },
+        },
+    },
+});
+
+app.openapi(listBrandsRoute, async (c) => {
     const results = await db.select().from(brands).orderBy(brands.name);
-    return c.json({ brands: results });
+    return c.json({ brands: results }, 200);
 });
 
-/**
- * POST /api/admin/brands
- * Create a new brand
- */
-app.post("/brands", async (c) => {
+const createBrandRoute = createRoute({
+    method: "post",
+    path: "/brands",
+    tags: ["Admin"],
+    summary: "Create Brand (Admin)",
+    description: "Create a new brand (Admin only).",
+    request: {
+        body: {
+            content: {
+                "application/json": {
+                    schema: z.any(), // Refine later
+                },
+            },
+        },
+    },
+    responses: {
+        201: {
+            description: "Brand created",
+            content: { "application/json": { schema: z.any() } }
+        },
+        400: {
+            description: "Invalid request",
+            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+        }
+    },
+});
+
+app.openapi(createBrandRoute, async (c) => {
     const body = await c.req.json();
 
     if (!body.name || !body.slug) {
@@ -139,12 +291,38 @@ app.post("/brands", async (c) => {
     return c.json(result[0], 201);
 });
 
-/**
- * PATCH /api/admin/brands/:id
- * Update a brand
- */
-app.patch("/brands/:id", async (c) => {
-    const id = c.req.param("id");
+const updateBrandRoute = createRoute({
+    method: "patch",
+    path: "/brands/{id}",
+    tags: ["Admin"],
+    summary: "Update Brand (Admin)",
+    description: "Update a brand (Admin only).",
+    request: {
+        params: z.object({
+            id: z.string(),
+        }),
+        body: {
+            content: {
+                "application/json": {
+                    schema: z.any(), // Refine later
+                },
+            },
+        },
+    },
+    responses: {
+        200: {
+            description: "Brand updated",
+            content: { "application/json": { schema: z.any() } }
+        },
+        400: {
+            description: "Not found",
+            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+        }
+    },
+});
+
+app.openapi(updateBrandRoute, async (c) => {
+    const { id } = c.req.valid("param");
     const body = await c.req.json();
 
     const result = await db
@@ -157,7 +335,7 @@ app.patch("/brands/:id", async (c) => {
         throw new BadRequestError("Brand not found");
     }
 
-    return c.json(result[0]);
+    return c.json(result[0], 200);
 });
 
 export default app;

@@ -1,5 +1,3 @@
-import type { Perk } from "@uni-perks/db";
-
 export interface GeoData {
     country: string;
     region: string;
@@ -17,27 +15,6 @@ export function extractGeoData(request: Request): GeoData {
         continent: request.headers.get("CF-Continent") || "NA",
         city: request.headers.get("CF-IPCity") || undefined,
     };
-}
-
-/**
- * Check if a perk is available in a specific country
- */
-export function isPerkAvailableInCountry(perk: Perk, userCountry: string): boolean {
-    // Global perks are available everywhere
-    if (perk.isGlobal) return true;
-
-    // Check exclusions first
-    if (perk.excludedCountries?.includes(userCountry)) {
-        return false;
-    }
-
-    // Check if country is in available list
-    if (perk.availableCountries) {
-        return perk.availableCountries.includes(userCountry);
-    }
-
-    // No restrictions = available everywhere
-    return true;
 }
 
 /**

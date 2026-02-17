@@ -13,7 +13,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -146,20 +146,17 @@ export function PerksTable({ perks }: PerksTableProps) {
                                 <TableCell className="text-right">{perk.clickCount}</TableCell>
                                 <TableCell>
                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                disabled={loading === perk.id}
-                                            >
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
+                                        <DropdownMenuTrigger
+                                            className={buttonVariants({ variant: "ghost", size: "icon" })}
+                                            disabled={loading === perk.id}
+                                        >
+                                            <MoreHorizontal className="h-4 w-4" />
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem asChild>
-                                                <Link href={`/admin/perks/${perk.id}/edit`}>
+                                            <DropdownMenuItem>
+                                                <Link href={`/admin/perks/${perk.id}/edit`} className="flex items-center w-full">
                                                     <Pencil className="mr-2 h-4 w-4" />
                                                     Edit
                                                 </Link>

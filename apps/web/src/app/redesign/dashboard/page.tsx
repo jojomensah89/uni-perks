@@ -14,7 +14,8 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { ArrowUpRight, Users, MousePointerClick, DollarSign, Activity } from "lucide-react"
 
 // Mock Data
@@ -134,12 +135,10 @@ export default function RedesignDashboardPage() {
                                         Highest click-through rates this week.
                                     </CardDescription>
                                 </div>
-                                <Button asChild size="sm" className="ml-auto gap-1">
-                                    <a href="#">
-                                        View All
-                                        <ArrowUpRight className="h-4 w-4" />
-                                    </a>
-                                </Button>
+                                <a href="#" className={cn(buttonVariants({ size: "sm" }), "ml-auto gap-1")}>
+                                    View All
+                                    <ArrowUpRight className="h-4 w-4" />
+                                </a>
                             </CardHeader>
                             <CardContent>
                                 <Table>

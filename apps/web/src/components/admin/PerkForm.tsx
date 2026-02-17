@@ -70,7 +70,7 @@ export function PerkForm({ perk, categories, mode }: PerkFormProps) {
                     router.push("/admin/perks");
                     router.refresh();
                 } else {
-                    const error = await response.json();
+                    const error = await response.json() as { message?: string };
                     alert(`Error: ${error.message || "Failed to save perk"}`);
                 }
             } catch (error) {
@@ -160,7 +160,7 @@ export function PerkForm({ perk, categories, mode }: PerkFormProps) {
                                 <Label htmlFor="categoryId">Category *</Label>
                                 <Select
                                     value={field.state.value}
-                                    onValueChange={(value) => field.handleChange(value)}
+                                    onValueChange={(value) => field.handleChange(value || "")}
                                     required
                                 >
                                     <SelectTrigger>
@@ -277,7 +277,7 @@ export function PerkForm({ perk, categories, mode }: PerkFormProps) {
                                 <Label htmlFor="verificationMethod">Verification Method *</Label>
                                 <Select
                                     value={field.state.value}
-                                    onValueChange={(value) => field.handleChange(value)}
+                                    onValueChange={(value) => field.handleChange(value || "")}
                                     required
                                 >
                                     <SelectTrigger>

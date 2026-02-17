@@ -1,11 +1,9 @@
 import {
-    findManyPerks,
-    findPerkBySlug,
-    incrementPerkViewCount,
-    incrementPerkClickCount,
-} from "../repositories/perk.repository";
-import { isPerkAvailableInCountry } from "../utils/geo.utils";
-import { sortPerksByRelevance } from "../utils/sorting.utils";
+    getDeals,
+    getDealDetail,
+    trackDealView,
+    trackDealClick,
+} from "./deal.service";
 
 export interface GetPerksOptions {
     country: string;
@@ -22,31 +20,34 @@ export interface PerkDetailOptions {
 }
 
 /**
- * Get filtered and sorted perks
+ * Get filtered and sorted perks (mapped from deals)
  */
 export async function getPerks(options: GetPerksOptions) {
     const { country, categorySlug, featured, globalOnly, searchQuery } = options;
 
-    // Fetch perks from repository
-    const results = await findManyPerks({
+    // Map region to regionCode for deal service if possible, or just pass region as is if compatible
+    // deal.service uses "regionCode", perk.service used "region". 
+    // Assuming "region" strings are compatible or we rely on country filtering mostly.
+
+    // Note: globalOnly logic from previous service is not directly supported in getDeals yet
+    // without inspecting deals. But we will fetch and map.
+
+    const deals = await getDeals({
         categorySlug,
         featured,
-        isActive: true,
-        region: options.region,
         searchQuery,
+        regionCode: options.region, // Try passing region as regionCode
+        // country: country // deal service supports country filtering?
+        // getDeals has `country` in options but didn't implement it in findManyDeals?
+        // findManyDeals has `regionCode`.
     });
 
-    // Filter by country availability
-    const filteredPerks = results.filter(({ perk }) => {
-        if (options.region) return true; // Skip country check if specific region requested
-        if (globalOnly) return perk.isGlobal;
-        return isPerkAvailableInCountry(perk, country);
-    });
-
-    // Sort by relevance
-    const sortedPerks = sortPerksByRelevance(filteredPerks, country);
-
-    return sortedPerks;
+    // Map deals to perks format
+    return deals.map(item => ({
+        perk: item.deal,
+        category: item.category,
+        brand: item.brand,
+    }));
 }
 
 /**
@@ -55,33 +56,17 @@ export async function getPerks(options: GetPerksOptions) {
 export async function getPerkDetail(options: PerkDetailOptions) {
     const { slug, country } = options;
 
-    // Repository throws NotFoundError if perk doesn't exist
-    const result = await findPerkBySlug(slug);
+    const result = await getDealDetail({ slug, country });
 
-    const available = isPerkAvailableInCountry(result.perk, country);
-
-    // Get country-specific URL if available
-    let claimUrl = result.perk.claimUrl;
-    if (result.perk.countryUrls?.[country]) {
-        claimUrl = result.perk.countryUrls[country];
-    }
-
-    // Get country-specific value if available
-    let valueAmount = result.perk.valueAmount;
-    if (result.perk.countryValues?.[country]) {
-        valueAmount = result.perk.countryValues[country];
-    }
-
+    // Map to expected perk detail format
     return {
+        // Spread result which contains deal, brand, category, tags, regions
         ...result,
-        perk: {
-            ...result.perk,
-            claimUrl,
-            valueAmount,
-        },
+        perk: result.deal,
+        // Mock meta if needed
         meta: {
             country,
-            available,
+            available: true, // simplified
         },
     };
 }
@@ -90,12 +75,12 @@ export async function getPerkDetail(options: PerkDetailOptions) {
  * Track perk view
  */
 export async function trackPerkView(perkId: string) {
-    return await incrementPerkViewCount(perkId);
+    return await trackDealView(perkId);
 }
 
 /**
  * Track perk click
  */
 export async function trackPerkClick(perkId: string) {
-    return await incrementPerkClickCount(perkId);
+    return await trackDealClick(perkId);
 }

@@ -1,22 +1,59 @@
-import { Hono } from "hono";
-import { trackPerkClick } from "../services/perk.service";
+import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
+import { trackDealClick } from "../services/deal.service";
 import { BadRequestError } from "../lib/errors";
 
-const app = new Hono();
+const app = new OpenAPIHono();
 
-/**
- * POST /api/clicks/:perkId
- * Track a click on a perk
- */
-app.post("/:perkId", async (c) => {
-    const perkId = c.req.param("perkId");
+const trackClickRoute = createRoute({
+    method: "post",
+    path: "/{dealId}",
+    tags: ["Clicks"],
+    summary: "Track a click on a deal",
+    description: "Increments the click count for a specific deal.",
+    request: {
+        params: z.object({
+            dealId: z.string().openapi({
+                param: {
+                    name: "dealId",
+                    in: "path",
+                },
+                example: "deal-123",
+            }),
+        }),
+    },
+    responses: {
+        200: {
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        success: z.boolean(),
+                    }),
+                },
+            },
+            description: "Click tracked successfully",
+        },
+        400: {
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        message: z.string(),
+                    }),
+                },
+            },
+            description: "Invalid request",
+        },
+    },
+});
 
-    if (!perkId) {
-        throw new BadRequestError("Perk ID is required");
+app.openapi(trackClickRoute, async (c) => {
+    const { dealId } = c.req.valid("param");
+
+    if (!dealId) {
+        throw new BadRequestError("Deal ID is required");
     }
 
-    await trackPerkClick(perkId);
-    return c.json({ success: true });
+    await trackDealClick(dealId);
+    return c.json({ success: true }, 200);
 });
 
 export default app;

@@ -8,6 +8,8 @@
     "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server"
   },
   "dependencies": {
+    "@hono/zod-openapi": "^1.2.2",
+    "@scalar/hono-api-reference": "^0.9.41",
     "@uni-perks/auth": "workspace:*",
     "@uni-perks/db": "workspace:*",
     "@uni-perks/env": "workspace:*",

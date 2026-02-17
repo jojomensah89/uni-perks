@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { DealCard } from "@/components/redesign/DealCard"
 import {
     Carousel,
@@ -123,12 +124,12 @@ export default function RedesignHomePage() {
                     No account needed — just click and save.
                 </p>
                 <div className="flex items-center justify-center gap-4">
-                    <Button size="lg" asChild>
-                        <Link href="/redesign/perks">Browse All Perks <ArrowRight className="ml-2 h-4 w-4" /></Link>
-                    </Button>
-                    <Button size="lg" variant="outline" asChild>
-                        <Link href="#how-it-works">How It Works</Link>
-                    </Button>
+                    <Link href="/redesign/perks" className={cn(buttonVariants({ size: "lg" }))}>
+                        Browse All Perks <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                    <Link href="#how-it-works" className={cn(buttonVariants({ size: "lg", variant: "outline" }))}>
+                        How It Works
+                    </Link>
                 </div>
             </section>
 
