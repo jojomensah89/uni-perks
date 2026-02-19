@@ -12,7 +12,7 @@ export const SiteHeader = () => {
     const isActive = (path: string) => pathname === path;
 
     return (
-        <header className="px-4 md:px-6 py-4 flex justify-between items-center border-b border-border relative">
+        <header className="px-4 md:px-6 py-4 flex justify-between items-center border-b border-border sticky top-0 z-50 bg-background/80 backdrop-blur-md">
             <Link href="/" className="text-xl font-black tracking-[-0.04em] no-underline text-foreground flex items-center gap-2">
                 <span className="bg-[hsl(65,100%,60%)] text-foreground px-2 py-0.5 rounded-md text-lg">U</span>
                 UniPerks

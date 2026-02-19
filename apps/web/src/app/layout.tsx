@@ -3,8 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "../index.css";
 import Providers from "@/components/providers";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { SiteHeader } from "@/components/SiteHeader";
-import { FooterSection } from "@/components/FooterSection";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,13 +21,7 @@ export const metadata: Metadata = {
   },
   description:
     "The one-stop hub for 30+ verified student discounts on software, food, music, travel, and more. Save thousands as a student.",
-  keywords: [
-    "student discounts",
-    "student perks",
-    "university discounts",
-    "student deals",
-    "education discounts",
-  ],
+  keywords: ["student discounts", "student perks", "university discounts", "student deals"],
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -45,22 +37,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <NuqsAdapter>
-          <Providers>
-            <SiteHeader />
-            <main>{children}</main>
-            <FooterSection />
-          </Providers>
+          <Providers>{children}</Providers>
         </NuqsAdapter>
       </body>
     </html>
