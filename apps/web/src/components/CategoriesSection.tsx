@@ -1,113 +1,64 @@
-'use client';
+"use client";
 
-import { useRef } from 'react';
-import { DealCard } from './DealCard';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRef } from "react";
+import DealCardLink from "./DealCardLink";
+import { getDealsByCategory, categories } from "@/data/deals";
 
-interface Category {
-    id: string;
-    name: string;
-    slug: string;
-}
-
-interface Deal {
-    id: string;
-    slug: string;
-    title: string;
-    shortDescription: string;
-    longDescription?: string;
-    discountLabel: string;
-    brand: {
-        name: string;
-        logoUrl?: string;
-    };
-    category?: {
-        name: string;
-        slug: string;
-    };
-    tags?: Array<{ id: string; name: string }>;
-    coverImageUrl?: string;
-}
-
-interface CategoryCarouselProps {
-    category: Category;
-    deals: Deal[];
-}
-
-function CategoryCarousel({ category, deals }: CategoryCarouselProps) {
+const CategoryCarousel = ({ name }: { name: string }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
+    const deals = getDealsByCategory(name);
 
-    const scroll = (dir: 'left' | 'right') => {
+    const scroll = (dir: "left" | "right") => {
         if (scrollRef.current) {
-            scrollRef.current.scrollBy({ left: dir === 'left' ? -300 : 300, behavior: 'smooth' });
+            scrollRef.current.scrollBy({ left: dir === "left" ? -300 : 300, behavior: "smooth" });
         }
     };
 
     if (deals.length === 0) return null;
 
     return (
-        <section className="mb-8" aria-labelledby={`category-${category.slug}`}>
+        <div className="mb-8">
             <div className="flex items-center justify-between px-4 mb-3">
-                <h3 id={`category-${category.slug}`} className="text-lg font-bold tracking-tight">
-                    {category.name}
-                </h3>
+                <h3 className="text-lg font-bold tracking-tight">{name}</h3>
                 <div className="flex gap-2">
-                    <Button
-                        onClick={() => scroll('left')}
-                        variant="outline"
-                        size="icon"
-                        className="w-8 h-8 rounded-full"
-                        aria-label={`Scroll ${category.name} left`}
+                    <button
+                        onClick={() => scroll("left")}
+                        className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors text-sm"
                     >
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        onClick={() => scroll('right')}
-                        variant="outline"
-                        size="icon"
-                        className="w-8 h-8 rounded-full"
-                        aria-label={`Scroll ${category.name} right`}
+                        ←
+                    </button>
+                    <button
+                        onClick={() => scroll("right")}
+                        className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors text-sm"
                     >
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
+                        →
+                    </button>
                 </div>
             </div>
             <div
                 ref={scrollRef}
-                className="flex gap-4 overflow-x-auto px-4 pb-2 scrollbar-hide"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                role="list"
+                className="flex gap-4 overflow-x-auto px-4 pb-2"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" } as React.CSSProperties}
             >
                 {deals.map((deal) => (
-                    <div key={deal.id} className="flex-shrink-0 w-[260px] h-[300px]" role="listitem">
-                        <DealCard deal={deal} className="h-full" />
-                    </div>
+                    <DealCardLink key={deal.id} deal={deal} className="flex-shrink-0 w-[260px] h-[300px]" />
                 ))}
             </div>
-        </section>
+        </div>
     );
-}
+};
 
-interface CategoriesSectionProps {
-    categoriesWithDeals: Array<{
-        category: Category;
-        deals: Deal[];
-    }>;
-}
-
-export function CategoriesSection({ categoriesWithDeals }: CategoriesSectionProps) {
+const CategoriesSection = () => {
     return (
-        <section className="py-8" aria-labelledby="categories-heading">
-            <h2
-                id="categories-heading"
-                className="text-sm font-bold uppercase tracking-widest px-4 mb-6 text-muted-foreground"
-            >
+        <section className="py-8">
+            <h2 className="text-sm font-bold uppercase tracking-widest px-4 mb-6 text-muted-foreground">
                 Browse by Category
             </h2>
-            {categoriesWithDeals.map(({ category, deals }) => (
-                <CategoryCarousel key={category.id} category={category} deals={deals} />
+            {categories.map((cat) => (
+                <CategoryCarousel key={cat} name={cat} />
             ))}
         </section>
     );
-}
+};
+
+export default CategoriesSection;

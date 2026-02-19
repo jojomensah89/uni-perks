@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-
 import { Geist, Geist_Mono } from "next/font/google";
-
 import "../index.css";
-import Header from "@/components/header";
 import Providers from "@/components/providers";
-import { NuqsAdapter } from 'nuqs/adapters/next/app';
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { SiteHeader } from "@/components/SiteHeader";
+import { FooterSection } from "@/components/FooterSection";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,27 +18,32 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "uni-perks - Student Discounts & Perks",
-    template: "%s | uni-perks",
+    default: "UniPerks – Student Deals & Perks",
+    template: "%s | UniPerks",
   },
-  description: "Discover exclusive student discounts, perks, and credits from top companies. Save money on software, services, and more with your student status.",
-  keywords: ["student discounts", "student perks", "university discounts", "student deals", "education discounts"],
+  description:
+    "The one-stop hub for 30+ verified student discounts on software, food, music, travel, and more. Save thousands as a student.",
+  keywords: [
+    "student discounts",
+    "student perks",
+    "university discounts",
+    "student deals",
+    "education discounts",
+  ],
   openGraph: {
     type: "website",
     locale: "en_US",
     url: process.env.NEXT_PUBLIC_BASE_URL || "https://uni-perks.com",
-    siteName: "uni-perks",
-    title: "uni-perks - Student Discounts & Perks",
-    description: "Discover exclusive student discounts, perks, and credits from top companies.",
+    siteName: "UniPerks",
+    title: "UniPerks – Student Deals & Perks",
+    description: "The one-stop hub for 30+ verified student discounts.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "uni-perks - Student Discounts & Perks",
-    description: "Discover exclusive student discounts, perks, and credits from top companies.",
+    title: "UniPerks – Student Deals & Perks",
+    description: "The one-stop hub for 30+ verified student discounts.",
   },
 };
-
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function RootLayout({
   children,
@@ -48,15 +52,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen overflow-hidden`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
         <NuqsAdapter>
           <Providers>
-            <ScrollArea className="h-full w-full" scrollBarClassName="mt-14 z-40">
-              <div className="grid grid-rows-[auto_1fr] min-h-screen">
-                <Header />
-                {children}
-              </div>
-            </ScrollArea>
+            <SiteHeader />
+            <main>{children}</main>
+            <FooterSection />
           </Providers>
         </NuqsAdapter>
       </body>

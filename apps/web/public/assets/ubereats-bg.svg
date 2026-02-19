@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="hsl(150,67%,10%)"/>
+      <stop offset="100%" stop-color="hsl(160,50%,25%)"/>
+    </linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="3"/></filter>
+  </defs>
+  <rect width="800" height="450" fill="url(#g)"/>
+  <circle cx="300" cy="180" r="180" fill="hsl(150,67%,18%)" opacity="0.6" filter="url(#blur)"/>
+  <circle cx="600" cy="300" r="140" fill="hsl(155,60%,25%)" opacity="0.5" filter="url(#blur)"/>
+  <!-- Fork and knife icon hint -->
+  <line x1="360" y1="150" x2="360" y2="300" stroke="white" stroke-width="0.5" opacity="0.1"/>
+  <line x1="440" y1="150" x2="440" y2="300" stroke="white" stroke-width="0.5" opacity="0.1"/>
+  <circle cx="400" cy="225" r="60" fill="none" stroke="white" stroke-width="0.5" opacity="0.1"/>
+</svg>

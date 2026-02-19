@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="hsl(200,70%,20%)"/>
+      <stop offset="100%" stop-color="hsl(200,80%,40%)"/>
+    </linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="3"/></filter>
+  </defs>
+  <rect width="800" height="450" fill="url(#g)"/>
+  <ellipse cx="400" cy="420" rx="600" ry="120" fill="hsl(200,60%,30%)" opacity="0.4" filter="url(#blur)"/>
+  <ellipse cx="400" cy="30" rx="400" ry="80" fill="hsl(200,80%,50%)" opacity="0.3" filter="url(#blur)"/>
+  <!-- Airplane path -->
+  <path d="M200,225 Q400,175 600,225" fill="none" stroke="white" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.2"/>
+  <circle cx="200" cy="225" r="4" fill="white" opacity="0.3"/>
+  <circle cx="600" cy="225" r="4" fill="white" opacity="0.3"/>
+</svg>
