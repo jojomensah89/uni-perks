@@ -66,6 +66,7 @@ const SEED_PERKS = [
         shortDescription: 'Do etc. AI credits with priority rate limits and access to Anthropic technical team.',
         valueAmount: 25000,
         valueCurrency: 'USD',
+        claimUrl: 'https://console.anthropic.com/settings/plans',
         isFeatured: true,
         categorySlug: 'ai'
     },
@@ -75,6 +76,7 @@ const SEED_PERKS = [
         shortDescription: '33 million characters (~$4,000+) of high-quality text-to-speech.',
         valueAmount: 4000,
         valueCurrency: 'USD',
+        claimUrl: 'https://elevenlabs.io/text-to-speech',
         isFeatured: true,
         categorySlug: 'ai'
     },
@@ -84,6 +86,7 @@ const SEED_PERKS = [
         shortDescription: 'One year free of Mixpanel Growth plan including product analytics.',
         valueAmount: 50000,
         valueCurrency: 'USD',
+        claimUrl: 'https://mixpanel.com/startups',
         isFeatured: true,
         categorySlug: 'analytics'
     },
@@ -93,6 +96,7 @@ const SEED_PERKS = [
         shortDescription: 'All-in-one platform with product analytics, session replay, feature flags.',
         valueAmount: 50000,
         valueCurrency: 'USD',
+        claimUrl: 'https://posthog.com/startups',
         isFeatured: true,
         categorySlug: 'analytics'
     },
@@ -101,6 +105,7 @@ const SEED_PERKS = [
         company: 'Datadog',
         shortDescription: 'Comprehensive monitoring platform including APM, infrastructure monitoring, log management.',
         valueAmount: 0,
+        claimUrl: 'https://www.datadoghq.com/startups/',
         isFeatured: true,
         categorySlug: 'analytics'
     },
@@ -110,6 +115,7 @@ const SEED_PERKS = [
         shortDescription: 'Build internal tools fast. $25k in credits.',
         valueAmount: 25000,
         valueCurrency: 'USD',
+        claimUrl: 'https://retool.com/startups',
         isFeatured: true,
         categorySlug: 'dev'
     },
@@ -118,6 +124,7 @@ const SEED_PERKS = [
         company: 'GitHub',
         shortDescription: '20 seats free GitHub Enterprise.',
         valueAmount: 0,
+        claimUrl: 'https://github.com/enterprise/startups',
         isFeatured: true,
         categorySlug: 'dev'
     },
@@ -127,6 +134,7 @@ const SEED_PERKS = [
         shortDescription: '$150 off incorporation + perks.',
         valueAmount: 150,
         valueCurrency: 'USD',
+        claimUrl: 'https://stripe.com/atlas',
         isFeatured: true,
         categorySlug: 'other'
     }
@@ -235,14 +243,16 @@ app.openapi(seedRoute, async (c) => {
                         brandId: brandId,
                         categoryId: catId,
                         shortDescription: perk.shortDescription,
-                        longDescription: perk.longDescription,
+                        longDescription: perk.longDescription || perk.shortDescription,
                         // Default values for required fields
                         discountType: "percentage",
                         discountLabel: "Special Offer",
                         verificationMethod: "email",
                         claimUrl: perk.claimUrl,
                         isFeatured: perk.isFeatured,
-                        isActive: true
+                        isActive: true,
+                        updatedAt: new Date(),
+                        createdAt: new Date(),
                     } as any);
                     insertedCount++;
                 }

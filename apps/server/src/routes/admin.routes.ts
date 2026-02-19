@@ -228,6 +228,18 @@ app.openapi(deleteDealRoute, async (c) => {
     return c.json(result[0], 200);
 });
 
+const BrandSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    slug: z.string(),
+    description: z.string().nullable().optional(),
+    website: z.string().nullable().optional(),
+    isVerified: z.boolean().nullable().optional(),
+    logoUrl: z.string().nullable().optional(),
+    coverImageUrl: z.string().nullable().optional(),
+    createdAt: z.string().optional(), // Date often serialized
+});
+
 const listBrandsRoute = createRoute({
     method: "get",
     path: "/brands",
@@ -240,7 +252,7 @@ const listBrandsRoute = createRoute({
             content: {
                 "application/json": {
                     schema: z.object({
-                        brands: z.array(z.any()), // Refine later
+                        brands: z.array(BrandSchema),
                     }),
                 },
             },

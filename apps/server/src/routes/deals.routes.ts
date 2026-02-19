@@ -28,7 +28,7 @@ const DealSchema = z.object({
 });
 
 const DealsListResponseSchema = z.object({
-    deals: z.array(z.any()), // Use z.any() for now to avoid strict schema mismatch with Join results, refine later
+    deals: z.array(DealSchema),
     meta: z.object({
         total: z.number(),
         country: z.string(),
@@ -90,7 +90,7 @@ app.openapi(listDealsRoute, async (c) => {
     });
 
     return c.json({
-        deals: results,
+        deals: results as any, // Cast to any to avoid strict schema mismatch with Join results for now
         meta: {
             total: results.length,
             country: requestedCountry,
@@ -119,7 +119,7 @@ const getDealRoute = createRoute({
             description: "Deal details",
             content: {
                 "application/json": {
-                    schema: z.any(), // Flexible schema for complex relation result
+                    schema: z.object({ deal: DealSchema, related: z.array(DealSchema).optional() }),
                 }
             },
         },

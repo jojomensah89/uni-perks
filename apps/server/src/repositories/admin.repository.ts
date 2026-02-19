@@ -1,6 +1,5 @@
-import { db, deals, categories, eq, and, desc, asc } from "@uni-perks/db";
+import { db, deals, categories, eq, desc, asc } from "@uni-perks/db";
 import { tryCatch } from "../lib/async-handler";
-import type { Deal } from "@uni-perks/db";
 
 export interface CreatePerkInput {
     slug: string;
