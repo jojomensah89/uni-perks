@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { brands, categories } from "./brands";
+import { brands, categories, brandFaqs, brandProducts } from "./brands";
 import { deals } from "./deals";
 import { tags, dealTags } from "./tags";
 import { collections, collectionDeals } from "./collections";
@@ -10,6 +10,18 @@ import { clicks, pageViews } from "./analytics";
 export const brandsRelations = relations(brands, ({ many }) => ({
     deals: many(deals),
     clicks: many(clicks),
+    faqs: many(brandFaqs),
+    products: many(brandProducts),
+}));
+
+// ===== BRAND FAQ RELATIONS =====
+export const brandFaqsRelations = relations(brandFaqs, ({ one }) => ({
+    brand: one(brands, { fields: [brandFaqs.brandId], references: [brands.id] }),
+}));
+
+// ===== BRAND PRODUCT RELATIONS =====
+export const brandProductsRelations = relations(brandProducts, ({ one }) => ({
+    brand: one(brands, { fields: [brandProducts.brandId], references: [brands.id] }),
 }));
 
 // ===== CATEGORY RELATIONS =====

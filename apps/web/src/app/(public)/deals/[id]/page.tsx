@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getDealById, getSimilarDeals, allDeals } from "@/data/deals";
 import DealCardLink from "@/components/DealCardLink";
 import DealTag from "@/components/DealTag";
+import { DealConditionsAccordion } from "@/components/deals/DealConditionsAccordion";
 import { ArrowLeft, ExternalLink, Globe, CheckCircle, XCircle, Info, ShieldCheck, DollarSign } from "lucide-react";
 
 export async function generateStaticParams() {
@@ -148,6 +149,15 @@ export default async function DealDetailsPage({ params }: { params: Promise<{ id
                         <div className="text-2xl font-black mb-1">{deal.discount}</div>
                         <p className="text-sm text-muted-foreground mb-4">{deal.subtitle}</p>
 
+                        {/* Assume deal object might have minimumSpend from DB eventually */}
+                        {/* @ts-ignore */}
+                        {deal.minimumSpend && (
+                            <div className="text-sm font-medium text-destructive mb-4">
+                                {/* @ts-ignore */}
+                                Minimum Spend: ${deal.minimumSpend}
+                            </div>
+                        )}
+
                         {deal.verificationMethod && (
                             <div className="flex items-center gap-2 text-sm mb-4 p-3 bg-muted rounded-lg">
                                 <ShieldCheck className="w-4 h-4 text-[hsl(141,73%,42%)] shrink-0" />
@@ -169,6 +179,22 @@ export default async function DealDetailsPage({ params }: { params: Promise<{ id
                         <p className="text-xs text-muted-foreground text-center mt-3">
                             You&apos;ll be redirected to {deal.brand}&apos;s website
                         </p>
+
+                        {/* @ts-ignore */}
+                        {deal.howToRedeem && (
+                            <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border/50 text-sm text-muted-foreground leading-relaxed">
+                                <span className="block font-semibold text-foreground mb-1">How to redeem</span>
+                                {/* @ts-ignore */}
+                                {deal.howToRedeem}
+                            </div>
+                        )}
+
+                        <DealConditionsAccordion
+                            /* @ts-ignore */
+                            conditions={deal.conditions || deal.terms}
+                            /* @ts-ignore */
+                            termsUrl={deal.termsUrl}
+                        />
                     </div>
                 </div>
             </div>

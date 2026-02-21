@@ -16,6 +16,10 @@ export interface DealData {
     regions?: { region: string; available: boolean; note?: string }[];
     terms?: string[];
     guidelines?: string[];
+    minimumSpend?: number;
+    howToRedeem?: string;
+    termsUrl?: string;
+    conditions?: string[];
 }
 
 export const allDeals: DealData[] = [
@@ -201,6 +205,9 @@ export const allDeals: DealData[] = [
             "Gift card offer valid during Back to School season only.",
             "Cannot combine with employee discounts or other promotions.",
         ],
+        minimumSpend: 50,
+        howToRedeem: "Shop through apple.com/education or visit an Apple Store. Bring valid student ID for in-store purchases. The back-to-school gift card will be delivered via email after your product ships.",
+        termsUrl: "https://www.apple.com/us-hed/shop/back-to-school/terms-conditions",
         guidelines: [
             "Shop through apple.com/education or visit an Apple Store.",
             "Bring valid student ID for in-store purchases.",

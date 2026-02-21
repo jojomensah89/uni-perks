@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 
 // ===== BRANDS =====
@@ -15,6 +15,9 @@ export const brands = sqliteTable("brands", {
 
     // Links
     website: text("website"),
+
+    // Rich profile content
+    whyWeLoveIt: text("why_we_love_it"), // Staff editorial note e.g. "Huel is perfect for busy students..."
 
     // Status
     isVerified: integer("is_verified", { mode: "boolean" }).default(false),
@@ -61,3 +64,33 @@ export const categories = sqliteTable("categories", {
 
 export type Brand = typeof brands.$inferSelect;
 export type Category = typeof categories.$inferSelect;
+
+// ===== BRAND FAQS =====
+export const brandFaqs = sqliteTable("brand_faqs", {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    brandId: text("brand_id").notNull().references(() => brands.id, { onDelete: "cascade" }),
+    question: text("question").notNull(),
+    answer: text("answer").notNull(),
+    displayOrder: integer("display_order").default(0),
+}, (table) => ({
+    brandIdx: index("brand_faqs_brand_idx").on(table.brandId),
+    orderIdx: index("brand_faqs_order_idx").on(table.displayOrder),
+}));
+
+export type BrandFaq = typeof brandFaqs.$inferSelect;
+
+// ===== BRAND FEATURED PRODUCTS =====
+// Trending products from a brand shown on the brand profile page (e.g. Huel's Daily Greens, Apple's iPad Air)
+export const brandProducts = sqliteTable("brand_products", {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    brandId: text("brand_id").notNull().references(() => brands.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),           // "Daily Greens"
+    imageUrl: text("image_url"),            // Product image
+    productUrl: text("product_url"),        // Direct link to product
+    displayOrder: integer("display_order").default(0),
+}, (table) => ({
+    brandIdx: index("brand_products_brand_idx").on(table.brandId),
+    orderIdx: index("brand_products_order_idx").on(table.displayOrder),
+}));
+
+export type BrandProduct = typeof brandProducts.$inferSelect;

@@ -35,6 +35,7 @@ const SEED_BRANDS = [
         slug: 'github',
         name: 'GitHub',
         tagline: 'Where the world builds software',
+        whyWeLoveIt: "GitHub's Student Developer pack is unmatched. It’s an essential toolkit that gives every CS student a massive head start on their career for free.",
         website: 'https://github.com',
         isVerified: true,
     },
@@ -42,6 +43,7 @@ const SEED_BRANDS = [
         slug: 'spotify',
         name: 'Spotify',
         tagline: 'Music for everyone',
+        whyWeLoveIt: "The undisputed king of study playlists. The fact that it bundles Hulu means you basically get endless music and binge-worthy TV for the price of a fancy coffee.",
         website: 'https://spotify.com',
         isVerified: true,
     },
@@ -49,6 +51,7 @@ const SEED_BRANDS = [
         slug: 'adobe',
         name: 'Adobe',
         tagline: 'Creativity for all',
+        whyWeLoveIt: "Whether you're an art major or just need to edit a PDF for a club application, 60% off the entire Creative Cloud suite is one of the steepest and most useful discounts available.",
         website: 'https://adobe.com',
         isVerified: true,
     },
@@ -56,6 +59,7 @@ const SEED_BRANDS = [
         slug: 'amazon',
         name: 'Amazon',
         tagline: 'Everything store',
+        whyWeLoveIt: "Free 2-day shipping is a lifesaver when you need textbooks or dorm room essentials in a pinch. The 6-month free trial is incredibly generous.",
         website: 'https://amazon.com',
         isVerified: true,
     },
@@ -63,6 +67,7 @@ const SEED_BRANDS = [
         slug: 'apple',
         name: 'Apple',
         tagline: 'Think different',
+        whyWeLoveIt: "Apple rarely does sales, making their year-round education pricing highly sought after. Their Back to School gift card promo is the absolute best time for students to upgrade their laptops.",
         website: 'https://apple.com',
         isVerified: true,
     },
@@ -146,6 +151,13 @@ async function seed() {
                 discountLabel: 'Free',
                 verificationMethod: 'edu_email',
                 claimUrl: 'https://education.github.com/pack',
+                isNewCustomerOnly: false,
+                conditions: [
+                    "Must be a student 13+ enrolled in a degree-granting institution.",
+                    "Free for the duration of your studies.",
+                    "Includes GitHub Copilot, Actions minutes, and Codespaces hours."
+                ],
+                howToRedeem: "Go to education.github.com and sign up with your school email. Upload a photo of your student ID if requested.",
                 isFeatured: true,
                 isActive: true,
                 regions: ['GLOBAL'],
@@ -166,6 +178,14 @@ async function seed() {
                 currency: 'USD',
                 verificationMethod: 'sheerid',
                 claimUrl: 'https://www.spotify.com/student',
+                isNewCustomerOnly: true,
+                conditions: [
+                    "Requires a valid .edu email or university verification.",
+                    "Plan renews at student price as long as you remain eligible.",
+                    "Hulu and SHOWTIME bundle available in the US only.",
+                    "Limit of 1 Premium account per person."
+                ],
+                howToRedeem: "Sign up at spotify.com/student and verify your student status via SheerID to enjoy your discounted subscription.",
                 isFeatured: true,
                 isActive: true,
                 regions: ['US', 'CA', 'GB'],
@@ -186,6 +206,13 @@ async function seed() {
                 currency: 'USD',
                 verificationMethod: 'sheerid',
                 claimUrl: 'https://www.adobe.com/creativecloud/buy/students.html',
+                isNewCustomerOnly: false,
+                conditions: [
+                    "Must be 13+ and enrolled in an accredited institution.",
+                    "First year at student price; standard pricing applies after.",
+                    "Annual plan with monthly payments. Early termination fee applies."
+                ],
+                howToRedeem: "Provide your school-issued email or upload enrollment proof at checkout.",
                 isFeatured: true,
                 isActive: true,
                 regions: ['GLOBAL'],
@@ -205,6 +232,14 @@ async function seed() {
                 currency: 'USD',
                 verificationMethod: 'edu_email',
                 claimUrl: 'https://www.amazon.com/primeStudent',
+                isNewCustomerOnly: true,
+                conditions: [
+                    "Valid .edu email required.",
+                    "6-month free trial, then $7.49/mo.",
+                    "Includes Prime Video, Music, Reading, and free shipping.",
+                    "Cancel anytime during or after trial."
+                ],
+                howToRedeem: "Go to amazon.com/joinstudent, sign in or create an Amazon account, and enter your .edu email to verify.",
                 isFeatured: true,
                 isActive: true,
                 regions: ['US'],
@@ -225,6 +260,15 @@ async function seed() {
                 currency: 'USD',
                 verificationMethod: 'unidays',
                 claimUrl: 'https://www.apple.com/apple-music/student/',
+                isNewCustomerOnly: false,
+                minimumSpend: 50,
+                conditions: [
+                    "Student verification through UNiDAYS required.",
+                    "Includes Apple TV+ at no extra cost.",
+                    "Available for up to 4 years.",
+                    "Minimum purchase of $50 required to stack with the hardware promo."
+                ],
+                howToRedeem: "Open Apple Music app or music.apple.com, select the Student plan, and verify through UNiDAYS.",
                 isFeatured: true,
                 isActive: true,
                 regions: ['US', 'GB', 'CA', 'AU'],
@@ -239,8 +283,15 @@ async function seed() {
             if (existing.length > 0 && existing[0]) {
                 dealId = existing[0].id;
             } else {
-                const { regions: dealRegionCodes, tags: dealTagSlugs, ...dealData } = deal;
-                const res = await db.insert(deals).values(dealData).returning();
+                const { regions: dealRegionCodes, tags: dealTagSlugs, conditions, ...dealData } = deal;
+
+                // SQLite text JSON fields must be stringified before insert
+                const insertData = {
+                    ...dealData,
+                    conditions: conditions ? JSON.stringify(conditions) : null,
+                };
+
+                const res = await db.insert(deals).values(insertData).returning();
                 if (!res[0]) continue;
                 dealId = res[0].id;
 
