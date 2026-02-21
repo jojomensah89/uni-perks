@@ -1,65 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import DealTag from "./DealTag";
+import Autoplay from "embla-carousel-autoplay";
+import {
+    Carousel,
+    CarouselContent,
+    CarouselItem,
+    CarouselNext,
+    CarouselPrevious,
+} from "@/components/ui/carousel";
 
-interface KitSlide {
-    tags: string[];
-    title: string;
-    description: string;
-    price: string;
-    cta: string;
-    bg: string;
-    decoration: "wave" | "dots" | "circles" | "zigzag" | "grid";
-}
-
-const kits: KitSlide[] = [
-    {
-        tags: ["Education", "Software", "Limited Time"],
-        title: "Back to School\nEssentials Kit",
-        description: "Get the ultimate productivity bundle. Notion Pro, Figma, and GitHub Copilot student pack all in one place.",
-        price: "Free for 12 months",
-        cta: "Claim bundle",
-        bg: "bg-beige",
-        decoration: "wave",
-    },
-    {
-        tags: ["Tech", "Coding", "Popular"],
-        title: "Computer Science\nStarter Pack",
-        description: "JetBrains IDEs, GitHub Pro, DigitalOcean credits, and AWS Educate — everything to code like a pro.",
-        price: "Save $1,200+",
-        cta: "Get the pack",
-        bg: "bg-github-purple text-primary-foreground",
-        decoration: "dots",
-    },
-    {
-        tags: ["Streaming", "Music", "Gaming"],
-        title: "Entertainment\nBundle",
-        description: "Spotify, YouTube Premium, Discord Nitro, and Xbox Game Pass — all at student prices.",
-        price: "Up to 70% off",
-        cta: "Explore deals",
-        bg: "bg-spotify-green text-primary-foreground",
-        decoration: "circles",
-    },
-    {
-        tags: ["Fashion", "Lifestyle", "Beauty"],
-        title: "Fashion &\nApparel Kit",
-        description: "Nike, ASOS, Urban Outfitters, and H&M student discounts combined in one place.",
-        price: "10–30% off everything",
-        cta: "Shop now",
-        bg: "bg-pink text-primary-foreground",
-        decoration: "zigzag",
-    },
-    {
-        tags: ["Food", "Delivery", "Groceries"],
-        title: "Food &\nDining Deals",
-        description: "Uber Eats, DoorDash, HelloFresh, and Starbucks — fuel your study sessions for less.",
-        price: "Save $50/month",
-        cta: "View deals",
-        bg: "bg-uber-black text-primary-foreground",
-        decoration: "grid",
-    },
-];
+import type { ApiDealResponse } from "./DealCardLink";
 
 const decorations: Record<string, React.ReactNode> = {
     wave: (
@@ -114,80 +65,66 @@ const decorations: Record<string, React.ReactNode> = {
     ),
 };
 
-const FeaturedCarousel = () => {
-    const [current, setCurrent] = useState(0);
-    const [isAnimating, setIsAnimating] = useState(false);
+const FeaturedCarousel = ({ deals = [] }: { deals: ApiDealResponse[] }) => {
+    if (deals.length === 0) {
+        return <div className="col-span-1 sm:col-span-2 rounded-lg bg-muted p-6 flex items-center justify-center text-muted-foreground">No featured deals</div>;
+    }
 
-    const goTo = useCallback(
-        (index: number) => {
-            if (isAnimating) return;
-            setIsAnimating(true);
-            setCurrent(index);
-            setTimeout(() => setIsAnimating(false), 500);
-        },
-        [isAnimating]
-    );
-
-    const next = useCallback(() => {
-        goTo((current + 1) % kits.length);
-    }, [current, goTo]);
-
-    useEffect(() => {
-        const timer = setInterval(next, 5000);
-        return () => clearInterval(timer);
-    }, [next]);
-
-    const kit = kits[current];
-    const isLight = !kit.bg.includes("text-primary-foreground");
+    const fallbackColors = ['bg-primary hover:bg-primary/90', 'bg-secondary hover:bg-secondary/90', 'bg-accent hover:bg-accent/90'];
+    const decorationKeys = Object.keys(decorations);
 
     return (
-        <article
-            className={`col-span-1 sm:col-span-2 rounded-lg overflow-hidden flex flex-col relative p-6 transition-colors duration-500 border-0 shadow-md ${kit.bg}`}
+        <Carousel
+            className="col-span-1 sm:col-span-2 w-full"
+            opts={{ loop: true }}
+            plugins={[Autoplay({ delay: 5000 })]}
         >
-            <div className="flex gap-1.5 mb-4 flex-wrap">
-                {kit.tags.map((tag) => (
-                    <DealTag key={tag} label={tag} variant={isLight ? "default" : "light"} />
-                ))}
-            </div>
-            <div className="flex flex-col h-full relative z-10">
-                <h2 className="text-[clamp(1.75rem,3.5vw,2.75rem)] leading-[0.95] mb-4 whitespace-pre-line">
-                    {kit.title}
-                </h2>
-                <p className={`text-sm max-w-[300px] ${isLight ? "text-foreground/70" : "opacity-85"}`}>
-                    {kit.description}
-                </p>
-                <div className="mt-auto">
-                    <span className="text-lg font-semibold leading-tight">{kit.price}</span>
-                    <div
-                        className={`underline underline-offset-4 text-sm font-medium cursor-pointer mt-3 ${isLight ? "" : "text-primary-foreground"
-                            }`}
-                    >
-                        {kit.cta}
-                    </div>
-                </div>
-            </div>
+            <CarouselContent>
+                {deals.map(({ deal, category, brand }, index) => {
+                    const randomFallback = fallbackColors[deal.id.charCodeAt(0) % fallbackColors.length];
+                    const decorationKey = decorationKeys[deal.id.charCodeAt(0) % decorationKeys.length];
 
-            {/* Decoration */}
-            {decorations[kit.decoration]}
+                    return (
+                        <CarouselItem key={deal.id}>
+                            <article
+                                className={`w-full h-full rounded-lg overflow-hidden flex flex-col relative p-6 transition-colors duration-500 border-0 shadow-md ${randomFallback} text-primary-foreground`}
+                            >
+                                <div className="flex gap-1.5 mb-4 flex-wrap z-20 relative">
+                                    <DealTag key={category.name} label={category.name} variant="light" />
+                                    {deal.isFeatured && <DealTag label="Featured" variant="default" />}
+                                </div>
+                                <div className="flex flex-col h-full relative z-20 relative">
+                                    <h2 className="text-[clamp(1.75rem,3.5vw,2.75rem)] leading-[0.95] mb-4 whitespace-pre-line font-black tracking-tight" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.1)" }}>
+                                        {brand.name}'s<br />Exclusive Offer
+                                    </h2>
+                                    <p className={`text-sm max-w-[300px] opacity-90 drop-shadow-sm`}>
+                                        {deal.title} - {deal.shortDescription}
+                                    </p>
+                                    <div className="mt-auto">
+                                        <span className="text-lg font-semibold leading-tight drop-shadow-sm">{deal.discountLabel}</span>
+                                        <a href={`/deals/${deal.slug}`} className={`block underline underline-offset-4 text-sm font-bold mt-3 text-primary-foreground drop-shadow-sm hover:opacity-80 transition-opacity`}>
+                                            View Offer
+                                        </a>
+                                    </div>
+                                </div>
 
-            {/* Dots navigation */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-                {kits.map((_, i) => (
-                    <button
-                        key={i}
-                        onClick={() => goTo(i)}
-                        className={`w-2 h-2 rounded-full transition-all duration-300 ${i === current
-                                ? isLight
-                                    ? "bg-foreground w-5"
-                                    : "bg-primary-foreground w-5"
-                                : isLight
-                                    ? "bg-foreground/30"
-                                    : "bg-primary-foreground/40"
-                            }`}
-                    />
-                ))}
+                                {/* Decoration */}
+                                {decorations[decorationKey]}
+
+                                {/* Gradient Darkener to ensure text is always readable over dynamic colors */}
+                                <div className={`absolute inset-0 bg-black/10 z-10 pointer-events-none`} />
+                            </article>
+                        </CarouselItem>
+                    );
+                })}
+            </CarouselContent>
+
+            {/* Shadcn Navigation (optional since dots were custom before, but these are standard) */}
+            <div className="absolute right-12 bottom-6 z-30 hidden sm:flex gap-2">
+                <CarouselPrevious className="relative inset-auto translate-x-0 translate-y-0 h-8 w-8 bg-black/20 text-white border-white/20 hover:bg-black/40 hover:text-white" />
+                <CarouselNext className="relative inset-auto translate-x-0 translate-y-0 h-8 w-8 bg-black/20 text-white border-white/20 hover:bg-black/40 hover:text-white" />
             </div>
-        </article>
+        </Carousel>
     );
 };
 

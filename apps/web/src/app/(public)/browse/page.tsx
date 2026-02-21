@@ -77,8 +77,8 @@ function BrowseContent() {
                     <button
                         onClick={() => handleCategory(null)}
                         className={`px-4 py-2 rounded-pill text-sm font-medium transition-colors ${!activeCategory
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted text-muted-foreground hover:text-foreground"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:text-foreground"
                             }`}
                     >
                         All ({allDeals.length})
@@ -92,8 +92,8 @@ function BrowseContent() {
                                 key={cat}
                                 onClick={() => handleCategory(activeCategory === cat ? null : cat)}
                                 className={`px-4 py-2 rounded-pill text-sm font-medium transition-colors ${activeCategory === cat
-                                        ? "bg-primary text-primary-foreground"
-                                        : "bg-muted text-muted-foreground hover:text-foreground"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted text-muted-foreground hover:text-foreground"
                                     }`}
                             >
                                 {cat} ({count})
@@ -119,7 +119,7 @@ function BrowseContent() {
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {filtered.map((deal) => (
-                                <DealCardLink key={deal.id} deal={deal} className="h-[300px]" />
+                                <DealCardLink key={deal.id} dealData={{ deal: deal as any, brand: { name: deal.brand } as any, category: { name: deal.category } as any }} className="h-[300px]" />
                             ))}
                         </div>
                     </>

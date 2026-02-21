@@ -1,49 +1,52 @@
 "use client";
 
-import { useRef } from "react";
+import {
+    Carousel,
+    CarouselContent,
+    CarouselItem,
+    CarouselNext,
+    CarouselPrevious
+} from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 import DealCardLink from "./DealCardLink";
 import { getDealsByCategory, categories } from "@/data/deals";
 
 const CategoryCarousel = ({ name }: { name: string }) => {
-    const scrollRef = useRef<HTMLDivElement>(null);
     const deals = getDealsByCategory(name);
-
-    const scroll = (dir: "left" | "right") => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollBy({ left: dir === "left" ? -300 : 300, behavior: "smooth" });
-        }
-    };
 
     if (deals.length === 0) return null;
 
     return (
-        <div className="mb-8">
-            <div className="flex items-center justify-between px-4 mb-3">
-                <h3 className="text-lg font-bold tracking-tight">{name}</h3>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => scroll("left")}
-                        className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors text-sm"
-                    >
-                        ←
-                    </button>
-                    <button
-                        onClick={() => scroll("right")}
-                        className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors text-sm"
-                    >
-                        →
-                    </button>
-                </div>
-            </div>
-            <div
-                ref={scrollRef}
-                className="flex gap-4 overflow-x-auto px-4 pb-2"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" } as React.CSSProperties}
+        <div className="mb-8 relative px-4">
+            <Carousel
+                opts={{
+                    align: "start",
+                    dragFree: true,
+                    loop: true,
+                }}
+                plugins={[Autoplay({ delay: 5000 })]}
+                className="w-full"
             >
-                {deals.map((deal) => (
-                    <DealCardLink key={deal.id} deal={deal} className="flex-shrink-0 w-[260px] h-[300px]" />
-                ))}
-            </div>
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-bold tracking-tight">{name}</h3>
+                    <div className="hidden sm:flex gap-2 mr-2">
+                        {/* We use static positioning classes instead of the absolute positioning from the default shadcn component */}
+                        <CarouselPrevious className="static translate-y-0 translate-x-0 h-8 w-8 bg-background border-border hover:bg-muted" />
+                        <CarouselNext className="static translate-y-0 translate-x-0 h-8 w-8 bg-background border-border hover:bg-muted" />
+                    </div>
+                </div>
+
+                <CarouselContent className="-ml-4">
+                    {deals.map((deal) => (
+                        <CarouselItem key={deal.id} className="pl-4 basis-auto">
+                            <DealCardLink
+                                dealData={{ deal: deal as any, brand: { name: deal.brand } as any, category: { name: deal.category } as any }}
+                                className="w-[260px] h-[300px]"
+                            />
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+            </Carousel>
         </div>
     );
 };
