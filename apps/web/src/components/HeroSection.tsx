@@ -26,7 +26,7 @@ const HeroSection = () => {
                 The best student
                 <br />
                 perks.{" "}
-                <span className="bg-[hsl(65,100%,60%)] px-3 py-1 inline-block mt-2">
+                <span className="bg-primary text-primary-foreground px-3 py-1 inline-block mt-2">
                     All free.
                 </span>
             </h1>
@@ -42,12 +42,12 @@ const HeroSection = () => {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search deals... (Spotify, Nike, GitHub...)"
-                    className="w-full bg-muted rounded-pill pl-13 pr-28 py-4 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-foreground/20 transition-shadow border border-border"
+                    className="w-full bg-muted rounded-full pl-13 pr-28 py-4 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-foreground/20 transition-shadow border border-border"
                     style={{ paddingLeft: "3.25rem" }}
                 />
                 <button
                     type="submit"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-primary-foreground px-5 py-2.5 rounded-pill text-sm font-medium hover:opacity-80 transition-opacity"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-medium hover:opacity-80 transition-opacity"
                 >
                     Search
                 </button>
@@ -59,7 +59,7 @@ const HeroSection = () => {
                     <button
                         key={tag}
                         onClick={() => router.push(`/browse?q=${encodeURIComponent(tag)}`)}
-                        className="bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-pill text-xs font-medium transition-colors"
+                        className="bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
                     >
                         {tag}
                     </button>

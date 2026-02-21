@@ -14,7 +14,7 @@ export const SiteHeader = () => {
     return (
         <header className="px-4 md:px-6 py-4 flex justify-between items-center border-b border-border sticky top-0 z-50 bg-background/80 backdrop-blur-md">
             <Link href="/" className="text-xl font-black tracking-[-0.04em] no-underline text-foreground flex items-center gap-2">
-                <span className="bg-[hsl(65,100%,60%)] text-foreground px-2 py-0.5 rounded-md text-lg">U</span>
+                <span className="bg-primary text-primary-foreground px-2 py-0.5 rounded-md text-lg">U</span>
                 UniPerks
             </Link>
 
@@ -22,36 +22,36 @@ export const SiteHeader = () => {
             <nav className="hidden md:flex gap-1 items-center">
                 <Link
                     href="/"
-                    className={`px-3 py-2 rounded-pill text-sm no-underline transition-colors ${isActive("/") ? "bg-muted text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                    className={`px-3 py-2 rounded-full text-sm no-underline transition-colors ${isActive("/") ? "bg-muted text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
                         }`}
                 >
                     Home
                 </Link>
                 <Link
                     href="/browse"
-                    className={`px-3 py-2 rounded-pill text-sm no-underline transition-colors ${isActive("/browse") ? "bg-muted text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                    className={`px-3 py-2 rounded-full text-sm no-underline transition-colors ${isActive("/browse") ? "bg-muted text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
                         }`}
                 >
                     Browse
                 </Link>
                 <Link
                     href="/about"
-                    className={`px-3 py-2 rounded-pill text-sm no-underline transition-colors ${isActive("/about") ? "bg-muted text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                    className={`px-3 py-2 rounded-full text-sm no-underline transition-colors ${isActive("/about") ? "bg-muted text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
                         }`}
                 >
                     How It Works
                 </Link>
-                <Link
+                <a
                     href="/submit"
-                    className={`px-3 py-2 rounded-pill text-sm no-underline transition-colors ${isActive("/submit") ? "bg-muted text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                    className={`px-3 py-2 rounded-full text-sm no-underline transition-colors ${isActive("/submit") ? "bg-muted text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
                         }`}
                 >
                     Submit a Perk
-                </Link>
+                </a>
                 <div className="w-px h-5 bg-border mx-2" />
                 <Link
                     href="/browse"
-                    className="bg-primary text-primary-foreground px-4 py-2 rounded-pill text-sm font-medium no-underline hover:opacity-80 transition-opacity flex items-center gap-2"
+                    className="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium no-underline hover:opacity-80 transition-opacity flex items-center gap-2"
                 >
                     <Search className="w-3.5 h-3.5" />
                     Search deals
@@ -93,14 +93,14 @@ export const SiteHeader = () => {
                     >
                         How It Works
                     </Link>
-                    <Link
+                    <a
                         href="/submit"
                         onClick={() => setMobileOpen(false)}
                         className={`px-4 py-3 rounded-lg text-sm no-underline transition-colors ${isActive("/submit") ? "bg-muted text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
                             }`}
                     >
                         Submit a Perk
-                    </Link>
+                    </a>
                 </div>
             )}
         </header>

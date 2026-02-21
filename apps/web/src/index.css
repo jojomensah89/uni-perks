@@ -40,11 +40,6 @@
     --sidebar-ring: oklch(0.6136 0.0937 156.6146);
     --radius: 1rem;
 
-    /* Orchids brand tokens */
-    --radius-pill: 100px;
-    --yellow: hsl(65, 100%, 60%);
-    --yellow-soft: hsl(65, 100%, 92%);
-    --green-deal: hsl(141, 73%, 42%);
   }
 
   .dark {
@@ -135,19 +130,7 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
-  --radius-pill: var(--radius-pill);
-
-  /* Orchids brand colors as Tailwind utilities */
-  --color-beige: hsl(43, 30%, 86%);
-  --color-pink: hsl(0, 100%, 81%);
-  --color-blue-cta: hsl(195, 52%, 88%);
-  --color-spotify-green: hsl(141, 73%, 42%);
-  --color-apple-black: hsl(0, 0%, 8%);
-  --color-adobe-red: hsl(0, 82%, 45%);
-  --color-uber-black: hsl(150, 67%, 28%);
-  --color-travel-teal: hsl(190, 60%, 45%);
-  --color-github-purple: hsl(250, 40%, 25%);
-  --color-news-yellow: hsl(48, 95%, 55%);
+  /* Orchids brand colors as Tailwind utilities - Removed so elements fall back to theme */
 
   --animate-shiny-text: shiny-text 8s infinite;
 

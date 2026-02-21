@@ -19,7 +19,7 @@ export const FooterSection = () => {
     return (
         <footer className="mt-auto">
             {/*Newsletter CTA*/}
-            <div className="bg-[hsl(65,100%,60%)] px-6 md:px-10 py-10 text-center flex flex-col items-center gap-4">
+            <div className="bg-primary px-6 md:px-10 py-10 text-center flex flex-col items-center gap-4">
                 <h2 className="text-xl font-bold leading-tight text-foreground">Don&apos;t miss new student perks</h2>
                 <p className="text-sm text-foreground/70">
                     Join 50,000+ students saving money every day. Weekly digest of the best deals.
@@ -51,7 +51,7 @@ export const FooterSection = () => {
                 <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
                     <div>
                         <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                            <span className="bg-[hsl(65,100%,60%)] text-foreground px-1.5 py-0.5 rounded text-sm">U</span>
+                            <span className="bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-sm">U</span>
                             UniPerks
                         </h3>
                         <p className="text-sm text-primary-foreground/60 leading-relaxed">
@@ -65,7 +65,7 @@ export const FooterSection = () => {
                             <Link href="/" className="text-sm text-primary-foreground/60 hover:text-primary-foreground no-underline transition-colors">Home</Link>
                             <Link href="/browse" className="text-sm text-primary-foreground/60 hover:text-primary-foreground no-underline transition-colors">Browse Deals</Link>
                             <Link href="/about" className="text-sm text-primary-foreground/60 hover:text-primary-foreground no-underline transition-colors">How It Works</Link>
-                            <Link href="/submit" className="text-sm text-primary-foreground/60 hover:text-primary-foreground no-underline transition-colors">Submit a Perk</Link>
+                            <Link href="#" className="text-sm text-primary-foreground/60 hover:text-primary-foreground no-underline transition-colors">Submit a Perk</Link>
                         </div>
                     </div>
 

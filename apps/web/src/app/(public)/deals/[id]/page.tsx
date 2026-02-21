@@ -73,7 +73,7 @@ export default async function DealDetailsPage({ params }: { params: Promise<{ id
                         <p className="text-sm text-muted-foreground leading-relaxed mb-4">{deal.detail}</p>
                         {deal.estimatedValue && (
                             <div className="flex items-center gap-2 text-sm">
-                                <DollarSign className="w-4 h-4 text-[hsl(141,73%,42%)]" />
+                                <DollarSign className="w-4 h-4 text-primary" />
                                 <span className="font-medium">Estimated value:</span>
                                 <span className="text-muted-foreground">{deal.estimatedValue}</span>
                             </div>
@@ -91,7 +91,7 @@ export default async function DealDetailsPage({ params }: { params: Promise<{ id
                                 {deal.regions.map((r) => (
                                     <div key={r.region} className="flex items-start gap-3 text-sm">
                                         {r.available ? (
-                                            <CheckCircle className="w-4 h-4 text-[hsl(141,73%,42%)] mt-0.5 shrink-0" />
+                                            <CheckCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                                         ) : (
                                             <XCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
                                         )}
@@ -160,7 +160,7 @@ export default async function DealDetailsPage({ params }: { params: Promise<{ id
 
                         {deal.verificationMethod && (
                             <div className="flex items-center gap-2 text-sm mb-4 p-3 bg-muted rounded-lg">
-                                <ShieldCheck className="w-4 h-4 text-[hsl(141,73%,42%)] shrink-0" />
+                                <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
                                 <div>
                                     <p className="font-medium text-xs text-muted-foreground uppercase tracking-wide">Verified via</p>
                                     <p className="text-sm">{deal.verificationMethod}</p>

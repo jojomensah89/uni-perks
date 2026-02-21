@@ -59,7 +59,7 @@ const DealCardLink = ({ deal, className = "" }: DealCardLinkProps) => {
                     <p className="text-xs text-muted-foreground leading-relaxed mb-2">{deal.detail}</p>
                     {deal.verificationMethod && (
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
-                            <ShieldCheck className="w-3.5 h-3.5 text-[hsl(141,73%,42%)]" />
+                            <ShieldCheck className="w-3.5 h-3.5 text-primary" />
                             {deal.verificationMethod}
                         </div>
                     )}
