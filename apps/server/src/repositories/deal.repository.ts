@@ -3,6 +3,7 @@ import { NotFoundError } from "../lib/errors";
 
 export interface FindManyDealsOptions {
     categorySlug?: string;
+    collectionId?: string;
     featured?: boolean;
     isActive?: boolean;
     regionCode?: string;
@@ -14,6 +15,7 @@ export interface FindManyDealsOptions {
 export async function findManyDeals(options: FindManyDealsOptions) {
     const {
         categorySlug,
+        collectionId,
         featured,
         isActive = true,
         regionCode,
@@ -53,6 +55,26 @@ export async function findManyDeals(options: FindManyDealsOptions) {
 
     if (conditions.length > 0) {
         query = query.where(and(...conditions));
+    }
+
+    // If collectionId specified, filter by collection
+    if (collectionId) {
+        // Need to import collectionDeals at the top of the file
+        // For now, doing it within the module scope using dynamic import or assuming it's exported
+        const { collectionDeals } = await import("@uni-perks/db");
+
+        const dealIdsInCollection = await db
+            .select({ dealId: collectionDeals.dealId })
+            .from(collectionDeals)
+            .where(eq(collectionDeals.collectionId, collectionId));
+
+        const ids = dealIdsInCollection.map(d => d.dealId);
+        if (ids.length > 0) {
+            query = query.where(inArray(deals.id, ids));
+        } else {
+            // Force 0 results if collection has no deals
+            query = query.where(inArray(deals.id, []));
+        }
     }
 
     // If regionCode specified, filter by region

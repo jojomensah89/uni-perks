@@ -1,5 +1,3 @@
-"use client";
-
 import {
     Carousel,
     CarouselContent,
@@ -7,12 +5,19 @@ import {
     CarouselNext,
     CarouselPrevious
 } from "@/components/ui/carousel";
-import Autoplay from "embla-carousel-autoplay";
-import DealCardLink from "./DealCardLink";
-import { getDealsByCategory, categories } from "@/data/deals";
+import DealCardLink, { type ApiDealResponse } from "./DealCardLink";
+import { fetchAPI } from "@/lib/api";
 
-const CategoryCarousel = ({ name }: { name: string }) => {
-    const deals = getDealsByCategory(name);
+type ApiCategoryResponse = {
+    id: string;
+    name: string;
+    slug: string;
+};
+
+const CategoryCarousel = async ({ category }: { category: ApiCategoryResponse }) => {
+    // Fetch deals for this specific category
+    const res = await fetchAPI<{ deals: ApiDealResponse[] }>(`/api/deals?category=${category.id}&limit=10`);
+    const deals = res.deals || [];
 
     if (deals.length === 0) return null;
 
@@ -24,11 +29,10 @@ const CategoryCarousel = ({ name }: { name: string }) => {
                     dragFree: true,
                     loop: true,
                 }}
-                plugins={[Autoplay({ delay: 5000 })]}
                 className="w-full"
             >
                 <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-bold tracking-tight">{name}</h3>
+                    <h3 className="text-lg font-bold tracking-tight">{category.name}</h3>
                     <div className="hidden sm:flex gap-2 mr-2">
                         {/* We use static positioning classes instead of the absolute positioning from the default shadcn component */}
                         <CarouselPrevious className="static translate-y-0 translate-x-0 h-8 w-8 bg-background border-border hover:bg-muted" />
@@ -37,10 +41,10 @@ const CategoryCarousel = ({ name }: { name: string }) => {
                 </div>
 
                 <CarouselContent className="-ml-4">
-                    {deals.map((deal) => (
-                        <CarouselItem key={deal.id} className="pl-4 basis-auto">
+                    {deals.map((dealWrapper) => (
+                        <CarouselItem key={dealWrapper.deal.id} className="pl-4 basis-auto">
                             <DealCardLink
-                                dealData={{ deal: deal as any, brand: { name: deal.brand } as any, category: { name: deal.category } as any }}
+                                dealData={dealWrapper}
                                 className="w-[260px] h-[300px]"
                             />
                         </CarouselItem>
@@ -51,14 +55,20 @@ const CategoryCarousel = ({ name }: { name: string }) => {
     );
 };
 
-const CategoriesSection = () => {
+const CategoriesSection = async () => {
+    // Fetch all categories
+    const categoriesRes = await fetchAPI<{ categories: ApiCategoryResponse[] }>("/api/categories");
+    const categories = categoriesRes.categories || [];
+
+    if (categories.length === 0) return null;
+
     return (
         <section className="py-8">
             <h2 className="text-sm font-bold uppercase tracking-widest px-4 mb-6 text-muted-foreground">
                 Browse by Category
             </h2>
             {categories.map((cat) => (
-                <CategoryCarousel key={cat} name={cat} />
+                <CategoryCarousel key={cat.id} category={cat} />
             ))}
         </section>
     );

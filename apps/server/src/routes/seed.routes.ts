@@ -1,5 +1,5 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import { db, categories, deals, brands, eq } from "@uni-perks/db";
+import { db, categories, deals, brands, eq, and } from "@uni-perks/db";
 
 const app = new OpenAPIHono();
 
@@ -261,7 +261,49 @@ app.openapi(seedRoute, async (c) => {
 
         console.log(`✅ Seeded ${insertedCount} deals.`);
 
-        return c.json({ success: true, message: `Seeded categories and ${insertedCount} deals.` }, 200);
+        // 3. Seed a Featured Collection
+        const { collections, collectionDeals } = await import("@uni-perks/db");
+        const collectionSlug = "student-essentials";
+        const existingCollection = await db.select().from(collections).where(eq(collections.slug, collectionSlug)).limit(1);
+
+        let collectionId = existingCollection[0]?.id;
+
+        if (!collectionId) {
+            const newCollection = await db.insert(collections).values({
+                name: "Student Essentials",
+                slug: collectionSlug,
+                description: "Must-have tools and resources for every student.",
+                audience: "All Students",
+                isFeatured: true,
+                displayOrder: 1
+            }).returning();
+            if (newCollection[0]) collectionId = newCollection[0].id;
+        }
+
+        if (collectionId) {
+            // Assign some deals to this collection (e.g., the first 3 deals)
+            const allSeededDeals = await db.select().from(deals).limit(3);
+            for (let i = 0; i < allSeededDeals.length; i++) {
+                const deal = allSeededDeals[i];
+                if (!deal) continue;
+
+                // Check if already mapped
+                const existingMap = await db.select().from(collectionDeals)
+                    .where(and(eq(collectionDeals.collectionId, collectionId), eq(collectionDeals.dealId, deal.id)))
+                    .limit(1);
+
+                if (existingMap.length === 0) {
+                    await db.insert(collectionDeals).values({
+                        collectionId,
+                        dealId: deal.id,
+                        displayOrder: i
+                    });
+                }
+            }
+            console.log(`✅ Seeded Collection: Student Essentials`);
+        }
+
+        return c.json({ success: true, message: `Seeded categories, collections, and deals.` }, 200);
     } catch (e) {
         console.error(e);
         return c.json({ success: false, error: String(e) }, 500);

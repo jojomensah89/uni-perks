@@ -20,8 +20,8 @@ const DealSchema = z.object({
     currency: z.string().nullable().optional(),
     verificationMethod: z.string(),
     claimUrl: z.string(),
-    isFeatured: z.boolean().optional(),
-    isActive: z.boolean().optional(),
+    isFeatured: z.boolean().nullable().optional(),
+    isActive: z.boolean().nullable().optional(),
     brandId: z.string(),
     categoryId: z.string(),
     // Add other fields as needed
@@ -43,11 +43,12 @@ const listDealsRoute = createRoute({
     path: "/",
     tags: ["Deals"],
     summary: "List Deals",
-    description: "Get a paginated list of deals, optionally filtered by category, featured status, or search query.",
+    description: "Get a paginated list of deals, optionally filtered by category, featured status, collection, or search query.",
     request: {
         query: z.object({
             country: z.string().optional(),
             category: z.string().optional(),
+            collectionId: z.string().optional(),
             featured: z.string().optional().openapi({ example: "true" }),
             region: z.string().optional(),
             q: z.string().optional(),
@@ -73,6 +74,7 @@ app.openapi(listDealsRoute, async (c) => {
 
     const requestedCountry = query.country || geoData.country;
     const categorySlug = query.category;
+    const collectionId = query.collectionId;
     const featured = query.featured === "true";
     const regionCode = query.region;
     const searchQuery = query.q;
@@ -82,6 +84,7 @@ app.openapi(listDealsRoute, async (c) => {
     const results = await getDeals({
         country: requestedCountry,
         categorySlug,
+        collectionId,
         featured,
         regionCode,
         searchQuery,

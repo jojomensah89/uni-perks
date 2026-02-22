@@ -8,6 +8,7 @@ import {
 export interface GetDealsOptions {
     country?: string;
     categorySlug?: string;
+    collectionId?: string;
     featured?: boolean;
     regionCode?: string;
     searchQuery?: string;
@@ -26,6 +27,7 @@ export interface DealDetailOptions {
 export async function getDeals(options: GetDealsOptions) {
     const results = await findManyDeals({
         categorySlug: options.categorySlug,
+        collectionId: options.collectionId,
         featured: options.featured,
         isActive: true,
         regionCode: options.regionCode,
