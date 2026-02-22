@@ -20,10 +20,9 @@ export default async function AdminLayout({
     if (!session?.user) {
         redirect("/login");
     }
-    // TODO: Uncomment after DB migration for role check
-    // if (session.user.role !== "admin") {
-    //     redirect("/");
-    // }
+    if (session.user.role !== "admin") {
+        redirect("/");
+    }
 
     return (
         <div className="h-screen flex overflow-hidden bg-background">

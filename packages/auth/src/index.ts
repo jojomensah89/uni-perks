@@ -3,6 +3,7 @@ import * as schema from "@uni-perks/db/schema/auth";
 import { env } from "@uni-perks/env/server";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { admin } from "better-auth/plugins";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -10,6 +11,9 @@ export const auth = betterAuth({
 
     schema: schema,
   }),
+  plugins: [
+    admin()
+  ],
   trustedOrigins: [env.CORS_ORIGIN],
   emailAndPassword: {
     enabled: true,

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, LogOut } from "lucide-react";
+import { LayoutDashboard, Tag, Users, Building2, TicketPercent, LogOut } from "lucide-react";
 import {
     Sidebar,
     SidebarContent,
@@ -20,7 +20,10 @@ import UserMenu from "@/components/user-menu";
 
 const navItems = [
     { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { title: "Perks", href: "/admin/perks", icon: Package },
+    { title: "Deals", href: "/admin/deals", icon: TicketPercent },
+    { title: "Brands", href: "/admin/brands", icon: Building2 },
+    { title: "Categories", href: "/admin/categories", icon: Tag },
+    { title: "Users", href: "/admin/users", icon: Users },
 ] as const;
 
 export function AdminNav() {
@@ -33,7 +36,7 @@ export function AdminNav() {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" render={<Link href="/" />}>
                             <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                                <Package className="size-4" />
+                                <TicketPercent className="size-4" />
                             </div>
                             <div className="grid flex-1 text-left text-sm leading-tight">
                                 <span className="truncate font-semibold">Uni Perks</span>
@@ -58,10 +61,11 @@ export function AdminNav() {
                                         <SidebarMenuButton
                                             isActive={isActive}
                                             tooltip={item.title}
-                                            render={<Link href={item.href} />}
                                         >
-                                            <item.icon />
-                                            <span>{item.title}</span>
+                                            <Link href={item.href as any} className="flex gap-2 w-full h-full items-center">
+                                                <item.icon />
+                                                <span>{item.title}</span>
+                                            </Link>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
                                 );
@@ -86,6 +90,6 @@ export function AdminNav() {
             </SidebarFooter>
 
             <SidebarRail />
-        </Sidebar>
+        </Sidebar >
     );
 }
