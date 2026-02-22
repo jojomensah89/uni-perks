@@ -12,6 +12,7 @@
     "@libsql/client": "catalog:",
     "@opennextjs/cloudflare": "^1.14.6",
     "@tanstack/react-form": "^1.28.3",
+    "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-table": "^8.21.3",
     "@uni-perks/auth": "workspace:*",
     "@uni-perks/env": "workspace:*",

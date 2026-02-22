@@ -1,4 +1,6 @@
-import { headers } from "next/headers";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
 import { BrandsTable } from "@/components/admin/BrandsTable";
 import { BrandForm } from "@/components/admin/BrandForm";
 import { fetchAPI } from "@/lib/api";
@@ -14,17 +16,31 @@ export type ApiBrandResponse = {
     logoUrl?: string;
 };
 
-export default async function AdminBrandsPage() {
-    const h = await headers();
-    const cookie = h.get("cookie") || "";
-
-    const res = await fetchAPI<{ brands: ApiBrandResponse[] }>("/api/brands", {
-        headers: {
-            "Cookie": cookie
-        }
+export default function AdminBrandsPage() {
+    const brandsQuery = useQuery({
+        queryKey: ["admin_brands"],
+        queryFn: () => fetchAPI<{ brands: ApiBrandResponse[] }>("/api/brands"),
     });
 
-    const brands = res.brands || [];
+    if (brandsQuery.isLoading) {
+        return (
+            <div className="flex flex-col gap-6 items-center justify-center min-h-[50vh]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <p className="text-muted-foreground">Loading brands...</p>
+            </div>
+        );
+    }
+
+    if (brandsQuery.isError) {
+        return (
+            <div className="flex flex-col gap-6 items-center justify-center min-h-[50vh]">
+                <p className="text-destructive font-semibold">Failed to load brands.</p>
+                <p className="text-muted-foreground text-sm">Please check your connection and try again.</p>
+            </div>
+        );
+    }
+
+    const brands = brandsQuery.data?.brands || [];
 
     return (
         <div className="flex flex-col gap-6">

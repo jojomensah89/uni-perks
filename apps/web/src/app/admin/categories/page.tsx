@@ -1,4 +1,6 @@
-import { headers } from "next/headers";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
 import { CategoriesTable } from "@/components/admin/CategoriesTable";
 import { CategoryForm } from "@/components/admin/CategoryForm";
 import { fetchAPI } from "@/lib/api";
@@ -10,20 +12,31 @@ export type ApiCategoryResponse = {
     icon?: string;
 };
 
-export default async function AdminCategoriesPage() {
-    // We pass cookies/headers so the backend recognizes the admin session
-    const h = await headers();
-    const cookie = h.get("cookie") || "";
-
-    // Using fetchAPI (which currently points to /api/categories)
-    // Note: If you add an /api/admin/categories endpoint later, change this URL.
-    const res = await fetchAPI<{ categories: ApiCategoryResponse[] }>("/api/categories", {
-        headers: {
-            "Cookie": cookie
-        }
+export default function AdminCategoriesPage() {
+    const categoriesQuery = useQuery({
+        queryKey: ["admin_categories"],
+        queryFn: () => fetchAPI<{ categories: ApiCategoryResponse[] }>("/api/categories"),
     });
 
-    const categories = res.categories || [];
+    if (categoriesQuery.isLoading) {
+        return (
+            <div className="flex flex-col gap-6 items-center justify-center min-h-[50vh]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <p className="text-muted-foreground">Loading categories...</p>
+            </div>
+        );
+    }
+
+    if (categoriesQuery.isError) {
+        return (
+            <div className="flex flex-col gap-6 items-center justify-center min-h-[50vh]">
+                <p className="text-destructive font-semibold">Failed to load categories.</p>
+                <p className="text-muted-foreground text-sm">Please check your connection and try again.</p>
+            </div>
+        );
+    }
+
+    const categories = categoriesQuery.data?.categories || [];
 
     return (
         <div className="flex flex-col gap-6">

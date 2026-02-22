@@ -9,12 +9,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         const [dealsData, brandsData, categoriesData] = await Promise.all([
             fetchAPI<{ deals: any[] }>('api/deals?limit=1000', { cache: 'force-cache' }),
             fetchAPI<{ brands: any[] }>('api/brands', { cache: 'force-cache' }),
-            fetchAPI<any[]>('api/categories', { cache: 'force-cache' }),
+            fetchAPI<{ categories: any[] }>('api/categories', { cache: 'force-cache' }),
         ]);
 
         const deals = dealsData.deals || [];
         const brands = brandsData.brands || [];
-        const categories = categoriesData || [];
+        const categories = categoriesData.categories || [];
 
         return [
             // Homepage

@@ -11,6 +11,25 @@ export const auth = betterAuth({
 
     schema: schema,
   }),
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          const existingUsers = await db.select().from(schema.user).limit(1);
+          if (existingUsers.length === 0) {
+            return {
+              data: {
+                ...user,
+                role: "admin",
+              },
+            };
+          } else {
+            throw new Error("Signups are disabled after the first admin setup.");
+          }
+        },
+      },
+    },
+  },
   plugins: [
     admin()
   ],

@@ -1,4 +1,6 @@
-import { headers } from "next/headers";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
 import { DealsTable } from "@/components/admin/DealsTable";
 import { DealForm } from "@/components/admin/DealForm";
 import { fetchAPI } from "@/lib/api";
@@ -17,25 +19,46 @@ export type ApiDealResponse = {
     category: Pick<ApiCategoryResponse, "id" | "name">;
 };
 
-export default async function AdminDealsPage() {
-    const h = await headers();
-    const cookie = h.get("cookie") || "";
+export default function AdminDealsPage() {
+    const dealsQuery = useQuery({
+        queryKey: ["admin_deals"],
+        queryFn: () => fetchAPI<{ deals: ApiDealResponse[] }>("/api/admin/deals"),
+    });
 
-    const [dealsRes, brandsRes, categoriesRes] = await Promise.all([
-        fetchAPI<{ deals: ApiDealResponse[] }>("/api/admin/deals", {
-            headers: { "Cookie": cookie }
-        }),
-        fetchAPI<{ brands: ApiBrandResponse[] }>("/api/brands", {
-            headers: { "Cookie": cookie }
-        }),
-        fetchAPI<{ categories: ApiCategoryResponse[] }>("/api/categories", {
-            headers: { "Cookie": cookie }
-        })
-    ]);
+    const brandsQuery = useQuery({
+        queryKey: ["admin_brands"],
+        queryFn: () => fetchAPI<{ brands: ApiBrandResponse[] }>("/api/brands"),
+    });
 
-    const deals = dealsRes.deals || [];
-    const brands = brandsRes.brands || [];
-    const categories = categoriesRes.categories || [];
+    const categoriesQuery = useQuery({
+        queryKey: ["admin_categories"],
+        queryFn: () => fetchAPI<{ categories: ApiCategoryResponse[] }>("/api/categories"),
+    });
+
+    const isLoading = dealsQuery.isLoading || brandsQuery.isLoading || categoriesQuery.isLoading;
+    const isError = dealsQuery.isError || brandsQuery.isError || categoriesQuery.isError;
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col gap-6 items-center justify-center min-h-[50vh]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <p className="text-muted-foreground">Loading details...</p>
+            </div>
+        );
+    }
+
+    if (isError) {
+        return (
+            <div className="flex flex-col gap-6 items-center justify-center min-h-[50vh]">
+                <p className="text-destructive font-semibold">Failed to load data.</p>
+                <p className="text-muted-foreground text-sm">Please check your connection and try again.</p>
+            </div>
+        );
+    }
+
+    const deals = dealsQuery.data?.deals || [];
+    const brands = brandsQuery.data?.brands || [];
+    const categories = categoriesQuery.data?.categories || [];
 
     return (
         <div className="flex flex-col gap-6">

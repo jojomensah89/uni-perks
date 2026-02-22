@@ -28,6 +28,7 @@
     "dev:server": "turbo -F server dev",
     "db:push": "turbo -F @uni-perks/db db:push",
     "db:generate": "turbo -F @uni-perks/db db:generate",
+    "db:studio": "turbo -F @uni-perks/db db:studio",
     "deploy": "turbo -F @uni-perks/infra deploy",
     "destroy": "turbo -F @uni-perks/infra destroy"
   },

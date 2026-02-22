@@ -1,46 +1,40 @@
-import type { Context, Next } from "hono";
-import { AppError } from "../lib/errors";
+import type { Context } from "hono";
 
 /**
  * Global error handling middleware
  */
-export async function errorHandler(c: Context, next: Next) {
-    try {
-        await next();
-    } catch (error) {
-        console.error("Error:", error);
+export async function errorHandler(error: Error, c: Context) {
+    console.error("Error:", error);
 
-        // Handle known application errors
-        if (error instanceof AppError) {
-            return c.json(
-                {
-                    error: {
-                        message: error.message,
-                        statusCode: error.statusCode,
-                        ...(error instanceof ValidationError && error.errors
-                            ? { errors: error.errors }
-                            : {}),
-                    },
-                },
-                error.statusCode as any
-            );
-        }
-
-        // Handle unknown errors
-        const isDevelopment = process.env.NODE_ENV === "development";
+    // Handle known application errors (duck-typing to avoid module/instanceof issues)
+    const appError = error as any;
+    if (appError && typeof appError.statusCode === 'number' && appError.isOperational !== undefined) {
         return c.json(
             {
                 error: {
-                    message: isDevelopment
-                        ? (error as Error).message
-                        : "Internal server error",
-                    statusCode: 500,
-                    ...(isDevelopment && { stack: (error as Error).stack }),
+                    message: appError.message,
+                    statusCode: appError.statusCode,
+                    ...(appError.errors ? { errors: appError.errors } : {}),
                 },
             },
-            500
+            appError.statusCode as any
         );
     }
+
+    // Handle unknown errors
+    const isDevelopment = process.env.NODE_ENV === "development";
+    return c.json(
+        {
+            error: {
+                message: isDevelopment
+                    ? (error as Error).message
+                    : "Internal server error",
+                statusCode: 500,
+                ...(isDevelopment && { stack: (error as Error).stack }),
+            },
+        },
+        500
+    );
 }
 
 /**
@@ -59,5 +53,3 @@ export function notFoundHandler(c: Context) {
     );
 }
 
-// Import ValidationError for type checking
-import { ValidationError } from "../lib/errors";

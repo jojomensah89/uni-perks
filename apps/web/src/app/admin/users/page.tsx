@@ -1,4 +1,6 @@
-import { headers } from "next/headers";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
 import { UsersTable } from "@/components/admin/UsersTable";
 import { fetchAPI } from "@/lib/api";
 
@@ -14,18 +16,40 @@ export type ApiUserResponse = {
     createdAt: number;
 };
 
-export default async function AdminUsersPage() {
-    const h = await headers();
-    const cookie = h.get("cookie") || "";
+export default function AdminUsersPage() {
+    const usersQuery = useQuery({
+        queryKey: ["admin_users"],
+        queryFn: async () => {
+            // Note: Since this fetch accesses admin-only info, our updated 
+            // setup handles cookies automatically in the browser fetch
+            try {
+                return await fetchAPI<{ users: ApiUserResponse[] }>("/api/admin/users");
+            } catch (error) {
+                // Fallback if API missing
+                return { users: [] };
+            }
+        },
+    });
 
-    // The better-auth admin plugin typically comes with list users admin endpoint
-    // This assumes we implement an overarching route in server for it,
-    // or we fetch using the better-auth client directly
-    const res = await fetchAPI<{ users: ApiUserResponse[] }>("/api/admin/users", {
-        headers: { "Cookie": cookie }
-    }).catch(() => ({ users: [] })); // Fallback if API missing
+    if (usersQuery.isLoading) {
+        return (
+            <div className="flex flex-col gap-6 items-center justify-center min-h-[50vh]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <p className="text-muted-foreground">Loading users...</p>
+            </div>
+        );
+    }
 
-    const users = res.users || [];
+    if (usersQuery.isError) {
+        return (
+            <div className="flex flex-col gap-6 items-center justify-center min-h-[50vh]">
+                <p className="text-destructive font-semibold">Failed to load users.</p>
+                <p className="text-muted-foreground text-sm">Please check your connection and try again.</p>
+            </div>
+        );
+    }
+
+    const users = usersQuery.data?.users || [];
 
     return (
         <div className="flex flex-col gap-6">

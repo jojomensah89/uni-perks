@@ -18,8 +18,8 @@ import adminRouter from "./routes/admin.routes";
 
 const app = new OpenAPIHono();
 
-// Global error handler (must be first)
-app.use("*", errorHandler);
+// Global error handler
+app.onError(errorHandler);
 
 // Middleware
 app.use(logger());
