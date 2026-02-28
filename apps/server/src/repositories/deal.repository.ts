@@ -1,4 +1,4 @@
-import { db, deals, brands, categories, regions, tags, dealRegions, dealTags, eq, and, desc, ilike, inArray, sql } from "@uni-perks/db";
+import { db, deals, brands, categories, regions, tags, dealRegions, dealTags, eq, and, desc, inArray, sql } from "@uni-perks/db";
 import { NotFoundError } from "../lib/errors";
 
 export interface FindManyDealsOptions {
@@ -50,7 +50,10 @@ export async function findManyDeals(options: FindManyDealsOptions) {
     }
 
     if (searchQuery) {
-        conditions.push(ilike(deals.title, `%${searchQuery}%`));
+        // Search across deal title, description, and brand name
+        conditions.push(
+            sql`(${deals.title} LIKE ${`%${searchQuery}%`} OR ${deals.shortDescription} LIKE ${`%${searchQuery}%`} OR ${brands.name} LIKE ${`%${searchQuery}%`} OR ${categories.name} LIKE ${`%${searchQuery}%`})`
+        );
     }
 
     if (conditions.length > 0) {

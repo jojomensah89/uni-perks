@@ -3,11 +3,20 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { allDeals } from "@/data/deals";
+import { useQuery } from "@tanstack/react-query";
+import { fetchAPI } from "@/lib/api";
 
 const HeroSection = () => {
     const [query, setQuery] = useState("");
     const router = useRouter();
+
+    // Fetch deal count from API
+    const { data } = useQuery({
+        queryKey: ["deal-count"],
+        queryFn: () => fetchAPI<{ meta: { total: number } }>("/api/deals?limit=1"),
+    });
+
+    const dealCount = data?.meta?.total || 0;
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,7 +40,7 @@ const HeroSection = () => {
                 </span>
             </h1>
             <p className="text-sm md:text-base text-muted-foreground max-w-lg mx-auto mb-8">
-                {allDeals.length}+ verified student discounts on software, food, fashion, travel, and more. Stop paying full price.
+                {dealCount}+ verified student discounts on software, food, fashion, travel, and more. Stop paying full price.
             </p>
 
             {/* Search bar */}

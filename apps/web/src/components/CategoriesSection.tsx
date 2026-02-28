@@ -16,7 +16,7 @@ type ApiCategoryResponse = {
 
 const CategoryCarousel = async ({ category }: { category: ApiCategoryResponse }) => {
     // Fetch deals for this specific category
-    const res = await fetchAPI<{ deals: ApiDealResponse[] }>(`/api/deals?category=${category.id}&limit=10`);
+    const res = await fetchAPI<{ deals: ApiDealResponse[] }>(`/api/deals?category=${category.slug}&limit=10`);
     const deals = res.deals || [];
 
     if (deals.length === 0) return null;

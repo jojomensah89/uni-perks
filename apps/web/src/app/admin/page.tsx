@@ -1,25 +1,42 @@
-import { headers } from "next/headers";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, TrendingUp, Eye, MousePointerClick } from "lucide-react";
+import { Package, TrendingUp, Eye, MousePointerClick, Building2, Tag, Layers } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
+import { fetchAPI } from "@/lib/api";
 
-export default async function AdminDashboard() {
-    const session = await authClient.getSession({
-        fetchOptions: {
-            headers: await headers(),
-            throw: true,
-        },
+interface AdminStats {
+    totalDeals: number;
+    activeDeals: number;
+    totalBrands: number;
+    totalCategories: number;
+    totalCollections: number;
+    totalViews: number;
+    totalClicks: number;
+}
+
+export default function AdminDashboard() {
+    const { data: session } = authClient.useSession();
+
+    const statsQuery = useQuery({
+        queryKey: ["admin_stats"],
+        queryFn: () => fetchAPI<AdminStats>("/api/admin/stats"),
     });
 
-    // TODO: Fetch actual stats from API
-    const stats = {
-        totalPerks: 12,
-        activePerks: 12,
-        totalViews: 1250,
-        totalClicks: 340,
+    const stats = statsQuery.data || {
+        totalDeals: 0,
+        activeDeals: 0,
+        totalBrands: 0,
+        totalCategories: 0,
+        totalCollections: 0,
+        totalViews: 0,
+        totalClicks: 0,
     };
+
+    const isLoading = statsQuery.isLoading;
 
     return (
         <div className="space-y-8">
@@ -33,26 +50,30 @@ export default async function AdminDashboard() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Perks</CardTitle>
+                        <CardTitle className="text-sm font-medium">Total Deals</CardTitle>
                         <Package className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalPerks}</div>
+                        <div className="text-2xl font-bold">
+                            {isLoading ? "..." : stats.totalDeals}
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                            {stats.activePerks} active
+                            {isLoading ? "..." : stats.activeDeals} active
                         </p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active Perks</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Brands</CardTitle>
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.activePerks}</div>
+                        <div className="text-2xl font-bold">
+                            {isLoading ? "..." : stats.totalBrands}
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                            Currently available
+                            Partner brands
                         </p>
                     </CardContent>
                 </Card>
@@ -63,7 +84,9 @@ export default async function AdminDashboard() {
                         <Eye className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalViews}</div>
+                        <div className="text-2xl font-bold">
+                            {isLoading ? "..." : stats.totalViews.toLocaleString()}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                             All time
                         </p>
@@ -76,9 +99,43 @@ export default async function AdminDashboard() {
                         <MousePointerClick className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalClicks}</div>
+                        <div className="text-2xl font-bold">
+                            {isLoading ? "..." : stats.totalClicks.toLocaleString()}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                             All time
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Categories</CardTitle>
+                        <Tag className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">
+                            {isLoading ? "..." : stats.totalCategories}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Active categories
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Collections</CardTitle>
+                        <Layers className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">
+                            {isLoading ? "..." : stats.totalCollections}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Curated collections
                         </p>
                     </CardContent>
                 </Card>
@@ -87,14 +144,17 @@ export default async function AdminDashboard() {
             <Card>
                 <CardHeader>
                     <CardTitle>Quick Actions</CardTitle>
-                    <CardDescription>Manage your perks and content</CardDescription>
+                    <CardDescription>Manage your deals and content</CardDescription>
                 </CardHeader>
-                <CardContent className="flex gap-4">
-                    <Link href={"/admin/perks/new" as any} className={buttonVariants()}>
-                        Add New Perk
+                <CardContent className="flex flex-wrap gap-4">
+                    <Link href="/admin/deals" className={buttonVariants()}>
+                        Add New Deal
                     </Link>
-                    <Link href={"/admin/perks" as any} className={buttonVariants({ variant: "outline" })}>
-                        View All Perks
+                    <Link href="/admin/brands" className={buttonVariants({ variant: "outline" })}>
+                        Manage Brands
+                    </Link>
+                    <Link href={"/admin/collections" as any} className={buttonVariants({ variant: "outline" })}>
+                        Manage Collections
                     </Link>
                 </CardContent>
             </Card>

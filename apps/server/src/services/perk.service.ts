@@ -23,11 +23,7 @@ export interface PerkDetailOptions {
  * Get filtered and sorted perks (mapped from deals)
  */
 export async function getPerks(options: GetPerksOptions) {
-    const { country, categorySlug, featured, globalOnly, searchQuery } = options;
-
-    // Map region to regionCode for deal service if possible, or just pass region as is if compatible
-    // deal.service uses "regionCode", perk.service used "region". 
-    // Assuming "region" strings are compatible or we rely on country filtering mostly.
+    const { categorySlug, featured, searchQuery } = options;
 
     // Note: globalOnly logic from previous service is not directly supported in getDeals yet
     // without inspecting deals. But we will fetch and map.
