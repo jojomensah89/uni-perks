@@ -50,3 +50,7 @@ tmp
 temp
 
 docs/*
+
+# Skills
+.agents/
+.agent/
