@@ -62,7 +62,7 @@ const CategoriesSection = async () => {
     if (categories.length === 0) return null;
 
     return (
-        <section className="py-8 bg-muted/30">
+        <section className="py-8">
             <div className="max-w-7xl mx-auto">
                 <h2 className="text-sm font-bold uppercase tracking-widest px-4 mb-6 text-muted-foreground">
                     Browse by Category
