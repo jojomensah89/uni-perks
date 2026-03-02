@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import DealCardLink, { type ApiDealResponse } from "@/components/DealCardLink";
+import DealCard, { type ApiDealResponse } from "@/components/DealCard";
 import { fetchAPI } from "@/lib/api";
 import type { ApiCollectionResponse } from "@/components/CuratedCarousel";
 
@@ -65,7 +65,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {deals.map((dealWrapper) => (
-                            <DealCardLink key={dealWrapper.deal.id} dealData={dealWrapper} className="h-[320px]" />
+                            <DealCard key={dealWrapper.deal.id} dealData={dealWrapper} />
                         ))}
                     </div>
                 )}

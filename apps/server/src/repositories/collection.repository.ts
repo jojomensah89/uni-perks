@@ -1,4 +1,4 @@
-import { db, collections, collectionDeals, deals, brands, categories, eq, and, desc } from "@uni-perks/db";
+import { db, collections, collectionDeals, deals, brands, categories, eq, and } from "@uni-perks/db";
 import { NotFoundError } from "../lib/errors";
 
 export async function findAllCollections(options: { featured?: boolean } = {}) {

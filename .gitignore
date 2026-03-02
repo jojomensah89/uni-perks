@@ -51,6 +51,9 @@ temp
 
 docs/*
 
-# Skills
+# Skills and AI tools
 .agents/
 .agent/
+.trae/
+.factory/
+skills-lock.json

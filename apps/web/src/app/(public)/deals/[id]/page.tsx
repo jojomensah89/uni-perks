@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchAPI } from "@/lib/api";
-import type { ApiDealResponse } from "@/components/DealCardLink";
+import type { ApiDealResponse } from "@/components/DealCard";
 import DealTag from "@/components/DealTag";
 import { DealConditionsAccordion } from "@/components/deals/DealConditionsAccordion";
 import { ArrowLeft, ExternalLink, Globe, CheckCircle, XCircle, Info, ShieldCheck, DollarSign } from "lucide-react";

@@ -5,7 +5,7 @@ import {
     CarouselNext,
     CarouselPrevious
 } from "@/components/ui/carousel";
-import DealCardLink, { type ApiDealResponse } from "./DealCardLink";
+import DealCard, { type ApiDealResponse } from "./DealCard";
 import { fetchAPI } from "@/lib/api";
 
 type ApiCategoryResponse = {
@@ -16,7 +16,7 @@ type ApiCategoryResponse = {
 
 const CategoryCarousel = async ({ category }: { category: ApiCategoryResponse }) => {
     // Fetch deals for this specific category
-    const res = await fetchAPI<{ deals: ApiDealResponse[] }>(`/api/deals?category=${category.id}&limit=10`);
+    const res = await fetchAPI<{ deals: ApiDealResponse[] }>(`/api/deals?category=${category.slug}&limit=10`);
     const deals = res.deals || [];
 
     if (deals.length === 0) return null;
@@ -34,7 +34,6 @@ const CategoryCarousel = async ({ category }: { category: ApiCategoryResponse })
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="text-lg font-bold tracking-tight">{category.name}</h3>
                     <div className="hidden sm:flex gap-2 mr-2">
-                        {/* We use static positioning classes instead of the absolute positioning from the default shadcn component */}
                         <CarouselPrevious className="static translate-y-0 translate-x-0 h-8 w-8 bg-background border-border hover:bg-muted" />
                         <CarouselNext className="static translate-y-0 translate-x-0 h-8 w-8 bg-background border-border hover:bg-muted" />
                     </div>
@@ -43,9 +42,9 @@ const CategoryCarousel = async ({ category }: { category: ApiCategoryResponse })
                 <CarouselContent className="-ml-4">
                     {deals.map((dealWrapper) => (
                         <CarouselItem key={dealWrapper.deal.id} className="pl-4 basis-auto">
-                            <DealCardLink
+                            <DealCard
                                 dealData={dealWrapper}
-                                className="w-[260px] h-[300px]"
+                                className="w-[280px]"
                             />
                         </CarouselItem>
                     ))}
@@ -58,18 +57,20 @@ const CategoryCarousel = async ({ category }: { category: ApiCategoryResponse })
 const CategoriesSection = async () => {
     // Fetch all categories
     const categoriesRes = await fetchAPI<{ categories: ApiCategoryResponse[] }>("/api/categories");
-    const categories = categoriesRes.categories || [];
+    const categories = (categoriesRes.categories || []).slice(0, 3); // Limit to 3 categories
 
     if (categories.length === 0) return null;
 
     return (
-        <section className="py-8">
-            <h2 className="text-sm font-bold uppercase tracking-widest px-4 mb-6 text-muted-foreground">
-                Browse by Category
-            </h2>
-            {categories.map((cat) => (
-                <CategoryCarousel key={cat.id} category={cat} />
-            ))}
+        <section className="py-8 bg-muted/30">
+            <div className="max-w-7xl mx-auto">
+                <h2 className="text-sm font-bold uppercase tracking-widest px-4 mb-6 text-muted-foreground">
+                    Browse by Category
+                </h2>
+                {categories.map((cat) => (
+                    <CategoryCarousel key={cat.id} category={cat} />
+                ))}
+            </div>
         </section>
     );
 };

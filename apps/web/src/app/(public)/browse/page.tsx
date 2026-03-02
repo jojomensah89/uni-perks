@@ -1,10 +1,17 @@
 "use client";
 
-import { useState, useMemo, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Search } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
-import DealCardLink from "@/components/DealCardLink";
-import { allDeals, categories, searchDeals } from "@/data/deals";
+import { useQuery } from "@tanstack/react-query";
+import DealCard, { type ApiDealResponse } from "@/components/DealCard";
+import { fetchAPI } from "@/lib/api";
+
+type ApiCategoryResponse = {
+    id: string;
+    name: string;
+    slug: string;
+};
 
 function BrowseContent() {
     const searchParams = useSearchParams();
@@ -21,13 +28,31 @@ function BrowseContent() {
         if (cat) setActiveCategory(cat);
     }, [searchParams]);
 
-    const filtered = useMemo(() => {
-        let deals = search.trim() ? searchDeals(search) : allDeals;
-        if (activeCategory) {
-            deals = deals.filter((d) => d.category === activeCategory);
-        }
-        return deals;
-    }, [activeCategory, search]);
+    // Fetch deals from API
+    const dealsQuery = useQuery({
+        queryKey: ["deals", activeCategory, search],
+        queryFn: () => {
+            const params = new URLSearchParams();
+            params.set("limit", "100");
+            if (activeCategory) params.set("category", activeCategory);
+            if (search.trim()) params.set("q", search.trim());
+            return fetchAPI<{ deals: ApiDealResponse[]; meta: { total: number } }>(
+                `/api/deals?${params.toString()}`
+            );
+        },
+    });
+
+    // Fetch categories from API
+    const categoriesQuery = useQuery({
+        queryKey: ["categories"],
+        queryFn: () => fetchAPI<{ categories: ApiCategoryResponse[] }>("/api/categories"),
+    });
+
+    const deals = dealsQuery.data?.deals || [];
+    const categories = categoriesQuery.data?.categories || [];
+    const totalDeals = dealsQuery.data?.meta?.total || 0;
+    const isLoading = dealsQuery.isLoading || categoriesQuery.isLoading;
+    const isError = dealsQuery.isError;
 
     const handleSearch = (value: string) => {
         setSearch(value);
@@ -50,7 +75,9 @@ function BrowseContent() {
             {/* Title + search */}
             <div className="px-4 md:px-6 pt-8 pb-4">
                 <h1 className="text-2xl font-black tracking-tight mb-2">Browse All Deals</h1>
-                <p className="text-sm text-muted-foreground mb-6">{allDeals.length} verified student perks and discounts</p>
+                <p className="text-sm text-muted-foreground mb-6">
+                    {isLoading ? "Loading..." : `${totalDeals} verified student perks and discounts`}
+                </p>
 
                 {/* Search */}
                 <div className="relative max-w-md mb-6">
@@ -81,31 +108,35 @@ function BrowseContent() {
                             : "bg-muted text-muted-foreground hover:text-foreground"
                             }`}
                     >
-                        All ({allDeals.length})
+                        All ({totalDeals})
                     </button>
-                    {categories.map((cat) => {
-                        const count = (search.trim() ? searchDeals(search) : allDeals).filter(
-                            (d) => d.category === cat
-                        ).length;
-                        return (
-                            <button
-                                key={cat}
-                                onClick={() => handleCategory(activeCategory === cat ? null : cat)}
-                                className={`px-4 py-2 rounded-pill text-sm font-medium transition-colors ${activeCategory === cat
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-muted text-muted-foreground hover:text-foreground"
-                                    }`}
-                            >
-                                {cat} ({count})
-                            </button>
-                        );
-                    })}
+                    {categories.map((cat) => (
+                        <button
+                            key={cat.id}
+                            onClick={() => handleCategory(activeCategory === cat.slug ? null : cat.slug)}
+                            className={`px-4 py-2 rounded-pill text-sm font-medium transition-colors ${activeCategory === cat.slug
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-muted-foreground hover:text-foreground"
+                                }`}
+                        >
+                            {cat.name}
+                        </button>
+                    ))}
                 </div>
             </div>
 
             {/* Results */}
             <div className="flex-1 p-4 md:p-6">
-                {filtered.length === 0 ? (
+                {isLoading ? (
+                    <div className="flex items-center justify-center py-16">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                ) : isError ? (
+                    <div className="py-16 text-center">
+                        <p className="text-destructive font-semibold mb-2">Failed to load deals</p>
+                        <p className="text-muted-foreground text-sm">Please try again later</p>
+                    </div>
+                ) : deals.length === 0 ? (
                     <div className="py-16 text-center">
                         <p className="text-4xl mb-4">:(</p>
                         <p className="text-muted-foreground text-sm mb-2">No deals found.</p>
@@ -114,12 +145,15 @@ function BrowseContent() {
                 ) : (
                     <>
                         <p className="text-xs text-muted-foreground mb-4 px-2">
-                            {filtered.length} deal{filtered.length !== 1 ? "s" : ""} found
+                            {deals.length} deal{deals.length !== 1 ? "s" : ""} found
                             {search.trim() && ` for "${search}"`}
                         </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {filtered.map((deal) => (
-                                <DealCardLink key={deal.id} dealData={{ deal: deal as any, brand: { name: deal.brand } as any, category: { name: deal.category } as any }} className="h-[300px]" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {deals.map((dealWrapper) => (
+                                <DealCard
+                                    key={dealWrapper.deal.id}
+                                    dealData={dealWrapper}
+                                />
                             ))}
                         </div>
                     </>

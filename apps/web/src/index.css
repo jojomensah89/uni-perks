@@ -134,6 +134,9 @@
 
   --animate-shiny-text: shiny-text 8s infinite;
 
+  /* Ticker animation for hero section */
+  --animate-ticker: ticker 30s linear infinite;
+
   @keyframes shiny-text {
 
     0%,
@@ -157,6 +160,15 @@
     to {
       transform: translateY(0);
       opacity: 1;
+    }
+  }
+
+  @keyframes ticker {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
     }
   }
 
