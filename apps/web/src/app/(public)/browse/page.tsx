@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { Search } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -12,6 +12,8 @@ type ApiCategoryResponse = {
     name: string;
     slug: string;
 };
+
+type CategoryWithCount = ApiCategoryResponse & { dealCount: number };
 
 function BrowseContent() {
     const searchParams = useSearchParams();
@@ -28,7 +30,19 @@ function BrowseContent() {
         if (cat) setActiveCategory(cat);
     }, [searchParams]);
 
-    // Fetch deals from API
+    // Fetch deals from API (all deals when no category is selected, for counting)
+    const allDealsQuery = useQuery({
+        queryKey: ["deals-all"],
+        queryFn: () => {
+            const params = new URLSearchParams();
+            params.set("limit", "100");
+            return fetchAPI<{ deals: ApiDealResponse[]; meta: { total: number } }>(
+                `/api/deals?${params.toString()}`
+            );
+        },
+    });
+
+    // Fetch filtered deals from API
     const dealsQuery = useQuery({
         queryKey: ["deals", activeCategory, search],
         queryFn: () => {
@@ -48,11 +62,29 @@ function BrowseContent() {
         queryFn: () => fetchAPI<{ categories: ApiCategoryResponse[] }>("/api/categories"),
     });
 
+    const allDeals = allDealsQuery.data?.deals || [];
     const deals = dealsQuery.data?.deals || [];
     const categories = categoriesQuery.data?.categories || [];
-    const totalDeals = dealsQuery.data?.meta?.total || 0;
+    const totalDeals = allDealsQuery.data?.meta?.total || 0;
+    const filteredDeals = dealsQuery.data?.meta?.total || 0;
     const isLoading = dealsQuery.isLoading || categoriesQuery.isLoading;
     const isError = dealsQuery.isError;
+
+    // Compute category counts from all deals
+    const categoriesWithCounts: CategoryWithCount[] = useMemo(() => {
+        if (!allDeals.length || !categories.length) {
+            return categories.map(cat => ({ ...cat, dealCount: 0 }));
+        }
+        const countMap = new Map<string, number>();
+        allDeals.forEach(deal => {
+            const slug = deal.category.slug;
+            countMap.set(slug, (countMap.get(slug) || 0) + 1);
+        });
+        return categories.map(cat => ({
+            ...cat,
+            dealCount: countMap.get(cat.slug) || 0,
+        }));
+    }, [allDeals, categories]);
 
     const handleSearch = (value: string) => {
         setSearch(value);
@@ -87,7 +119,7 @@ function BrowseContent() {
                         placeholder="Search brand, category, or discount..."
                         value={search}
                         onChange={(e) => handleSearch(e.target.value)}
-                        className="w-full bg-muted rounded-pill pl-11 pr-4 py-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring transition-shadow"
+                        className="w-full bg-muted rounded-full pl-11 pr-4 py-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring transition-shadow"
                     />
                     {search && (
                         <button
@@ -103,23 +135,23 @@ function BrowseContent() {
                 <div className="flex flex-wrap gap-2">
                     <button
                         onClick={() => handleCategory(null)}
-                        className={`px-4 py-2 rounded-pill text-sm font-medium transition-colors ${!activeCategory
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${!activeCategory
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted text-muted-foreground hover:text-foreground"
                             }`}
                     >
                         All ({totalDeals})
                     </button>
-                    {categories.map((cat) => (
+                    {categoriesWithCounts.map((cat) => (
                         <button
                             key={cat.id}
                             onClick={() => handleCategory(activeCategory === cat.slug ? null : cat.slug)}
-                            className={`px-4 py-2 rounded-pill text-sm font-medium transition-colors ${activeCategory === cat.slug
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeCategory === cat.slug
                                 ? "bg-primary text-primary-foreground"
                                 : "bg-muted text-muted-foreground hover:text-foreground"
                                 }`}
                         >
-                            {cat.name}
+                            {cat.name} ({cat.dealCount})
                         </button>
                     ))}
                 </div>
@@ -145,7 +177,8 @@ function BrowseContent() {
                 ) : (
                     <>
                         <p className="text-xs text-muted-foreground mb-4 px-2">
-                            {deals.length} deal{deals.length !== 1 ? "s" : ""} found
+                            {filteredDeals} deal{filteredDeals !== 1 ? "s" : ""} found
+                            {activeCategory && ` in selected category`}
                             {search.trim() && ` for "${search}"`}
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

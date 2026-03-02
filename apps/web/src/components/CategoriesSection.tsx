@@ -64,7 +64,7 @@ const CategoriesSection = async () => {
     return (
         <section className="py-8">
             <div className="max-w-7xl mx-auto">
-                <h2 className="text-sm font-bold uppercase tracking-widest px-4 mb-6 text-muted-foreground">
+                <h2 className="text-lg md:text-xl font-black tracking-tight px-4 mb-6 text-foreground">
                     Browse by Category
                 </h2>
                 {categories.map((cat) => (

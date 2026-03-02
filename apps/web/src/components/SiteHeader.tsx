@@ -12,7 +12,7 @@ export const SiteHeader = () => {
     const isActive = (path: string) => pathname === path;
 
     return (
-        <header className="px-4 md:px-6 py-4 flex justify-between items-center border-b border-border sticky top-0 z-50 bg-background/80 backdrop-blur-md">
+        <header className="px-4 md:px-6 py-4 flex justify-between items-center border-b border-border bg-background/80 backdrop-blur-md">
             <Link href="/" className="text-xl font-black tracking-[-0.04em] no-underline text-foreground flex items-center gap-2">
                 <span className="bg-primary text-primary-foreground px-2 py-0.5 rounded-md text-lg">U</span>
                 UniPerks
@@ -41,13 +41,6 @@ export const SiteHeader = () => {
                 >
                     How It Works
                 </Link>
-                <a
-                    href="/submit"
-                    className={`px-3 py-2 rounded-full text-sm no-underline transition-colors ${isActive("/submit") ? "bg-muted text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
-                        }`}
-                >
-                    Submit a Perk
-                </a>
                 <div className="w-px h-5 bg-border mx-2" />
                 <Link
                     href="/browse"
@@ -93,14 +86,6 @@ export const SiteHeader = () => {
                     >
                         How It Works
                     </Link>
-                    <a
-                        href="/submit"
-                        onClick={() => setMobileOpen(false)}
-                        className={`px-4 py-3 rounded-lg text-sm no-underline transition-colors ${isActive("/submit") ? "bg-muted text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
-                            }`}
-                    >
-                        Submit a Perk
-                    </a>
                 </div>
             )}
         </header>

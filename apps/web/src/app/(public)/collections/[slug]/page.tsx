@@ -28,11 +28,11 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
             <div className="bg-muted px-4 md:px-8 py-12 md:py-20 mb-8 border-b border-border">
                 <div className="max-w-4xl">
                     <div className="flex items-center gap-3 mb-4">
-                        <span className="bg-primary/10 text-primary px-3 py-1 rounded-pill text-xs font-bold uppercase tracking-wider">
+                        <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
                             Curated Collection
                         </span>
                         {collection.audience && (
-                            <span className="bg-accent/10 text-accent px-3 py-1 rounded-pill text-xs font-bold uppercase tracking-wider">
+                            <span className="bg-accent/10 text-accent px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
                                 {collection.audience}
                             </span>
                         )}

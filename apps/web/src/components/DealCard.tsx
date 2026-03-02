@@ -103,7 +103,7 @@ const DealCard = ({ dealData, className = "", variant = "default" }: DealCardPro
             href={`/deals/${deal.slug}`} 
             className={cn("no-underline block h-full", className)}
         >
-            <article className="group relative bg-card rounded-xl overflow-hidden border border-border shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">
+            <article className="group relative bg-card rounded-lg overflow-hidden border border-border shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">
                 {/* Image Section - 4:3 aspect ratio */}
                 <div className="relative aspect-[4/3] overflow-hidden bg-muted">
                     {coverImage ? (

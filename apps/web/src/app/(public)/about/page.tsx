@@ -1,12 +1,20 @@
 import Link from "next/link";
 import { ShieldCheck, Search, Zap, Heart, ArrowRight } from "lucide-react";
-import { allDeals, categories } from "@/data/deals";
+import { fetchAPI } from "@/lib/api";
+
+type ApiCategoryResponse = {
+    id: string;
+    name: string;
+    slug: string;
+};
+
+type CategoryWithCount = ApiCategoryResponse & { dealCount: number };
 
 const steps = [
     {
         icon: Search,
         title: "Browse",
-        description: "Search or browse 30+ verified student perks across software, food, fashion, travel, and more.",
+        description: "Search or browse verified student perks across software, food, fashion, travel, and more.",
     },
     {
         icon: ShieldCheck,
@@ -40,7 +48,7 @@ const faqs = [
     },
     {
         q: "Can I submit a perk I found?",
-        a: "Absolutely! Use our Submit a Perk page to share deals we might have missed. Community contributions help everyone.",
+        a: "Absolutely! We welcome community contributions to help everyone save more.",
     },
     {
         q: "Do these work for international students?",
@@ -53,7 +61,28 @@ export const metadata = {
     description: "Learn how UniPerks works — browse, verify, and claim the best student discounts.",
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+    // Fetch deals count and categories from API
+    const [dealsRes, categoriesRes] = await Promise.all([
+        fetchAPI<{ meta: { total: number } }>("/api/deals?limit=1"),
+        fetchAPI<{ categories: ApiCategoryResponse[] }>("/api/categories?limit=8"),
+    ]);
+
+    const totalDeals = dealsRes.meta?.total || 0;
+    const categories = categoriesRes.categories || [];
+
+    // Fetch deal counts per category
+    const categoriesWithCounts = await Promise.all(
+        categories.map(async (cat) => {
+            try {
+                const catDealsRes = await fetchAPI<{ meta: { total: number } }>(`/api/deals?category=${cat.slug}&limit=1`);
+                return { ...cat, dealCount: catDealsRes.meta?.total || 0 };
+            } catch {
+                return { ...cat, dealCount: 0 };
+            }
+        })
+    );
+
     return (
         <div className="max-w-[1440px] mx-auto bg-background min-h-screen flex flex-col">
             {/* Hero */}
@@ -65,7 +94,7 @@ export default function AboutPage() {
                     We aggregate the best student perks, discounts, and freebies in one place — so you don&apos;t have to hunt for them.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                    Currently tracking <strong className="text-foreground">{allDeals.length}+ perks</strong> across{" "}
+                    Currently tracking <strong className="text-foreground">{totalDeals}+ perks</strong> across{" "}
                     <strong className="text-foreground">{categories.length} categories</strong>.
                 </p>
             </section>
@@ -75,8 +104,8 @@ export default function AboutPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-[1000px] mx-auto">
                     {steps.map((step, i) => (
                         <div key={step.title} className="relative text-center p-6">
-                            <div className="bg-[hsl(65,100%,60%)] w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                <step.icon className="w-6 h-6 text-foreground" />
+                            <div className="bg-primary w-14 h-14 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                <step.icon className="w-6 h-6 text-primary-foreground" />
                             </div>
                             <div className="absolute top-2 left-2 text-6xl font-black text-foreground/5">{i + 1}</div>
                             <h3 className="font-bold text-lg mb-2">{step.title}</h3>
@@ -90,24 +119,21 @@ export default function AboutPage() {
             <section className="px-4 md:px-6 py-12 bg-muted">
                 <h2 className="text-xl font-bold text-center mb-8">Perk Categories</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-w-[800px] mx-auto">
-                    {categories.map((cat) => {
-                        const count = allDeals.filter((d) => d.category === cat).length;
-                        return (
-                            <Link
-                                key={cat}
-                                href={`/browse?cat=${encodeURIComponent(cat)}`}
-                                className="bg-card rounded-xl p-4 text-center no-underline hover:shadow-md transition-shadow border border-border"
-                            >
-                                <p className="font-semibold text-sm text-foreground">{cat}</p>
-                                <p className="text-xs text-muted-foreground mt-1">{count} perks</p>
-                            </Link>
-                        );
-                    })}
+                    {categoriesWithCounts.filter(cat => cat.dealCount > 0).map((cat) => (
+                        <Link
+                            key={cat.id}
+                            href={`/browse?cat=${encodeURIComponent(cat.slug)}`}
+                            className="bg-card rounded-lg p-4 text-center no-underline hover:shadow-md transition-shadow border border-border"
+                        >
+                            <p className="font-semibold text-sm text-foreground">{cat.name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{cat.dealCount} perks</p>
+                        </Link>
+                    ))}
                 </div>
                 <div className="text-center mt-6">
                     <Link
                         href="/browse"
-                        className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-pill text-sm font-medium no-underline hover:opacity-80 transition-opacity"
+                        className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-medium no-underline hover:opacity-80 transition-opacity"
                     >
                         Browse all deals
                         <ArrowRight className="w-4 h-4" />
@@ -120,7 +146,7 @@ export default function AboutPage() {
                 <h2 className="text-xl font-bold text-center mb-8">Frequently Asked Questions</h2>
                 <div className="max-w-[700px] mx-auto space-y-4">
                     {faqs.map((faq) => (
-                        <div key={faq.q} className="bg-card rounded-xl p-5 border border-border">
+                        <div key={faq.q} className="bg-card rounded-lg p-5 border border-border">
                             <h3 className="font-semibold text-sm mb-2">{faq.q}</h3>
                             <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
                         </div>
