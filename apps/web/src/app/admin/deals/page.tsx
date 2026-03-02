@@ -7,14 +7,19 @@ import { fetchAPI } from "@/lib/api";
 import type { ApiBrandResponse } from "@/app/admin/brands/page";
 import type { ApiCategoryResponse } from "@/app/admin/categories/page";
 
+// API returns nested structure: { deal: {...}, brand: {...}, category: {...} }
 export type ApiDealResponse = {
-    id: string;
-    title: string;
-    slug: string;
-    discountType: string;
-    discountValue: string;
-    shortDescription?: string;
-    isActive?: boolean;
+    deal: {
+        id: string;
+        title: string;
+        slug: string;
+        discountType: string;
+        discountValue: number | null;
+        discountLabel: string;
+        shortDescription?: string;
+        isActive: boolean;
+        isFeatured: boolean;
+    };
     brand: Pick<ApiBrandResponse, "id" | "name">;
     category: Pick<ApiCategoryResponse, "id" | "name">;
 };

@@ -36,6 +36,13 @@
       "when": 1771762790718,
       "tag": "0004_legal_rattler",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1772463408759,
+      "tag": "0005_stale_bromley",
+      "breakpoints": true
     }
   ]
 }

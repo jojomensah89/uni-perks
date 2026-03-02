@@ -16,34 +16,64 @@ import {
 
 export const columns: ColumnDef<ApiDealResponse>[] = [
     {
-        accessorKey: "title",
+        accessorKey: "deal.title",
         header: "Title",
-        cell: ({ row }) => (
-            <div className="font-medium">{row.getValue("title")}</div>
-        ),
+        cell: ({ row }) => {
+            const deal = row.original.deal;
+            return (
+                <div>
+                    <div className="font-medium">{deal.title}</div>
+                    <div className="text-xs text-muted-foreground">{deal.slug}</div>
+                </div>
+            );
+        },
     },
     {
         accessorKey: "brand.name",
         header: "Brand",
+        cell: ({ row }) => {
+            const brand = row.original.brand;
+            return <span>{brand?.name || "-"}</span>;
+        },
     },
     {
         accessorKey: "category.name",
         header: "Category",
+        cell: ({ row }) => {
+            const category = row.original.category;
+            return <span>{category?.name || "-"}</span>;
+        },
     },
     {
-        accessorKey: "discountValue",
+        id: "discount",
         header: "Discount",
         cell: ({ row }) => {
-            const data = row.original;
-            return <span>{data.discountValue} {data.discountType}</span>;
-        }
+            const deal = row.original.deal;
+            return (
+                <Badge variant="outline" className="font-mono">
+                    {deal.discountLabel || `${deal.discountValue}${deal.discountType === 'percentage' ? '%' : ''}`}
+                </Badge>
+            );
+        },
     },
     {
-        accessorKey: "isActive",
+        id: "featured",
+        header: "Featured",
+        cell: ({ row }) => {
+            const deal = row.original.deal;
+            return deal.isFeatured ? (
+                <Badge className="bg-primary">Featured</Badge>
+            ) : (
+                <span className="text-muted-foreground">-</span>
+            );
+        },
+    },
+    {
+        id: "status",
         header: "Status",
         cell: ({ row }) => {
-            const isActive = row.getValue("isActive") as boolean;
-            return isActive ? (
+            const deal = row.original.deal;
+            return deal.isActive ? (
                 <Badge variant="default" className="bg-green-600">Active</Badge>
             ) : (
                 <Badge variant="secondary">Inactive</Badge>
@@ -53,7 +83,7 @@ export const columns: ColumnDef<ApiDealResponse>[] = [
     {
         id: "actions",
         cell: ({ row }) => {
-            const deal = row.original;
+            const { deal } = row.original;
 
             return (
                 <DropdownMenu>

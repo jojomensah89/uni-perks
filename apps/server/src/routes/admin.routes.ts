@@ -1,7 +1,7 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware";
 import { BadRequestError } from "../lib/errors";
-import { db, deals, brands, categories, collections, collectionDeals, eq, desc, sql } from "@uni-perks/db";
+import { db, deals, brands, categories, collections, collectionDeals, siteSettings, eq, desc, sql } from "@uni-perks/db";
 
 const app = new OpenAPIHono();
 
@@ -777,6 +777,192 @@ app.openapi(getStatsRoute, async (c) => {
         totalViews: dealStats?.totalViews || 0,
         totalClicks: dealStats?.totalClicks || 0,
     }, 200);
+});
+
+// ===== SETTINGS =====
+
+const updateTickerRoute = createRoute({
+    method: "put",
+    path: "/settings/ticker",
+    tags: ["Admin"],
+    summary: "Update Ticker Messages",
+    description: "Update the site ticker messages (Admin only).",
+    request: {
+        body: {
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        messages: z.array(z.string()),
+                    }),
+                },
+            },
+        },
+    },
+    responses: {
+        200: {
+            description: "Ticker updated",
+            content: { "application/json": { schema: z.object({ success: z.boolean() }) } }
+        },
+    },
+});
+
+app.openapi(updateTickerRoute, async (c) => {
+    const { messages } = await c.req.json();
+
+    const value = JSON.stringify(messages);
+
+    // Upsert the setting
+    const existing = await db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.key, "ticker_messages"))
+        .limit(1);
+
+    if (existing[0]) {
+        await db
+            .update(siteSettings)
+            .set({ value, updatedAt: new Date() })
+            .where(eq(siteSettings.id, existing[0].id));
+    } else {
+        await db.insert(siteSettings).values({
+            key: "ticker_messages",
+            value,
+            description: "Messages displayed in the scrolling ticker banner",
+        });
+    }
+
+    return c.json({ success: true }, 200);
+});
+
+// ===== CATEGORIES CRUD =====
+
+const createCategoryRoute = createRoute({
+    method: "post",
+    path: "/categories",
+    tags: ["Admin"],
+    summary: "Create Category (Admin)",
+    description: "Create a new category (Admin only).",
+    request: {
+        body: {
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        name: z.string(),
+                        slug: z.string(),
+                        icon: z.string().optional(),
+                        color: z.string().optional(),
+                        coverImageUrl: z.string().optional(),
+                        displayOrder: z.number().optional(),
+                        metaTitle: z.string().optional(),
+                        metaDescription: z.string().optional(),
+                    }),
+                },
+            },
+        },
+    },
+    responses: {
+        201: {
+            description: "Category created",
+            content: { "application/json": { schema: z.any() } }
+        },
+        400: {
+            description: "Invalid request",
+            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+        }
+    },
+});
+
+app.openapi(createCategoryRoute, async (c) => {
+    const body = await c.req.json();
+
+    if (!body.name || !body.slug) {
+        throw new BadRequestError("Missing required fields: name, slug");
+    }
+
+    const result = await db.insert(categories).values(body).returning();
+    return c.json(result[0], 201);
+});
+
+const updateCategoryRoute = createRoute({
+    method: "patch",
+    path: "/categories/{id}",
+    tags: ["Admin"],
+    summary: "Update Category (Admin)",
+    description: "Update a category (Admin only).",
+    request: {
+        params: z.object({
+            id: z.string(),
+        }),
+        body: {
+            content: {
+                "application/json": {
+                    schema: z.any(),
+                },
+            },
+        },
+    },
+    responses: {
+        200: {
+            description: "Category updated",
+            content: { "application/json": { schema: z.any() } }
+        },
+        400: {
+            description: "Not found",
+            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+        }
+    },
+});
+
+app.openapi(updateCategoryRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const body = await c.req.json();
+
+    const result = await db
+        .update(categories)
+        .set(body)
+        .where(eq(categories.id, id))
+        .returning();
+
+    if (!result[0]) {
+        throw new BadRequestError("Category not found");
+    }
+
+    return c.json(result[0], 200);
+});
+
+const deleteCategoryRoute = createRoute({
+    method: "delete",
+    path: "/categories/{id}",
+    tags: ["Admin"],
+    summary: "Delete Category (Admin)",
+    description: "Delete a category (Admin only).",
+    request: {
+        params: z.object({
+            id: z.string(),
+        }),
+    },
+    responses: {
+        200: {
+            description: "Category deleted",
+            content: { "application/json": { schema: z.object({ success: z.boolean() }) } }
+        },
+        400: {
+            description: "Not found",
+            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+        }
+    },
+});
+
+app.openapi(deleteCategoryRoute, async (c) => {
+    const { id } = c.req.valid("param");
+
+    const result = await db.delete(categories).where(eq(categories.id, id)).returning();
+
+    if (!result[0]) {
+        throw new BadRequestError("Category not found");
+    }
+
+    return c.json({ success: true }, 200);
 });
 
 export default app;

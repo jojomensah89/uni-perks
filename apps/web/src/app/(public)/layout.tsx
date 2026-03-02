@@ -6,8 +6,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
     return (
         <>
             <div className="sticky top-0 z-50">
-                <TickerBar />
                 <SiteHeader />
+                <TickerBar />
             </div>
             <main>{children}</main>
             <FooterSection />

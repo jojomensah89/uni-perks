@@ -17,6 +17,7 @@ import seedRouter from "./routes/seed.routes";
 import adminRouter from "./routes/admin.routes";
 import uploadRouter from "./routes/upload.routes";
 import imagesRouter from "./routes/images.routes";
+import settingsRouter from "./routes/settings.routes";
 
 const app = new OpenAPIHono();
 
@@ -71,6 +72,7 @@ app.route("/api/seed", seedRouter);
 app.route("/api/admin", adminRouter);
 app.route("/api/upload", uploadRouter);
 app.route("/api/images", imagesRouter);
+app.route("/api/settings", settingsRouter);
 
 // Health check
 app.get("/", (c) => {

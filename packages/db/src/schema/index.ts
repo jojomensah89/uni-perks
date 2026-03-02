@@ -6,6 +6,7 @@ export * from "./collections";
 export * from "./geo";
 export * from "./analytics";
 export * from "./dealSuggestions";
+export * from "./settings";
 export * from "./relations";
 
 
