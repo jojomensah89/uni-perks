@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <style>
+    .bg { fill: #10b981; fill: oklch(0.6136 0.0937 156.6146); }
+    .fg { fill: #ffffff; fill: oklch(0.9878 0.0042 91.4463); }
+  </style>
+  <rect width="256" height="256" rx="48" class="bg" />
+  <text x="50%" y="50%" dy="0.35em" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="160" class="fg">U</text>
+</svg>
