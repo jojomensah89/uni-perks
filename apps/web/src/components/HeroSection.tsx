@@ -1,15 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Search } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAPI } from "@/lib/api";
 
 const HeroSection = () => {
-    const [query, setQuery] = useState("");
-    const router = useRouter();
-
     // Fetch deal count from API
     const { data } = useQuery({
         queryKey: ["deal-count"],
@@ -17,13 +11,6 @@ const HeroSection = () => {
     });
 
     const dealCount = data?.meta?.total || 0;
-
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (query.trim()) {
-            router.push(`/browse?q=${encodeURIComponent(query.trim())}`);
-        }
-    };
 
     return (
         <section className="relative overflow-hidden">
@@ -56,40 +43,9 @@ const HeroSection = () => {
                 </h1>
 
                 {/* Subtitle */}
-                <p className="text-sm md:text-base text-muted-foreground max-w-lg mx-auto mb-8 font-mono">
+                <p className="text-sm md:text-base text-muted-foreground max-w-lg mx-auto font-mono">
                     {dealCount > 0 ? `${dealCount}+` : "Hundreds of"} verified student discounts on software, food, fashion, travel, and more. Stop paying full price.
                 </p>
-
-                {/* Search bar */}
-                <form onSubmit={handleSearch} className="max-w-lg mx-auto relative">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <input
-                        type="text"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search deals... (Spotify, Nike, GitHub...)"
-                        className="w-full bg-muted rounded-full pl-14 pr-28 py-4 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring transition-shadow border border-border"
-                    />
-                    <button
-                        type="submit"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-medium hover:opacity-90 transition-opacity"
-                    >
-                        Search
-                    </button>
-                </form>
-
-                {/* Quick filters */}
-                <div className="flex flex-wrap justify-center gap-2 mt-6">
-                    {["Free", "Software", "Food", "Fashion", "Travel"].map((tag) => (
-                        <button
-                            key={tag}
-                            onClick={() => router.push(`/browse?q=${encodeURIComponent(tag)}`)}
-                            className="bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground px-4 py-2 rounded-full text-xs font-medium transition-colors border border-border/50"
-                        >
-                            {tag}
-                        </button>
-                    ))}
-                </div>
             </div>
         </section>
     );

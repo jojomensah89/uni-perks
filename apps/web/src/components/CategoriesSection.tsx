@@ -57,7 +57,7 @@ const CategoryCarousel = async ({ category }: { category: ApiCategoryResponse })
 const CategoriesSection = async () => {
     // Fetch all categories
     const categoriesRes = await fetchAPI<{ categories: ApiCategoryResponse[] }>("/api/categories");
-    const categories = categoriesRes.categories || [];
+    const categories = (categoriesRes.categories || []).slice(0, 3); // Limit to 3 categories
 
     if (categories.length === 0) return null;
 

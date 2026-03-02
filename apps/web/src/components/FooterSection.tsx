@@ -41,8 +41,8 @@ export const FooterSection = () => {
 
     return (
         <footer className="mt-auto">
-            {/* Newsletter CTA - Purple gradient per spec */}
-            <div className="bg-gradient-to-r from-purple-600 to-purple-800 px-6 md:px-10 py-12 md:py-16 text-center">
+            {/* Newsletter CTA - Green gradient using primary color */}
+            <div className="bg-gradient-to-r from-primary to-primary/80 px-6 md:px-10 py-12 md:py-16 text-center">
                 <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
                     Don&apos;t miss the next drop
                 </h2>

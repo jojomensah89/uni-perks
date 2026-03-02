@@ -73,15 +73,6 @@ const CATEGORY_COLORS: Record<string, string> = {
     "sports-outdoors": "bg-amber-500/20",
 };
 
-// Check if deal is expiring soon (within 7 days)
-function isExpiringSoon(expirationDate: string | null | undefined): boolean {
-    if (!expirationDate) return false;
-    const exp = new Date(expirationDate);
-    const now = new Date();
-    const daysUntilExpiry = (exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-    return daysUntilExpiry > 0 && daysUntilExpiry <= 7;
-}
-
 // Format urgency text
 function getUrgencyText(expirationDate: string | null | undefined): string | null {
     if (!expirationDate) return null;
@@ -100,20 +91,19 @@ const DealCard = ({ dealData, className = "", variant = "default" }: DealCardPro
 
     // Determine cover image source
     const coverImage = getImageUrl(deal.coverImageUrl) || getImageUrl(brand.coverImageUrl);
-    
+
     // Get category color for fallback
     const categoryColor = category.color || CATEGORY_COLORS[category.slug] || "bg-muted";
-    
+
     // Urgency badge logic
     const urgencyText = getUrgencyText(deal.expirationDate);
-    const isExpiring = isExpiringSoon(deal.expirationDate);
 
     return (
         <Link 
             href={`/deals/${deal.slug}`} 
             className={cn("no-underline block h-full", className)}
         >
-            <article className="group relative bg-card rounded-xl overflow-hidden border border-border shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 h-full flex flex-col">
+            <article className="group relative bg-card rounded-xl overflow-hidden border border-border shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">
                 {/* Image Section - 4:3 aspect ratio */}
                 <div className="relative aspect-[4/3] overflow-hidden bg-muted">
                     {coverImage ? (
@@ -143,11 +133,11 @@ const DealCard = ({ dealData, className = "", variant = "default" }: DealCardPro
 
                     {/* Logo Badge - Bottom Left on Image */}
                     {brand.logoUrl && (
-                        <div className="absolute bottom-3 left-3 h-12 w-12 bg-card rounded-lg border border-border shadow-md flex items-center justify-center overflow-hidden">
+                        <div className="absolute bottom-3 left-3 h-12 w-12 md:h-16 md:w-16 bg-card rounded-lg border border-border shadow-md flex items-center justify-center overflow-hidden">
                             <img
                                 src={getImageUrl(brand.logoUrl) || ""}
                                 alt={`${brand.name} logo`}
-                                className="w-8 h-8 object-contain"
+                                className="w-8 h-8 md:w-12 md:h-12 object-contain"
                                 loading="lazy"
                             />
                         </div>
@@ -164,7 +154,7 @@ const DealCard = ({ dealData, className = "", variant = "default" }: DealCardPro
                 </div>
 
                 {/* Content Section - Clean text area */}
-                <CardContent className="p-4 flex-1 flex flex-col gap-1.5">
+                <CardContent className="p-4 md:p-5 flex-1 flex flex-col space-y-2">
                     {/* Discount Label - Bold headline */}
                     <h3 className="text-base font-bold leading-tight text-foreground">
                         {deal.discountLabel}
@@ -200,24 +190,7 @@ const DealCard = ({ dealData, className = "", variant = "default" }: DealCardPro
                         <span className="text-muted-foreground/50">·</span>
                         <span>{category.name}</span>
                     </p>
-
-                    {/* Spacer for flex alignment */}
-                    <div className="flex-1" />
-
-                    {/* Verification method badge */}
-                    <div className="pt-2 border-t border-border/50 mt-2">
-                        <span className="text-[11px] text-muted-foreground capitalize">
-                            {deal.verificationMethod.replace(/_/g, " ")}
-                        </span>
-                    </div>
                 </CardContent>
-
-                {/* Hover overlay with CTA */}
-                <div className="absolute inset-0 bg-primary/90 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
-                    <span className="bg-card text-card-foreground px-6 py-2.5 rounded-full text-sm font-semibold shadow-lg">
-                        Get Deal
-                    </span>
-                </div>
             </article>
         </Link>
     );
