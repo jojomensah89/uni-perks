@@ -9,6 +9,8 @@ export async function fetchAPI<T>(path: string, options?: RequestInit): Promise<
             'Content-Type': 'application/json',
             ...options?.headers,
         },
+        // Include cookies for authentication
+        credentials: 'include',
         // Ensure we don't cache aggressively during dev, or use 'force-cache' for static
         cache: options?.cache || 'no-store',
     });
