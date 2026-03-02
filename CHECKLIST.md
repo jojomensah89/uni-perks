@@ -7,6 +7,7 @@ A comprehensive checklist for setting up, populating, and launching your student
 ## 1. Environment Setup
 
 ### Cloudflare Account
+
 - [ ] Create Cloudflare account (if not existing)
 - [ ] Enable Workers (free tier available)
 - [ ] Enable D1 database
@@ -15,6 +16,7 @@ A comprehensive checklist for setting up, populating, and launching your student
 ### Environment Variables
 
 #### apps/server/.env
+
 ```env
 BETTER_AUTH_SECRET=your-secret-key-min-32-chars
 BETTER_AUTH_URL=http://localhost:3000
@@ -22,27 +24,32 @@ CORS_ORIGIN=http://localhost:3001
 ```
 
 #### apps/web/.env
+
 ```env
 NEXT_PUBLIC_SERVER_URL=http://localhost:3000
 NEXT_PUBLIC_BASE_URL=http://localhost:3001
 ```
 
 ### Local Development
+
 - [ ] Install dependencies: `bun install`
 - [ ] Run development: `bun run dev`
-- [ ] Verify API at http://localhost:3000
-- [ ] Verify Web at http://localhost:3001
+- [ ] Verify API at <http://localhost:3000>
+- [ ] Verify Web at <http://localhost:3001>
+- [ ] use react doctor to fix react issues <[React Doctor](https://github.com/millionco/react-doctor)>
 
 ---
 
 ## 2. Database Setup
 
 ### Schema & Seeding
+
 - [ ] Apply database schema: `bun run db:push`
 - [ ] Seed categories via API: `POST /api/seed` or manual insert
 - [ ] Verify tables exist in D1 console
 
 ### First Admin Account
+
 - [ ] Navigate to `/login`
 - [ ] Create first account (automatically becomes admin)
 - [ ] Verify admin access to `/admin`
@@ -52,6 +59,7 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3001
 ## 3. Content Population
 
 ### Categories to Add
+
 - [ ] Tech & Software
 - [ ] Fashion & Lifestyle  
 - [ ] Food & Delivery
@@ -62,6 +70,7 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3001
 - [ ] Sports & Outdoors
 
 ### Brands to Add (with logos)
+
 - [ ] Nike (upload logo to R2)
 - [ ] Spotify
 - [ ] Adobe
@@ -75,6 +84,7 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3001
 - [ ] Add more brands...
 
 ### Deals to Add (per brand)
+
 - [ ] Verify each deal's claim URL is active
 - [ ] Set discount type, value, and label
 - [ ] Add conditions/terms (JSON array)
@@ -82,6 +92,7 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3001
 - [ ] Add regional availability
 
 ### Collections to Create
+
 - [ ] Student Essentials
 - [ ] Tech for Students
 - [ ] Fashion Finds
@@ -94,6 +105,7 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3001
 ## 4. Affiliate Partnerships
 
 ### Affiliate Networks to Join
+
 - [ ] **Impact** (impact.com) - Nike, Adidas, fashion brands
 - [ ] **Rakuten** (rakutenadvertising.com) - Large retailers
 - [ ] **CJ Affiliate** (cj.com) - Diverse portfolio
@@ -103,12 +115,15 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3001
 - [ ] **PartnerStack** - SaaS/tech tools
 
 ### Student Verification Partners
+
 - [ ] **SheerID** (sheerid.com) - Verification API
 - [ ] **ID.me** - US-focused verification
 - [ ] Consider **UNiDAYS** partner program
 
 ### Brand Outreach Checklist
+
 For each brand you want to partner with:
+
 - [ ] Find brand's affiliate program page (usually `/affiliates` or `/partners`)
 - [ ] Apply to their program via affiliate network
 - [ ] Wait for approval (usually 3-7 days)
@@ -117,6 +132,7 @@ For each brand you want to partner with:
 - [ ] Test link works correctly
 
 ### Outreach Email Template
+
 ```
 Subject: Partnership Inquiry - Uni-Perks Student Discount Platform
 
@@ -147,12 +163,14 @@ Uni-Perks Team
 ## 5. Image Assets
 
 ### Upload to R2
+
 - [ ] Brand logos (PNG/SVG preferred, 200x200px)
 - [ ] Deal cover images (1200x800px or 3:2 ratio)
 - [ ] Category images (1200x600px)
 - [ ] Favicon and social sharing images
 
 ### Naming Convention
+
 ```
 brands/{brand-slug}/logo.png
 brands/{brand-slug}/cover.jpg
@@ -165,6 +183,7 @@ categories/{category-slug}/cover.jpg
 ## 6. SEO & Discovery
 
 ### Technical SEO
+
 - [ ] Verify sitemap at `/sitemap.xml`
 - [ ] Verify robots.txt at `/robots.txt`
 - [ ] Add meta titles/descriptions to all pages
@@ -172,11 +191,13 @@ categories/{category-slug}/cover.jpg
 - [ ] Implement structured data (JSON-LD) for deals
 
 ### LLM Optimization
+
 - [ ] Verify `llms.txt` is accessible at `/llms.txt`
 - [ ] Submit to **llmstxt.site**
 - [ ] Submit to **directory.llmstxt.cloud**
 
 ### Search Console
+
 - [ ] Add site to Google Search Console
 - [ ] Submit sitemap
 - [ ] Verify ownership
@@ -187,6 +208,7 @@ categories/{category-slug}/cover.jpg
 ## 7. Testing & QA
 
 ### Functionality Testing
+
 - [ ] All deal links work and redirect correctly
 - [ ] Search functionality returns relevant results
 - [ ] Category filters work correctly
@@ -195,12 +217,14 @@ categories/{category-slug}/cover.jpg
 - [ ] Analytics tracking records views/clicks
 
 ### Mobile Testing
+
 - [ ] Test on mobile (iOS Safari)
 - [ ] Test on mobile (Android Chrome)
 - [ ] Test on tablet
 - [ ] Verify responsive design
 
 ### Performance
+
 - [ ] Run Lighthouse audit
 - [ ] Check Core Web Vitals
 - [ ] Optimize images (WebP format)
@@ -211,6 +235,7 @@ categories/{category-slug}/cover.jpg
 ## 8. Deployment
 
 ### Pre-Deployment
+
 - [ ] Update environment variables for production
 - [ ] Set `BETTER_AUTH_URL` to production URL
 - [ ] Set `CORS_ORIGIN` to production URL
@@ -218,11 +243,13 @@ categories/{category-slug}/cover.jpg
 - [ ] Configure custom domain in Cloudflare
 
 ### Deploy
+
 - [ ] Run `bun run deploy`
 - [ ] Verify deployment successful
 - [ ] Test production site
 
 ### Post-Deployment
+
 - [ ] Create production admin account
 - [ ] Seed production database
 - [ ] Verify all links work in production
@@ -233,18 +260,21 @@ categories/{category-slug}/cover.jpg
 ## 9. Post-Launch
 
 ### Marketing
+
 - [ ] Announce on social media
 - [ ] Submit to student deal directories
 - [ ] Reach out to university student unions
 - [ ] Create content for student blogs
 
 ### Monitoring
+
 - [ ] Set up Cloudflare analytics
 - [ ] Monitor deal click-through rates
 - [ ] Track most popular deals
 - [ ] Monitor for broken links
 
 ### Maintenance
+
 - [ ] Regular deal verification (weekly)
 - [ ] Remove expired deals
 - [ ] Update discount values as they change
@@ -276,11 +306,11 @@ bun run check-types   # Check all TypeScript
 
 ## Support & Resources
 
-- **Cloudflare Docs**: https://developers.cloudflare.com
-- **Better Auth Docs**: https://www.better-auth.com
-- **Drizzle ORM**: https://orm.drizzle.team
-- **Next.js Docs**: https://nextjs.org/docs
-- **Alchemy (infra)**: https://alchemy.run
+- **Cloudflare Docs**: <https://developers.cloudflare.com>
+- **Better Auth Docs**: <https://www.better-auth.com>
+- **Drizzle ORM**: <https://orm.drizzle.team>
+- **Next.js Docs**: <https://nextjs.org/docs>
+- **Alchemy (infra)**: <https://alchemy.run>
 
 ---
 
