@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { Search } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import DealCardLink, { type ApiDealResponse } from "@/components/DealCardLink";
+import DealCard, { type ApiDealResponse } from "@/components/DealCard";
 import { fetchAPI } from "@/lib/api";
 
 type ApiCategoryResponse = {
@@ -148,12 +148,11 @@ function BrowseContent() {
                             {deals.length} deal{deals.length !== 1 ? "s" : ""} found
                             {search.trim() && ` for "${search}"`}
                         </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {deals.map((dealWrapper) => (
-                                <DealCardLink
+                                <DealCard
                                     key={dealWrapper.deal.id}
                                     dealData={dealWrapper}
-                                    className="h-[300px]"
                                 />
                             ))}
                         </div>

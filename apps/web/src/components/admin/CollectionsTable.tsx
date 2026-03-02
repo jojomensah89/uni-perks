@@ -115,14 +115,12 @@ export function CollectionsTable({ data, onEdit }: CollectionsTableProps) {
                             </TableCell>
                             <TableCell>
                                 <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                            <MoreHorizontal className="w-4 h-4" />
-                                        </Button>
+                                    <DropdownMenuTrigger className="p-2 hover:bg-muted rounded-md">
+                                        <MoreHorizontal className="w-4 h-4" />
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem asChild>
-                                            <Link href={`/collections/${collection.slug}`}>
+                                        <DropdownMenuItem>
+                                            <Link href={`/collections/${collection.slug}` as any} className="flex items-center">
                                                 <Eye className="w-4 h-4 mr-2" />
                                                 View
                                             </Link>

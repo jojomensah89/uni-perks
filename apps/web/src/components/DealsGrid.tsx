@@ -1,5 +1,5 @@
 import CuratedCarousel, { type ApiCollectionResponse } from "./CuratedCarousel";
-import DealCardLink, { type ApiDealResponse } from "./DealCardLink";
+import DealCard, { type ApiDealResponse } from "./DealCard";
 import { fetchAPI } from "@/lib/api";
 
 const DealsGrid = async () => {
@@ -13,19 +13,35 @@ const DealsGrid = async () => {
     const featuredDeals = featuredRes.deals || [];
 
     return (
-        <main className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-background">
-            <CuratedCarousel collections={collections} />
-            {featuredDeals.map((dealWrapper) => (
-                <DealCardLink key={dealWrapper.deal.id} dealData={dealWrapper} className="h-[300px]" />
-            ))}
-
-            {/* If there are no featured deals at all, show a fallback message */}
-            {featuredDeals.length === 0 && (
-                <div className="col-span-1 sm:col-span-2 lg:col-span-2 flex items-center justify-center p-6 text-muted-foreground border border-dashed rounded-lg bg-muted/50">
-                    No active featured deals found.
+        <section className="py-12 px-4 md:px-6">
+            <div className="max-w-7xl mx-auto">
+                <h2 className="text-2xl font-bold mb-6">Curated & Featured</h2>
+                
+                {/* Top Row: Carousel (2 cols) + 2 DealCards */}
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                    <div className="lg:col-span-2">
+                        <CuratedCarousel collections={collections} />
+                    </div>
+                    {featuredDeals.slice(0, 2).map((dealWrapper) => (
+                        <DealCard key={dealWrapper.deal.id} dealData={dealWrapper} />
+                    ))}
                 </div>
-            )}
-        </main>
+
+                {/* Bottom Row: 4 DealCards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {featuredDeals.slice(2, 6).map((dealWrapper) => (
+                        <DealCard key={dealWrapper.deal.id} dealData={dealWrapper} />
+                    ))}
+                </div>
+
+                {/* Fallback if no deals */}
+                {featuredDeals.length === 0 && (
+                    <div className="col-span-full flex items-center justify-center p-6 text-muted-foreground border border-dashed rounded-lg bg-muted/50">
+                        No active featured deals found.
+                    </div>
+                )}
+            </div>
+        </section>
     );
 };
 

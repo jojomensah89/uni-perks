@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { fetchAPI } from "@/lib/api";
-import DealCardLink, { type ApiDealResponse } from "@/components/DealCardLink";
+import DealCard, { type ApiDealResponse } from "@/components/DealCard";
 import { ShieldCheck, ExternalLink, Globe } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -129,12 +129,11 @@ export default async function BrandPage({ params }: BrandPageProps) {
                                 <p className="text-muted-foreground">No active deals for this brand.</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 {deals.map((dealWrapper) => (
-                                    <DealCardLink
+                                    <DealCard
                                         key={dealWrapper.deal.id}
                                         dealData={dealWrapper}
-                                        className="h-[280px]"
                                     />
                                 ))}
                             </div>

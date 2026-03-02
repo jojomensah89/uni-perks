@@ -10,7 +10,7 @@ import {
     CarouselPrevious,
 } from "@/components/ui/carousel";
 
-import type { ApiDealResponse } from "./DealCardLink";
+import type { ApiDealResponse } from "./DealCard";
 
 const decorations: Record<string, React.ReactNode> = {
     wave: (

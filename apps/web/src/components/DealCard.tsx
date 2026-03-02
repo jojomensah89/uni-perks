@@ -1,128 +1,226 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import { Badge } from '@/components/ui/badge';
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Clock, ShieldCheck } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-interface DealCardProps {
+// API response type - matches the shape returned by deal.repository.ts
+export interface ApiDealResponse {
     deal: {
         id: string;
         slug: string;
         title: string;
         shortDescription: string;
         longDescription?: string;
+        discountType?: string;
         discountLabel: string;
-        brand: {
-            name: string;
-            logoUrl?: string;
-        };
-        category?: {
-            name: string;
-            slug: string;
-        };
-        tags?: Array<{ id: string; name: string }>;
-        coverImageUrl?: string;
+        discountValue?: number | null;
+        originalPrice?: number | null;
+        studentPrice?: number | null;
+        currency?: string | null;
+        verificationMethod: string;
+        claimUrl: string;
+        coverImageUrl?: string | null;
+        isFeatured?: boolean | null;
+        isActive?: boolean | null;
+        expirationDate?: string | null;
+        howToRedeem?: string | null;
+        conditions?: string | null;
     };
-    className?: string;
+    brand: {
+        id: string;
+        name: string;
+        slug?: string;
+        logoUrl?: string | null;
+        coverImageUrl?: string | null;
+    };
+    category: {
+        id: string;
+        name: string;
+        slug: string;
+        color?: string | null;
+    };
 }
 
-export function DealCard({ deal, className = '' }: DealCardProps) {
-    const imageUrl = deal.coverImageUrl || deal.brand.logoUrl || '/placeholder-deal.jpg';
-    const altText = `${deal.brand.name} student discount - ${deal.discountLabel}`;
+interface DealCardProps {
+    dealData: ApiDealResponse;
+    className?: string;
+    variant?: "default" | "compact";
+}
+
+// Helper to get image URL - uses R2 serving route for keys, or returns full URLs as-is
+function getImageUrl(keyOrUrl: string | null | undefined): string | undefined {
+    if (!keyOrUrl) return undefined;
+    // If it's already a full URL, return as-is
+    if (keyOrUrl.startsWith("http://") || keyOrUrl.startsWith("https://")) {
+        return keyOrUrl;
+    }
+    // Otherwise, construct URL via our images API route
+    const apiBase = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
+    return `${apiBase}/api/images/${keyOrUrl}`;
+}
+
+// Category color mapping for fallback backgrounds
+const CATEGORY_COLORS: Record<string, string> = {
+    "tech-software": "bg-blue-500/20",
+    "streaming": "bg-red-500/20",
+    "food-delivery": "bg-orange-500/20",
+    "fashion": "bg-pink-500/20",
+    "travel": "bg-green-500/20",
+    "education": "bg-purple-500/20",
+    "health-wellness": "bg-teal-500/20",
+    "entertainment": "bg-indigo-500/20",
+    "sports-outdoors": "bg-amber-500/20",
+};
+
+// Check if deal is expiring soon (within 7 days)
+function isExpiringSoon(expirationDate: string | null | undefined): boolean {
+    if (!expirationDate) return false;
+    const exp = new Date(expirationDate);
+    const now = new Date();
+    const daysUntilExpiry = (exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+    return daysUntilExpiry > 0 && daysUntilExpiry <= 7;
+}
+
+// Format urgency text
+function getUrgencyText(expirationDate: string | null | undefined): string | null {
+    if (!expirationDate) return null;
+    const exp = new Date(expirationDate);
+    const now = new Date();
+    const daysUntilExpiry = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilExpiry <= 0) return "Expired";
+    if (daysUntilExpiry === 1) return "ENDS TODAY";
+    if (daysUntilExpiry <= 3) return `ENDS IN ${daysUntilExpiry} DAYS`;
+    return null;
+}
+
+const DealCard = ({ dealData, className = "", variant = "default" }: DealCardProps) => {
+    const { deal, brand, category } = dealData;
+
+    // Determine cover image source
+    const coverImage = getImageUrl(deal.coverImageUrl) || getImageUrl(brand.coverImageUrl);
+    
+    // Get category color for fallback
+    const categoryColor = category.color || CATEGORY_COLORS[category.slug] || "bg-muted";
+    
+    // Urgency badge logic
+    const urgencyText = getUrgencyText(deal.expirationDate);
+    const isExpiring = isExpiringSoon(deal.expirationDate);
 
     return (
-        <Link
-            href={`/deals/${deal.slug}`}
-            className={`no-underline ${className}`}
-            aria-label={`View ${deal.title} - ${deal.discountLabel}`}
+        <Link 
+            href={`/deals/${deal.slug}`} 
+            className={cn("no-underline block h-full", className)}
         >
-            <article className="group relative rounded-lg overflow-hidden cursor-pointer transition-all duration-500 border-0 shadow-md hover:shadow-2xl hover:z-10 h-full">
-                {/* Background image */}
-                <div className="absolute inset-0">
-                    <Image
-                        src={imageUrl}
-                        alt={altText}
-                        fill
-                        className="object-cover transition-transform duration-700 group-hover:scale-110"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                        loading="lazy"
-                    />
-                </div>
-
-                {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-75 group-hover:opacity-85 transition-opacity duration-500" />
-
-                {/* Content */}
-                <div className="relative z-10 flex flex-col h-full p-5 text-white">
-                    {/* Tags */}
-                    {deal.tags && deal.tags.length > 0 && (
-                        <div className="flex gap-1.5 flex-wrap mb-auto" role="list">
-                            {deal.tags.slice(0, 3).map((tag) => (
-                                <Badge
-                                    key={tag.id}
-                                    variant="secondary"
-                                    className="rounded-full px-3 py-1 text-[0.7rem] font-medium uppercase border border-white/40 text-white bg-white/10 backdrop-blur-sm"
-                                >
-                                    {tag.name}
-                                </Badge>
-                            ))}
+            <article className="group relative bg-card rounded-xl overflow-hidden border border-border shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 h-full flex flex-col">
+                {/* Image Section - 4:3 aspect ratio */}
+                <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                    {coverImage ? (
+                        <img
+                            src={coverImage}
+                            alt={`${brand.name} - ${deal.discountLabel}`}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            loading="lazy"
+                        />
+                    ) : (
+                        // Fallback with brand initial or logo
+                        <div className={cn("w-full h-full flex items-center justify-center", categoryColor)}>
+                            {brand.logoUrl ? (
+                                <img
+                                    src={getImageUrl(brand.logoUrl) || ""}
+                                    alt={brand.name}
+                                    className="w-16 h-16 object-contain opacity-50"
+                                    loading="lazy"
+                                />
+                            ) : (
+                                <span className="text-4xl font-bold text-foreground/30">
+                                    {brand.name.charAt(0)}
+                                </span>
+                            )}
                         </div>
                     )}
 
-                    {/* Bottom content */}
-                    <div className="mt-auto">
-                        {/* Discount badge */}
-                        <div className="inline-block bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide mb-3 border border-white/30">
-                            {deal.discountLabel}
+                    {/* Logo Badge - Bottom Left on Image */}
+                    {brand.logoUrl && (
+                        <div className="absolute bottom-3 left-3 h-12 w-12 bg-card rounded-lg border border-border shadow-md flex items-center justify-center overflow-hidden">
+                            <img
+                                src={getImageUrl(brand.logoUrl) || ""}
+                                alt={`${brand.name} logo`}
+                                className="w-8 h-8 object-contain"
+                                loading="lazy"
+                            />
                         </div>
+                    )}
 
-                        {/* Logo + Brand */}
-                        <div className="flex items-center gap-2.5 mb-1">
-                            {deal.brand.logoUrl && (
-                                <div className="w-7 h-7 relative flex-shrink-0">
-                                    <Image
-                                        src={deal.brand.logoUrl}
-                                        alt={`${deal.brand.name} logo`}
-                                        fill
-                                        className="object-contain"
-                                        sizes="28px"
-                                    />
-                                </div>
-                            )}
-                            <h3 className="text-xl font-bold leading-tight">{deal.brand.name}</h3>
+                    {/* Featured Badge - Top Right */}
+                    {deal.isFeatured && (
+                        <div className="absolute top-3 right-3">
+                            <Badge variant="default" className="text-[10px] font-bold uppercase tracking-wide">
+                                Featured
+                            </Badge>
                         </div>
-                        <p className="text-sm opacity-90 line-clamp-2">{deal.shortDescription}</p>
-                    </div>
+                    )}
                 </div>
 
-                {/* Hover reveal panel - slides up from bottom */}
-                <div className="absolute bottom-0 left-0 right-0 bg-card text-card-foreground translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out z-20 p-4 rounded-b-lg border-0">
-                    <div className="flex items-center gap-2 mb-2">
-                        {deal.brand.logoUrl && (
-                            <div className="w-5 h-5 relative flex-shrink-0">
-                                <Image
-                                    src={deal.brand.logoUrl}
-                                    alt={`${deal.brand.name} logo`}
-                                    fill
-                                    className="object-contain"
-                                    sizes="20px"
-                                />
-                            </div>
-                        )}
-                        <span className="text-sm font-bold">{deal.brand.name}</span>
-                        <span className="ml-auto text-xs font-semibold text-muted-foreground uppercase">
-                            {deal.discountLabel}
+                {/* Content Section - Clean text area */}
+                <CardContent className="p-4 flex-1 flex flex-col gap-1.5">
+                    {/* Discount Label - Bold headline */}
+                    <h3 className="text-base font-bold leading-tight text-foreground">
+                        {deal.discountLabel}
+                    </h3>
+
+                    {/* Urgency Badge - In text area (per spec) */}
+                    {urgencyText && (
+                        <Badge 
+                            variant="destructive" 
+                            className={cn(
+                                "w-fit gap-1 text-[11px] font-semibold uppercase tracking-wide",
+                                urgencyText === "Expired" && "bg-muted-foreground"
+                            )}
+                        >
+                            <Clock className="h-3 w-3" />
+                            {urgencyText}
+                        </Badge>
+                    )}
+
+                    {/* Brand Name */}
+                    <p className="text-sm font-semibold text-foreground/90">
+                        {brand.name}
+                    </p>
+
+                    {/* Category + Availability Tags */}
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                        <span className="inline-flex items-center gap-1">
+                            <ShieldCheck className="h-3 w-3 text-primary" />
+                            For students
+                        </span>
+                        <span className="text-muted-foreground/50">·</span>
+                        <span>Online</span>
+                        <span className="text-muted-foreground/50">·</span>
+                        <span>{category.name}</span>
+                    </p>
+
+                    {/* Spacer for flex alignment */}
+                    <div className="flex-1" />
+
+                    {/* Verification method badge */}
+                    <div className="pt-2 border-t border-border/50 mt-2">
+                        <span className="text-[11px] text-muted-foreground capitalize">
+                            {deal.verificationMethod.replace(/_/g, " ")}
                         </span>
                     </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed mb-3 line-clamp-3">
-                        {deal.longDescription || deal.shortDescription}
-                    </p>
-                    <div className="inline-flex items-center gap-1 text-sm font-semibold text-foreground">
-                        View details
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                        </svg>
-                    </div>
+                </CardContent>
+
+                {/* Hover overlay with CTA */}
+                <div className="absolute inset-0 bg-primary/90 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
+                    <span className="bg-card text-card-foreground px-6 py-2.5 rounded-full text-sm font-semibold shadow-lg">
+                        Get Deal
+                    </span>
                 </div>
             </article>
         </Link>
     );
-}
+};
+
+export default DealCard;
