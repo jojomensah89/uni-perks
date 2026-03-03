@@ -115,7 +115,7 @@ const CuratedCarousel = ({ collections = [] }: { collections: ApiCollectionRespo
             </CarouselContent>
 
             {/* Navigation controls */}
-            <div className="absolute right-6 bottom-6 z-30 hidden sm:flex gap-2">
+            <div className="absolute right-6 bottom-10 z-30 hidden sm:flex gap-2">
                 <CarouselPrevious className="relative inset-auto translate-x-0 translate-y-0 h-10 w-10 bg-black/30 text-white border-white/20 hover:bg-black/60 hover:text-white backdrop-blur-sm" />
                 <CarouselNext className="relative inset-auto translate-x-0 translate-y-0 h-10 w-10 bg-black/30 text-white border-white/20 hover:bg-black/60 hover:text-white backdrop-blur-sm" />
             </div>

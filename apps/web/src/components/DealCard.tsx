@@ -142,23 +142,21 @@ const DealCard = ({ dealData, className = "", variant = "default" }: DealCardPro
                             />
                         </div>
                     )}
-
-                    {/* Featured Badge - Top Right */}
-                    {deal.isFeatured && (
-                        <div className="absolute top-3 right-3">
-                            <Badge variant="default" className="text-[10px] font-bold uppercase tracking-wide">
-                                Featured
-                            </Badge>
-                        </div>
-                    )}
                 </div>
 
                 {/* Content Section - Clean text area */}
                 <CardContent className="p-4 md:p-5 flex-1 flex flex-col space-y-2">
-                    {/* Discount Label - Bold headline */}
-                    <h3 className="text-base font-bold leading-tight text-foreground">
-                        {deal.discountLabel}
-                    </h3>
+                    {/* Discount Label + Featured Badge */}
+                    <div className="flex items-center justify-between gap-2">
+                        <h3 className="text-base font-bold leading-tight text-foreground">
+                            {deal.discountLabel}
+                        </h3>
+                        {deal.isFeatured && (
+                            <Badge variant="default" className="text-[10px] font-bold uppercase tracking-wide shrink-0">
+                                Featured
+                            </Badge>
+                        )}
+                    </div>
 
                     {/* Urgency Badge - In text area (per spec) */}
                     {urgencyText && (

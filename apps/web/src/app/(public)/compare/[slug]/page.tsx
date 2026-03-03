@@ -1,6 +1,21 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { fetchAPI } from "@/lib/api";
 import DealCard, { type ApiDealResponse } from "@/components/DealCard";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
 import type { Metadata } from "next";
 import {
     generateComparisonContent,
@@ -257,13 +272,21 @@ export default async function ComparisonPage({ params }: ComparisonPageProps) {
             {/* Hero */}
             <div className="bg-muted px-4 md:px-8 py-12 md:py-16 border-b border-border">
                 <div className="max-w-4xl">
-                    <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                        <a href="/" className="hover:text-foreground">Home</a>
-                        <span>/</span>
-                        <a href={`/student-discounts/${category?.slug}`} className="hover:text-foreground">{category?.name}</a>
-                        <span>/</span>
-                        <span className="text-foreground">{brandA.name} vs {brandB.name}</span>
-                    </nav>
+                    <Breadcrumb className="mb-4">
+                        <BreadcrumbList>
+                            <BreadcrumbItem>
+                                <BreadcrumbLink render={<Link href="/" />}>Home</BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbLink render={<Link href={`/student-discounts/${category?.slug ?? ''}` as any} />}>{category?.name}</BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbPage>{brandA.name} vs {brandB.name}</BreadcrumbPage>
+                            </BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
                     <h1 className="text-[clamp(2rem,4vw,3.5rem)] font-black leading-[1.1] tracking-tight mb-4">
                         {content.h1}
                     </h1>
@@ -335,7 +358,7 @@ export default async function ComparisonPage({ params }: ComparisonPageProps) {
                     </section>
 
                     {/* Deal Cards */}
-                    <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <section className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-visible">
                         <div>
                             <h3 className="font-bold mb-4">{brandA.name} Deal</h3>
                             {dealA && <DealCard dealData={dealA} />}
@@ -347,22 +370,26 @@ export default async function ComparisonPage({ params }: ComparisonPageProps) {
                     </section>
 
                     {/* FAQs */}
-                    <section className="bg-card rounded-xl p-6 border border-border">
+                    <section className="bg-card rounded-xl p-6 border border-border relative z-10">
                         <h2 className="text-xl font-bold mb-6">Frequently Asked Questions</h2>
-                        <div className="space-y-4">
+                        <Accordion multiple className="w-full">
                             {content.faqs.map((faq, i) => (
-                                <div key={i} className="border-b border-border pb-4 last:border-0">
-                                    <h3 className="font-semibold text-foreground mb-2">{faq.question}</h3>
-                                    <p className="text-sm text-muted-foreground">{faq.answer}</p>
-                                </div>
+                                <AccordionItem key={i} value={`faq-${i}`}>
+                                    <AccordionTrigger className="text-left font-semibold">
+                                        {faq.question}
+                                    </AccordionTrigger>
+                                    <AccordionContent className="text-muted-foreground">
+                                        {faq.answer}
+                                    </AccordionContent>
+                                </AccordionItem>
                             ))}
-                        </div>
+                        </Accordion>
                     </section>
                 </div>
 
                 {/* Sidebar */}
                 <aside className="space-y-6">
-                    <div className="bg-card rounded-xl p-6 border border-border sticky top-6">
+                    <div className="bg-card rounded-xl p-6 border border-border sticky top-[5.5rem]">
                         <h3 className="font-bold mb-4">Related Comparisons</h3>
                         <nav className="space-y-2">
                             {internalLinks.map((link, i) => (

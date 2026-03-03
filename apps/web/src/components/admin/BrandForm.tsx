@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 import { fetchAPI } from "@/lib/api";
+import { ImageUpload } from "./ImageUpload";
 
 interface BrandFormProps {
     onSuccess?: () => void;
@@ -199,31 +200,23 @@ export function BrandForm({ onSuccess }: BrandFormProps) {
                     <div className="grid grid-cols-2 gap-4">
                         <form.Field name="logoUrl">
                             {(field) => (
-                                <div className="grid gap-2">
-                                    <Label htmlFor={field.name}>Logo URL</Label>
-                                    <Input
-                                        id={field.name}
-                                        type="url"
-                                        value={field.state.value}
-                                        onChange={(e) => field.handleChange(e.target.value)}
-                                        placeholder="https://... or R2 key"
-                                    />
-                                </div>
+                                <ImageUpload
+                                    label="Logo"
+                                    value={field.state.value}
+                                    onChange={(key) => field.handleChange(key)}
+                                    folder="brands/logos"
+                                />
                             )}
                         </form.Field>
 
                         <form.Field name="coverImageUrl">
                             {(field) => (
-                                <div className="grid gap-2">
-                                    <Label htmlFor={field.name}>Cover Image URL</Label>
-                                    <Input
-                                        id={field.name}
-                                        type="url"
-                                        value={field.state.value}
-                                        onChange={(e) => field.handleChange(e.target.value)}
-                                        placeholder="https://... or R2 key"
-                                    />
-                                </div>
+                                <ImageUpload
+                                    label="Cover Image"
+                                    value={field.state.value}
+                                    onChange={(key) => field.handleChange(key)}
+                                    folder="brands/covers"
+                                />
                             )}
                         </form.Field>
                     </div>

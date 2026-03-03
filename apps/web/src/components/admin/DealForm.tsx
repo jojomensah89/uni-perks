@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 import { fetchAPI } from "@/lib/api";
+import { ImageUpload } from "./ImageUpload";
 import type { ApiBrandResponse } from "@/app/admin/brands/page";
 import type { ApiCategoryResponse } from "@/app/admin/categories/page";
 
@@ -268,16 +269,12 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
 
                             <form.Field name="coverImageUrl">
                                 {(field) => (
-                                    <div className="grid gap-2">
-                                        <Label htmlFor={field.name}>Cover Image URL</Label>
-                                        <Input
-                                            id={field.name}
-                                            type="url"
-                                            value={field.state.value}
-                                            onChange={(e) => field.handleChange(e.target.value)}
-                                            placeholder="https://... or R2 key"
-                                        />
-                                    </div>
+                                    <ImageUpload
+                                        label="Cover Image"
+                                        value={field.state.value}
+                                        onChange={(key) => field.handleChange(key)}
+                                        folder="deals"
+                                    />
                                 )}
                             </form.Field>
 
