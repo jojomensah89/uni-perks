@@ -5,8 +5,15 @@ import { useState } from "react";
 import { fetchAPI } from "@/lib/api";
 import { CollectionsTable } from "@/components/admin/CollectionsTable";
 import { CollectionForm } from "@/components/admin/CollectionForm";
+import { CollectionDealsManager } from "@/components/admin/CollectionDealsManager";
 import { Plus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet";
 
 export type ApiCollectionResponse = {
     id: string;
@@ -24,6 +31,8 @@ export default function AdminCollectionsPage() {
     const queryClient = useQueryClient();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingCollection, setEditingCollection] = useState<ApiCollectionResponse | null>(null);
+    const [isDealsManagerOpen, setIsDealsManagerOpen] = useState(false);
+    const [managingDealsFor, setManagingDealsFor] = useState<ApiCollectionResponse | null>(null);
 
     const collectionsQuery = useQuery({
         queryKey: ["admin_collections"],
@@ -52,6 +61,16 @@ export default function AdminCollectionsPage() {
     const handleFormSuccess = () => {
         handleFormClose();
         queryClient.invalidateQueries({ queryKey: ["admin_collections"] });
+    };
+
+    const handleManageDeals = (collection: ApiCollectionResponse) => {
+        setManagingDealsFor(collection);
+        setIsDealsManagerOpen(true);
+    };
+
+    const handleDealsManagerClose = () => {
+        setIsDealsManagerOpen(false);
+        setManagingDealsFor(null);
     };
 
     if (isLoading) {
@@ -93,6 +112,7 @@ export default function AdminCollectionsPage() {
             <CollectionsTable
                 data={collections}
                 onEdit={handleEdit}
+                onManageDeals={handleManageDeals}
             />
 
             <CollectionForm
@@ -101,6 +121,20 @@ export default function AdminCollectionsPage() {
                 onSuccess={handleFormSuccess}
                 collection={editingCollection}
             />
+
+            <Sheet open={isDealsManagerOpen} onOpenChange={handleDealsManagerClose}>
+                <SheetContent className="w-full sm:max-w-2xl p-0" side="right">
+                    <SheetHeader className="sr-only">
+                        <SheetTitle>Manage Collection Deals</SheetTitle>
+                    </SheetHeader>
+                    {managingDealsFor && (
+                        <CollectionDealsManager
+                            collection={managingDealsFor}
+                            onClose={handleDealsManagerClose}
+                        />
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
     );
 }

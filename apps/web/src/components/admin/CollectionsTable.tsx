@@ -18,7 +18,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Trash2, Eye } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Eye, ListPlus } from "lucide-react";
 import { fetchAPI } from "@/lib/api";
 import type { ApiCollectionResponse } from "@/app/admin/collections/page";
 import Link from "next/link";
@@ -26,9 +26,10 @@ import Link from "next/link";
 interface CollectionsTableProps {
     data: ApiCollectionResponse[];
     onEdit: (collection: ApiCollectionResponse) => void;
+    onManageDeals: (collection: ApiCollectionResponse) => void;
 }
 
-export function CollectionsTable({ data, onEdit }: CollectionsTableProps) {
+export function CollectionsTable({ data, onEdit, onManageDeals }: CollectionsTableProps) {
     const queryClient = useQueryClient();
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -128,6 +129,10 @@ export function CollectionsTable({ data, onEdit }: CollectionsTableProps) {
                                         <DropdownMenuItem onClick={() => onEdit(collection)}>
                                             <Pencil className="w-4 h-4 mr-2" />
                                             Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => onManageDeals(collection)}>
+                                            <ListPlus className="w-4 h-4 mr-2" />
+                                            Manage Deals
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
                                             onClick={() => handleDelete(collection.id)}
