@@ -169,3 +169,149 @@ export function generateHomeMetadata(): Metadata {
         },
     };
 }
+
+// ===== PSEO METADATA GENERATORS =====
+
+export function generateCurationMetadata(params: {
+    categoryName: string;
+    categorySlug: string;
+    dealCount: number;
+}): Metadata {
+    const { categoryName, categorySlug, dealCount } = params;
+    const title = `Best ${categoryName} Student Discounts | ${SITE_NAME}`;
+    const description = `Discover the top ${dealCount} student discounts on ${categoryName.toLowerCase()} products and services. Verified deals updated regularly.`;
+
+    return {
+        title,
+        description,
+        openGraph: {
+            title: `Best ${categoryName} Student Discounts`,
+            description,
+            images: [{ url: `${SITE_URL}/og-default.png`, width: 1200, height: 630 }],
+            type: 'website',
+            siteName: SITE_NAME,
+            url: `${SITE_URL}/student-discounts/${categorySlug}`,
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: `Best ${categoryName} Student Discounts`,
+            description,
+        },
+        alternates: {
+            canonical: `${SITE_URL}/student-discounts/${categorySlug}`,
+        },
+    };
+}
+
+export function generateLocationMetadata(params: {
+    regionName: string;
+    regionCode: string;
+    dealCount: number;
+    categorySlug?: string;
+    categoryName?: string;
+}): Metadata {
+    const { regionName, regionCode, dealCount, categorySlug, categoryName } = params;
+
+    let title: string;
+    let description: string;
+    let url: string;
+
+    if (categorySlug && categoryName) {
+        title = `${categoryName} Student Discounts in ${regionName} | ${SITE_NAME}`;
+        description = `Find ${dealCount} verified ${categoryName.toLowerCase()} student discounts available in ${regionName}.`;
+        url = `${SITE_URL}/student-discounts/${categorySlug}/in/${regionCode.toLowerCase()}`;
+    } else {
+        title = `Student Discounts in ${regionName} | ${SITE_NAME}`;
+        description = `Find ${dealCount} verified student discounts available for students in ${regionName}. Tech, entertainment, food, and more.`;
+        url = `${SITE_URL}/student-discounts/in/${regionCode.toLowerCase()}`;
+    }
+
+    return {
+        title,
+        description,
+        openGraph: {
+            title,
+            description,
+            images: [{ url: `${SITE_URL}/og-default.png`, width: 1200, height: 630 }],
+            type: 'website',
+            siteName: SITE_NAME,
+            url,
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title,
+            description,
+        },
+        alternates: {
+            canonical: url,
+        },
+    };
+}
+
+export function generateComparisonMetadata(params: {
+    brandAName: string;
+    brandBName: string;
+    brandASlug: string;
+    brandBSlug: string;
+    categoryName: string;
+}): Metadata {
+    const { brandAName, brandBName, brandASlug, brandBSlug, categoryName } = params;
+    const title = `${brandAName} vs ${brandBName} Student Discount Comparison | ${SITE_NAME}`;
+    const description = `Compare student discounts from ${brandAName} and ${brandBName}. Side-by-side comparison of discounts, prices, verification, and more.`;
+    const comparisonSlug = [brandASlug, brandBSlug].sort().join('-vs-');
+    const url = `${SITE_URL}/compare/${comparisonSlug}`;
+
+    return {
+        title,
+        description,
+        openGraph: {
+            title: `${brandAName} vs ${brandBName} Student Discount`,
+            description,
+            images: [{ url: `${SITE_URL}/og-default.png`, width: 1200, height: 630 }],
+            type: 'website',
+            siteName: SITE_NAME,
+            url,
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: `${brandAName} vs ${brandBName} Student Discount`,
+            description,
+        },
+        alternates: {
+            canonical: url,
+        },
+    };
+}
+
+export function generatePersonaMetadata(params: {
+    personaName: string;
+    personaSlug: string;
+    description?: string;
+    dealCount: number;
+}): Metadata {
+    const { personaName, personaSlug, description, dealCount } = params;
+    const title = `Best Student Discounts for ${personaName} | ${SITE_NAME}`;
+    const metaDescription = description || `Curated ${dealCount} student discounts specifically chosen for ${personaName}.`;
+    const url = `${SITE_URL}/for/${personaSlug}`;
+
+    return {
+        title,
+        description: metaDescription,
+        openGraph: {
+            title: `Student Discounts for ${personaName}`,
+            description: metaDescription,
+            images: [{ url: `${SITE_URL}/og-default.png`, width: 1200, height: 630 }],
+            type: 'website',
+            siteName: SITE_NAME,
+            url,
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: `Student Discounts for ${personaName}`,
+            description: metaDescription,
+        },
+        alternates: {
+            canonical: url,
+        },
+    };
+}

@@ -1,0 +1,261 @@
+import { notFound } from "next/navigation";
+import { fetchAPI } from "@/lib/api";
+import DealCard, { type ApiDealResponse } from "@/components/DealCard";
+import type { Metadata } from "next";
+import {
+    generateLocationContent,
+    type RegionInfo,
+    type CategoryInfo,
+} from "@/lib/pseo/templates";
+import {
+    generateLocationSchema,
+    generateFaqSchema,
+    generatePseoBreadcrumbSchema,
+    type DealForSchema,
+} from "@/lib/pseo/schema-markup";
+import {
+    generateLocationInternalLinks,
+} from "@/lib/pseo/internal-links";
+import { validatePageGeneration } from "@/lib/pseo/validators";
+
+export const revalidate = 3600; // ISR: revalidate every hour
+
+interface LocationPageProps {
+    params: Promise<{ regionCode: string }>;
+}
+
+export async function generateMetadata({ params }: LocationPageProps): Promise<Metadata> {
+    const { regionCode } = await params;
+    const upperCode = regionCode.toUpperCase();
+
+    try {
+        const data = await fetchAPI<{ regions: RegionInfo[] }>("/api/geo/regions", { cache: 'force-cache' });
+        const region = data?.regions?.find(r => r.code === upperCode);
+        
+        if (!region) return { title: "Region Not Found" };
+
+        return {
+            title: `Student Discounts in ${region.name} | UniPerks`,
+            description: `Find verified student discounts available for students in ${region.name}. Tech, entertainment, food, and more.`,
+            alternates: {
+                canonical: `https://uni-perks.com/student-discounts/in/${regionCode}`,
+            },
+        };
+    } catch {
+        return { title: "Region Not Found" };
+    }
+}
+
+export async function generateStaticParams() {
+    try {
+        const data = await fetchAPI<{ regions: RegionInfo[] }>("/api/geo/regions", { cache: 'force-cache' });
+        return (data?.regions || []).map((region) => ({
+            regionCode: region.code.toLowerCase(),
+        }));
+    } catch {
+        return [];
+    }
+}
+
+export default async function LocationPage({ params }: LocationPageProps) {
+    const { regionCode } = await params;
+    const upperCode = regionCode.toUpperCase();
+
+    // Fetch data
+    let region: RegionInfo | undefined;
+    let deals: ApiDealResponse[] = [];
+    let categories: CategoryInfo[] = [];
+
+    try {
+        const [regionsData, dealsData, categoriesData] = await Promise.all([
+            fetchAPI<{ regions: RegionInfo[] }>("/api/geo/regions", { cache: 'force-cache' }),
+            fetchAPI<{ deals: ApiDealResponse[] }>(`/api/deals?region=${upperCode}&limit=100`, { cache: 'force-cache' }),
+            fetchAPI<{ categories: CategoryInfo[] }>("/api/categories", { cache: 'force-cache' }),
+        ]);
+
+        region = regionsData?.regions?.find(r => r.code === upperCode);
+        deals = dealsData?.deals || [];
+        categories = categoriesData?.categories || [];
+    } catch {
+        notFound();
+    }
+
+    if (!region) {
+        notFound();
+    }
+
+    // Validate minimum deals
+    const validation = validatePageGeneration({
+        deals,
+        playbookType: 'location',
+        slug: regionCode,
+    });
+
+    if (!validation.isValid) {
+        return (
+            <div className="max-w-[1440px] mx-auto bg-background min-h-screen p-8">
+                <h1 className="text-3xl font-bold mb-4">Student Discounts in {region.name}</h1>
+                <p className="text-muted-foreground">
+                    We're currently adding more deals for {region.name}. Check back soon!
+                </p>
+            </div>
+        );
+    }
+
+    // Generate content
+    const content = generateLocationContent({
+        region,
+        deals,
+        categories,
+    });
+
+    // Generate internal links
+    const internalLinks = generateLocationInternalLinks({
+        currentRegion: region,
+        allRegions: [], // We'll need to pass this separately
+        categories,
+        deals,
+    });
+
+    // Generate schema
+    const dealsForSchema: DealForSchema[] = deals.map(d => ({
+        slug: d.deal.slug,
+        title: d.deal.title,
+        shortDescription: d.deal.shortDescription,
+        discountLabel: d.deal.discountLabel,
+        studentPrice: d.deal.studentPrice,
+        originalPrice: d.deal.originalPrice,
+        currency: d.deal.currency,
+        brand: d.brand,
+        category: d.category,
+    }));
+
+    const itemSchema = generateLocationSchema({
+        deals: dealsForSchema,
+        region,
+    });
+
+    const faqSchema = generateFaqSchema(content.faqs);
+
+    const breadcrumbSchema = generatePseoBreadcrumbSchema([
+        { name: "Home", url: "/" },
+        { name: "Student Discounts by Location", url: "/student-discounts/in" },
+        { name: region.name, url: `/student-discounts/in/${regionCode}` },
+    ]);
+
+    return (
+        <div className="max-w-[1440px] mx-auto bg-background min-h-screen">
+            {/* JSON-LD Scripts */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(itemSchema) }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+            />
+
+            {/* Hero */}
+            <div className="bg-muted px-4 md:px-8 py-12 md:py-16 border-b border-border">
+                <div className="max-w-4xl">
+                    <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                        <a href="/" className="hover:text-foreground">Home</a>
+                        <span>/</span>
+                        <a href="/browse" className="hover:text-foreground">Student Discounts</a>
+                        <span>/</span>
+                        <span className="text-foreground">{region.name}</span>
+                    </nav>
+                    <h1 className="text-[clamp(2rem,4vw,3.5rem)] font-black leading-[1.1] tracking-tight mb-4">
+                        {content.h1}
+                    </h1>
+                    <p className="text-lg md:text-xl text-muted-foreground max-w-2xl leading-relaxed">
+                        {content.introduction}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-4">
+                        {deals.length} verified deals available
+                    </p>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 p-4 md:p-8">
+                <div className="lg:col-span-3 space-y-8">
+                    {/* Sections */}
+                    {content.sections.map((section, i) => (
+                        <section key={i} className="bg-card rounded-xl p-6 border border-border">
+                            <h2 className="text-xl font-bold mb-4">{section.heading}</h2>
+                            <div className="prose prose-sm max-w-none text-muted-foreground">
+                                {section.body.split('\n').map((line, j) => (
+                                    <p key={j}>{line}</p>
+                                ))}
+                            </div>
+                        </section>
+                    ))}
+
+                    {/* Deals Grid */}
+                    <section>
+                        <h2 className="text-xl font-bold mb-6">
+                            Available Deals in {region.name}
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {deals.map((dealWrapper) => (
+                                <DealCard key={dealWrapper.deal.id} dealData={dealWrapper} />
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* FAQs */}
+                    <section className="bg-card rounded-xl p-6 border border-border">
+                        <h2 className="text-xl font-bold mb-6">Frequently Asked Questions</h2>
+                        <div className="space-y-4">
+                            {content.faqs.map((faq, i) => (
+                                <div key={i} className="border-b border-border pb-4 last:border-0">
+                                    <h3 className="font-semibold text-foreground mb-2">{faq.question}</h3>
+                                    <p className="text-sm text-muted-foreground">{faq.answer}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                </div>
+
+                {/* Sidebar */}
+                <aside className="space-y-6">
+                    <div className="bg-card rounded-xl p-6 border border-border sticky top-6">
+                        <h3 className="font-bold mb-4">Browse by Category</h3>
+                        <nav className="space-y-2">
+                            {categories.slice(0, 6).map((cat) => (
+                                <a
+                                    key={cat.slug}
+                                    href={`/student-discounts/${cat.slug}/in/${regionCode}`}
+                                    className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                    {cat.name} in {region.name}
+                                </a>
+                            ))}
+                        </nav>
+                    </div>
+
+                    {/* Related Pages */}
+                    <div className="bg-card rounded-xl p-6 border border-border">
+                        <h3 className="font-bold mb-4">Related Pages</h3>
+                        <nav className="space-y-2">
+                            {internalLinks.map((link, i) => (
+                                <a
+                                    key={i}
+                                    href={link.url}
+                                    className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                    {link.label}
+                                </a>
+                            ))}
+                        </nav>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    );
+}
