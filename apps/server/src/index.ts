@@ -18,6 +18,7 @@ import adminRouter from "./routes/admin.routes";
 import uploadRouter from "./routes/upload.routes";
 import imagesRouter from "./routes/images.routes";
 import settingsRouter from "./routes/settings.routes";
+import tagsRouter from "./routes/tags.routes";
 
 const app = new OpenAPIHono();
 
@@ -73,6 +74,7 @@ app.route("/api/admin", adminRouter);
 app.route("/api/upload", uploadRouter);
 app.route("/api/images", imagesRouter);
 app.route("/api/settings", settingsRouter);
+app.route("/api/tags", tagsRouter);
 
 // Health check
 app.get("/", (c) => {

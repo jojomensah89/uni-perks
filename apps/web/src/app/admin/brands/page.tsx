@@ -14,6 +14,7 @@ export type ApiBrandResponse = {
     website?: string;
     isVerified?: boolean;
     logoUrl?: string;
+    coverImageUrl?: string | null;
 };
 
 export default function AdminBrandsPage() {

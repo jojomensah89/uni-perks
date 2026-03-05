@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "@tanstack/react-form";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,16 @@ interface CategoryFormProps {
 export function CategoryForm({ onSuccess }: CategoryFormProps) {
     const [open, setOpen] = useState(false);
     const router = useRouter();
+    const queryClient = useQueryClient();
+
+    const createCategoryMutation = useMutation({
+        mutationFn: async (data: any) => {
+            return fetchAPI("/api/admin/categories", {
+                method: "POST",
+                body: JSON.stringify(data),
+            });
+        },
+    });
 
     const form = useForm({
         defaultValues: {
@@ -39,15 +50,12 @@ export function CategoryForm({ onSuccess }: CategoryFormProps) {
         },
         onSubmit: async ({ value }) => {
             try {
-                await fetchAPI("/api/admin/categories", {
-                    method: "POST",
-                    body: JSON.stringify(value),
-                });
+                await createCategoryMutation.mutateAsync(value);
 
                 toast.success("Category created successfully!");
                 setOpen(false);
                 form.reset();
-                router.refresh();
+                queryClient.invalidateQueries({ queryKey: ["adminCategories"] });
                 if (onSuccess) onSuccess();
             } catch (error: any) {
                 toast.error(error.message || "Failed to create category");

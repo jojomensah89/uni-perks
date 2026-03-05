@@ -40,6 +40,7 @@ export const deals = sqliteTable("deals", {
     // URLs
     claimUrl: text("claim_url").notNull(),
     affiliateUrl: text("affiliate_url"),
+    coverImageUrl: text("cover_image_url"),
 
     // Status
     isFeatured: integer("is_featured", { mode: "boolean" }).default(false),

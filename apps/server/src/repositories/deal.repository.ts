@@ -10,6 +10,8 @@ export interface FindManyDealsOptions {
     searchQuery?: string;
     limit?: number;
     offset?: number;
+    brandId?: string;
+    excludeDealId?: string;
 }
 
 export async function findManyDeals(options: FindManyDealsOptions) {
@@ -54,6 +56,14 @@ export async function findManyDeals(options: FindManyDealsOptions) {
         conditions.push(
             sql`(${deals.title} LIKE ${`%${searchQuery}%`} OR ${deals.shortDescription} LIKE ${`%${searchQuery}%`} OR ${brands.name} LIKE ${`%${searchQuery}%`} OR ${categories.name} LIKE ${`%${searchQuery}%`})`
         );
+    }
+
+    if (options.brandId) {
+        conditions.push(eq(deals.brandId, options.brandId));
+    }
+
+    if (options.excludeDealId) {
+        conditions.push(sql`${deals.id} != ${options.excludeDealId}`);
     }
 
     if (conditions.length > 0) {

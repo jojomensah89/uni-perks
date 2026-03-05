@@ -14,6 +14,8 @@ export interface GetDealsOptions {
     searchQuery?: string;
     limit?: number;
     offset?: number;
+    brandId?: string;
+    excludeDealId?: string;
 }
 
 export interface DealDetailOptions {
@@ -34,6 +36,8 @@ export async function getDeals(options: GetDealsOptions) {
         searchQuery: options.searchQuery,
         limit: options.limit,
         offset: options.offset,
+        brandId: options.brandId,
+        excludeDealId: options.excludeDealId,
     });
 
     return results;

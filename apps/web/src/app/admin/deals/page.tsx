@@ -17,11 +17,29 @@ export type ApiDealResponse = {
         discountValue: number | null;
         discountLabel: string;
         shortDescription?: string;
+        longDescription?: string;
+        coverImageUrl?: string | null;
+        originalPrice?: number | null;
+        studentPrice?: number | null;
+        currency?: string;
+        claimUrl?: string;
+        affiliateUrl?: string;
+        verificationMethod?: string;
+        eligibilityNote?: string;
+        howToRedeem?: string;
+        conditions?: string;
+        termsUrl?: string;
+        minimumSpend?: number | null;
+        isNewCustomerOnly?: boolean;
         isActive: boolean;
         isFeatured: boolean;
+        isExclusive?: boolean;
+        expirationDate?: string | number | null;
+        metaTitle?: string;
+        metaDescription?: string;
     };
-    brand: Pick<ApiBrandResponse, "id" | "name">;
-    category: Pick<ApiCategoryResponse, "id" | "name">;
+    brand: Pick<ApiBrandResponse, "id" | "name" | "slug" | "logoUrl">;
+    category: Pick<ApiCategoryResponse, "id" | "name" | "slug">;
 };
 
 export default function AdminDealsPage() {
@@ -74,14 +92,10 @@ export default function AdminDealsPage() {
                         Manage your exclusive university perks and discounts.
                     </p>
                 </div>
-                {/* 
-                  We pass brands and categories to the form 
-                  so it can populate select dropdowns 
-                */}
                 <DealForm brands={brands} categories={categories} />
             </div>
 
-            <DealsTable data={deals} />
+            <DealsTable data={deals} brands={brands} categories={categories} />
         </div>
     );
 }

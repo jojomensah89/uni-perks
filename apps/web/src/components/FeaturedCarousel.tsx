@@ -65,7 +65,9 @@ const decorations: Record<string, React.ReactNode> = {
     ),
 };
 
-const FeaturedCarousel = ({ deals = [] }: { deals: ApiDealResponse[] }) => {
+const EMPTY_DEALS: ApiDealResponse[] = [];
+
+const FeaturedCarousel = ({ deals = EMPTY_DEALS }: { deals: ApiDealResponse[] }) => {
     if (deals.length === 0) {
         return <div className="col-span-1 sm:col-span-2 rounded-lg bg-muted p-6 flex items-center justify-center text-muted-foreground">No featured deals</div>;
     }
@@ -120,7 +122,7 @@ const FeaturedCarousel = ({ deals = [] }: { deals: ApiDealResponse[] }) => {
             </CarouselContent>
 
             {/* Shadcn Navigation (optional since dots were custom before, but these are standard) */}
-            <div className="absolute right-12 bottom-6 z-30 hidden sm:flex gap-2">
+            <div className="absolute right-12 bottom-10 z-30 hidden sm:flex gap-2">
                 <CarouselPrevious className="relative inset-auto translate-x-0 translate-y-0 h-8 w-8 bg-black/20 text-white border-white/20 hover:bg-black/40 hover:text-white" />
                 <CarouselNext className="relative inset-auto translate-x-0 translate-y-0 h-8 w-8 bg-black/20 text-white border-white/20 hover:bg-black/40 hover:text-white" />
             </div>
