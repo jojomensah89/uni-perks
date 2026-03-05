@@ -86,6 +86,7 @@ export default async function CategoryCurationPage({ params }: CategoryPageProps
 
     let allCategories: CategoryInfo[] = [];
     let regions: { code: string; name: string }[] = [];
+    let hasError = false;
 
     try {
         const [catData, categoriesData, regionsData] = await Promise.all([
@@ -100,10 +101,10 @@ export default async function CategoryCurationPage({ params }: CategoryPageProps
         allCategories = categoriesData?.categories || [];
         regions = regionsData?.regions || [];
     } catch {
-        notFound();
+        hasError = true;
     }
 
-    if (!categoryData?.category || !categoryData.deals?.length) {
+    if (hasError || !categoryData?.category || !categoryData.deals?.length) {
         notFound();
     }
 
@@ -217,8 +218,8 @@ export default async function CategoryCurationPage({ params }: CategoryPageProps
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 p-4 md:p-8">
                 <div className="lg:col-span-3 space-y-8">
                     {/* Sections */}
-                    {content.sections.map((section, i) => (
-                        <section key={i} className="bg-card rounded-xl p-6 border border-border">
+                    {content.sections.map((section) => (
+                        <section key={section.heading} className="bg-card rounded-xl p-6 border border-border">
                             <h2 className="text-xl font-bold mb-4">{section.heading}</h2>
                             <div className="prose prose-sm max-w-none text-muted-foreground">
                                 {section.body.split('\n').map((line, j) => (
@@ -245,7 +246,7 @@ export default async function CategoryCurationPage({ params }: CategoryPageProps
                         <h2 className="text-xl font-bold mb-6">Frequently Asked Questions</h2>
                         <Accordion multiple className="w-full">
                             {content.faqs.map((faq, i) => (
-                                <AccordionItem key={i} value={`faq-${i}`}>
+                                <AccordionItem key={faq.question} value={`faq-${i}`}>
                                     <AccordionTrigger className="text-left font-semibold">
                                         {faq.question}
                                     </AccordionTrigger>
@@ -263,9 +264,9 @@ export default async function CategoryCurationPage({ params }: CategoryPageProps
                     <div className="bg-card rounded-xl p-6 border border-border sticky top-[5.5rem]">
                         <h3 className="font-bold mb-4">Related Pages</h3>
                         <nav className="space-y-2">
-                            {internalLinks.map((link, i) => (
+                            {internalLinks.map((link) => (
                                 <a
-                                    key={i}
+                                    key={link.url}
                                     href={link.url}
                                     className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
                                 >

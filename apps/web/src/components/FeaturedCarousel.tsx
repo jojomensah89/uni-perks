@@ -65,7 +65,9 @@ const decorations: Record<string, React.ReactNode> = {
     ),
 };
 
-const FeaturedCarousel = ({ deals = [] }: { deals: ApiDealResponse[] }) => {
+const EMPTY_DEALS: ApiDealResponse[] = [];
+
+const FeaturedCarousel = ({ deals = EMPTY_DEALS }: { deals: ApiDealResponse[] }) => {
     if (deals.length === 0) {
         return <div className="col-span-1 sm:col-span-2 rounded-lg bg-muted p-6 flex items-center justify-center text-muted-foreground">No featured deals</div>;
     }

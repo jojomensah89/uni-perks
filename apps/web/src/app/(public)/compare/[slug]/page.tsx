@@ -112,6 +112,7 @@ export default async function ComparisonPage({ params }: ComparisonPageProps) {
     let brandADeals: ApiDealResponse[] = [];
     let brandBDeals: ApiDealResponse[] = [];
     let categories: CategoryInfo[] = [];
+    let hasError = false;
 
     try {
         const [brandAData, brandBData, categoriesData] = await Promise.all([
@@ -126,10 +127,10 @@ export default async function ComparisonPage({ params }: ComparisonPageProps) {
         brandBDeals = brandBData?.deals || [];
         categories = categoriesData?.categories || [];
     } catch {
-        notFound();
+        hasError = true;
     }
 
-    if (!brandA || !brandB) {
+    if (hasError || !brandA || !brandB) {
         notFound();
     }
 
@@ -316,8 +317,8 @@ export default async function ComparisonPage({ params }: ComparisonPageProps) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {matrix.features.map((feature, i) => (
-                                        <tr key={i} className="border-b border-border last:border-0">
+                                    {matrix.features.map((feature) => (
+                                        <tr key={feature.name} className="border-b border-border last:border-0">
                                             <td className="py-3 px-4 text-muted-foreground">{feature.name}</td>
                                             <td className={`py-3 px-4 ${feature.winner === 'brandA' ? 'text-primary font-medium' : ''}`}>
                                                 {feature.brandAValue}
@@ -335,14 +336,14 @@ export default async function ComparisonPage({ params }: ComparisonPageProps) {
                     </section>
 
                     {/* Use Case Recommendations */}
-                    {recommendations.map((rec, i) => (
-                        <section key={i} className="bg-card rounded-xl p-6 border border-border">
+                    {recommendations.map((rec) => (
+                        <section key={rec.brand} className="bg-card rounded-xl p-6 border border-border">
                             <h2 className="text-xl font-bold mb-4">
                                 Choose {rec.brand === 'A' ? brandA.name : brandB.name} if...
                             </h2>
                             <ul className="space-y-2">
-                                {rec.scenarios.map((scenario, j) => (
-                                    <li key={j} className="flex items-start gap-2 text-sm text-muted-foreground">
+                                {rec.scenarios.map((scenario) => (
+                                    <li key={scenario} className="flex items-start gap-2 text-sm text-muted-foreground">
                                         <span className="text-primary mt-1">•</span>
                                         {scenario}
                                     </li>
@@ -374,7 +375,7 @@ export default async function ComparisonPage({ params }: ComparisonPageProps) {
                         <h2 className="text-xl font-bold mb-6">Frequently Asked Questions</h2>
                         <Accordion multiple className="w-full">
                             {content.faqs.map((faq, i) => (
-                                <AccordionItem key={i} value={`faq-${i}`}>
+                                <AccordionItem key={faq.question} value={`faq-${i}`}>
                                     <AccordionTrigger className="text-left font-semibold">
                                         {faq.question}
                                     </AccordionTrigger>
@@ -392,9 +393,9 @@ export default async function ComparisonPage({ params }: ComparisonPageProps) {
                     <div className="bg-card rounded-xl p-6 border border-border sticky top-[5.5rem]">
                         <h3 className="font-bold mb-4">Related Comparisons</h3>
                         <nav className="space-y-2">
-                            {internalLinks.map((link, i) => (
+                            {internalLinks.map((link) => (
                                 <a
-                                    key={i}
+                                    key={link.url}
                                     href={link.url}
                                     className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
                                 >

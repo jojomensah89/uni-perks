@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Dialog,
     DialogContent,
@@ -24,6 +24,7 @@ interface CollectionFormProps {
 }
 
 export function CollectionForm({ open, onClose, onSuccess, collection }: CollectionFormProps) {
+    const queryClient = useQueryClient();
     const [formData, setFormData] = useState({
         name: "",
         slug: "",
@@ -34,7 +35,10 @@ export function CollectionForm({ open, onClose, onSuccess, collection }: Collect
         coverImageUrl: "",
     });
 
-    useEffect(() => {
+    const [prevCollectionId, setPrevCollectionId] = useState(collection?.id);
+
+    if (collection?.id !== prevCollectionId) {
+        setPrevCollectionId(collection?.id);
         if (collection) {
             setFormData({
                 name: collection.name,
@@ -56,7 +60,7 @@ export function CollectionForm({ open, onClose, onSuccess, collection }: Collect
                 coverImageUrl: "",
             });
         }
-    }, [collection]);
+    }
 
     const createMutation = useMutation({
         mutationFn: (data: typeof formData) =>
@@ -64,7 +68,10 @@ export function CollectionForm({ open, onClose, onSuccess, collection }: Collect
                 method: "POST",
                 body: JSON.stringify(data),
             }),
-        onSuccess,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["adminCollections"] });
+            onSuccess();
+        },
     });
 
     const updateMutation = useMutation({
@@ -73,7 +80,10 @@ export function CollectionForm({ open, onClose, onSuccess, collection }: Collect
                 method: "PATCH",
                 body: JSON.stringify(data),
             }),
-        onSuccess,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["adminCollections"] });
+            onSuccess();
+        },
     });
 
     const handleSubmit = (e: React.FormEvent) => {

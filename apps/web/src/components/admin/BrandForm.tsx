@@ -20,6 +20,7 @@ import {
 import { Plus } from "lucide-react";
 import { fetchAPI } from "@/lib/api";
 import { ImageUpload } from "./ImageUpload";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 
 interface BrandFormProps {
     onSuccess?: () => void;
@@ -28,6 +29,17 @@ interface BrandFormProps {
 export function BrandForm({ onSuccess }: BrandFormProps) {
     const [open, setOpen] = useState(false);
     const router = useRouter();
+    const queryClient = useQueryClient();
+
+
+    const createBrandMutation = useMutation({
+        mutationFn: async (data: any) => {
+            return fetchAPI("/api/admin/brands", {
+                method: "POST",
+                body: JSON.stringify(data),
+            });
+        },
+    });
 
     const form = useForm({
         defaultValues: {
@@ -45,15 +57,12 @@ export function BrandForm({ onSuccess }: BrandFormProps) {
         },
         onSubmit: async ({ value }) => {
             try {
-                await fetchAPI("/api/admin/brands", {
-                    method: "POST",
-                    body: JSON.stringify(value),
-                });
+                await createBrandMutation.mutateAsync(value);
 
                 toast.success("Brand created successfully!");
                 setOpen(false);
                 form.reset();
-                router.refresh();
+                queryClient.invalidateQueries({ queryKey: ["adminBrands"] });
                 if (onSuccess) onSuccess();
             } catch (error: any) {
                 toast.error(error.message || "Failed to create brand");

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchAPI } from "@/lib/api";
+import DealCard from "@/components/DealCard";
 import type { ApiDealResponse } from "@/components/DealCard";
 import DealTag from "@/components/DealTag";
 import { DealConditionsAccordion } from "@/components/deals/DealConditionsAccordion";
@@ -24,6 +25,7 @@ export default async function DealDetailsPage({ params }: { params: Promise<{ id
     const { id: slug } = await params;
 
     let responseData;
+    let otherDeals: any[] = [];
     try {
         responseData = await fetchAPI<{ deal: any, brand: any, category: any, tags: any[], regions: any[] }>(`/api/deals/${slug}`);
     } catch (e) {
@@ -35,6 +37,20 @@ export default async function DealDetailsPage({ params }: { params: Promise<{ id
     }
 
     const { deal, brand, category, tags = [], regions = [] } = responseData;
+
+    if (brand.id) {
+        try {
+            const moreDealsRes = await fetchAPI<{ deals: any[] }>(`/api/deals?brandId=${brand.id}&excludeDealId=${deal.id}&limit=3`);
+            if (moreDealsRes && moreDealsRes.deals) {
+                otherDeals = moreDealsRes.deals;
+            }
+        } catch (e) {
+            console.error("Failed to fetch more deals from brand", e);
+        }
+    }
+
+    const apiBase = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
+    const getImageUrl = (key: string | null) => key ? (key.startsWith('http') ? key : `${apiBase}/api/images/${key}`) : "";
 
     return (
         <div className="max-w-[1440px] mx-auto bg-background">
@@ -48,26 +64,35 @@ export default async function DealDetailsPage({ params }: { params: Promise<{ id
 
             {/* Hero */}
             <div className="relative overflow-hidden rounded-xl mx-4 mt-4 h-[280px] md:h-[360px] bg-muted">
-                {/* Gradient overlay using generic fallback */}
-                <div className={`absolute inset-0 bg-gradient-to-t bg-primary opacity-60 transition-opacity duration-500`} />
+                {brand.coverImageUrl && (
+                    <img
+                        src={getImageUrl(brand.coverImageUrl)}
+                        alt={`${brand.name} cover`}
+                        className="absolute inset-0 w-full h-full object-cover"
+                    />
+                )}
+                <div className={`absolute inset-0 bg-gradient-to-t ${brand.coverImageUrl ? 'opacity-80' : 'opacity-60'} transition-opacity duration-500`} />
                 <div className="relative z-10 flex flex-col justify-end h-full p-6 md:p-8 text-primary-foreground">
                     <div className="flex gap-1.5 flex-wrap mb-4">
                         {tags.map((tag: any) => (
                             <DealTag key={tag.id} label={tag.name} variant="light" />
                         ))}
                     </div>
-                    <div className="inline-block bg-primary-foreground/20 backdrop-blur-sm rounded-full px-4 py-1.5 text-sm font-bold uppercase tracking-wide mb-4 border border-primary-foreground/30 w-fit">
+                    {/* <div className="inline-block bg-primary-foreground/20 backdrop-blur-sm rounded-full px-4 py-1.5 text-sm font-bold uppercase tracking-wide mb-4 border border-primary-foreground/30 w-fit">
                         {deal.discountLabel}
-                    </div>
+                    </div> */}
                     <div className="flex items-center gap-3 mb-2">
                         {brand.logoUrl ? (
-                            <img src={brand.logoUrl} className="w-10 h-10 object-contain rounded-md" alt={brand.name} />
+                            <img src={getImageUrl(brand.logoUrl)} className="w-10 h-10 object-contain rounded-md bg-white p-1" alt={brand.name} />
                         ) : (
                             <div className="w-10 h-10 bg-white/20 rounded-md flex items-center justify-center font-bold text-xs">{brand.name[0]}</div>
                         )}
                         <h1 className="text-3xl md:text-4xl font-black leading-tight drop-shadow-md">{brand.name}</h1>
                     </div>
-                    <p className="text-base opacity-95 max-w-lg mt-2 drop-shadow-sm">{deal.title}</p>
+                    {/* <p className="text-base opacity-95 max-w-lg mt-2 drop-shadow-sm">{deal.title}</p> */}
+                    <div className="inline-block bg-primary-foreground/20 backdrop-blur-sm rounded-full px-4 py-1.5 text-sm font-bold uppercase tracking-wide mb-4 border border-primary-foreground/30 w-fit">
+                        {deal.discountLabel}
+                    </div>
                 </div>
             </div>
 
@@ -132,11 +157,32 @@ export default async function DealDetailsPage({ params }: { params: Promise<{ id
                             <p className="text-sm text-muted-foreground">Click the "Claim Offer" button from the side panel to proceed.</p>
                         </section>
                     )}
+
+                    {/* More from this Brand */}
+                    {otherDeals && otherDeals.length > 0 && (
+                        <div className="pt-6 border-t border-border mt-8">
+                            <h2 className="text-xl font-bold mb-6">More from {brand.name}</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {otherDeals.map((relatedDeal) => (
+                                    <DealCard key={relatedDeal.deal.id} dealData={relatedDeal} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="space-y-4">
                     <div className="bg-card rounded-xl p-6 border border-border shadow-sm lg:sticky lg:top-6">
-                        <div className="text-2xl font-black mb-1 text-primary">{deal.discountLabel}</div>
+                        {deal.coverImageUrl && (
+                            <div className="mb-4 aspect-video w-full overflow-hidden rounded-lg bg-muted border border-border">
+                                <img
+                                    src={getImageUrl(deal.coverImageUrl)}
+                                    alt={deal.title}
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                        )}
+                        <div className="text-2xl font-black mb-1 ">{deal.discountLabel}</div>
                         <p className="text-sm text-muted-foreground mb-4">{deal.shortDescription}</p>
 
                         {deal.verificationMethod && (

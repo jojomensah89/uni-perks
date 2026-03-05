@@ -271,9 +271,9 @@ export default async function PersonaPage({ params }: PersonaPageProps) {
                         <section className="bg-card rounded-xl p-6 border border-border">
                             <h2 className="text-xl font-bold mb-4">Common Challenges & Solutions</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {persona.painPoints.map((point, i) => (
+                                {persona.painPoints.map((point) => (
                                     <div
-                                        key={i}
+                                        key={point}
                                         className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg"
                                     >
                                         <span className="text-primary mt-1">•</span>
@@ -285,8 +285,8 @@ export default async function PersonaPage({ params }: PersonaPageProps) {
                     )}
 
                     {/* Sections */}
-                    {content.sections.map((section, i) => (
-                        <section key={i} className="bg-card rounded-xl p-6 border border-border">
+                    {content.sections.map((section) => (
+                        <section key={section.heading} className="bg-card rounded-xl p-6 border border-border">
                             <h2 className="text-xl font-bold mb-4">{section.heading}</h2>
                             <div className="prose prose-sm max-w-none text-muted-foreground">
                                 {section.body.split('\n').map((line, j) => (
@@ -313,7 +313,7 @@ export default async function PersonaPage({ params }: PersonaPageProps) {
                         <h2 className="text-xl font-bold mb-6">Frequently Asked Questions</h2>
                         <Accordion multiple className="w-full">
                             {content.faqs.map((faq, i) => (
-                                <AccordionItem key={i} value={`faq-${i}`}>
+                                <AccordionItem key={faq.question} value={`faq-${i}`}>
                                     <AccordionTrigger className="text-left font-semibold">
                                         {faq.question}
                                     </AccordionTrigger>
@@ -365,9 +365,9 @@ export default async function PersonaPage({ params }: PersonaPageProps) {
                     <div className="bg-card rounded-xl p-6 border border-border">
                         <h3 className="font-bold mb-4">Related Pages</h3>
                         <nav className="space-y-2">
-                            {internalLinks.slice(0, 5).map((link, i) => (
+                            {internalLinks.slice(0, 5).map((link) => (
                                 <a
-                                    key={i}
+                                    key={link.url}
                                     href={link.url}
                                     className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
                                 >

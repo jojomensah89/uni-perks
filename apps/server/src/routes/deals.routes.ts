@@ -52,6 +52,8 @@ const listDealsRoute = createRoute({
             featured: z.string().optional().openapi({ example: "true" }),
             region: z.string().optional(),
             q: z.string().optional(),
+            brandId: z.string().optional(),
+            excludeDealId: z.string().optional(),
             limit: z.string().optional().default("50"),
             offset: z.string().optional().default("0"),
         }),
@@ -75,9 +77,11 @@ app.openapi(listDealsRoute, async (c) => {
     const requestedCountry = query.country || geoData.country;
     const categorySlug = query.category;
     const collectionId = query.collectionId;
-    const featured = query.featured === "true";
+    const featured = query.featured === "true" ? true : query.featured === "false" ? false : undefined;
     const regionCode = query.region;
     const searchQuery = query.q;
+    const brandId = query.brandId;
+    const excludeDealId = query.excludeDealId;
     const limit = parseInt(query.limit || "50");
     const offset = parseInt(query.offset || "0");
 
@@ -88,6 +92,8 @@ app.openapi(listDealsRoute, async (c) => {
         featured,
         regionCode,
         searchQuery,
+        brandId,
+        excludeDealId,
         limit,
         offset,
     });

@@ -53,7 +53,9 @@ const decorations: Record<string, React.ReactNode> = {
     ),
 };
 
-const CuratedCarousel = ({ collections = [] }: { collections: ApiCollectionResponse[] }) => {
+const EMPTY_COLLECTIONS: ApiCollectionResponse[] = [];
+
+const CuratedCarousel = ({ collections = EMPTY_COLLECTIONS }: { collections: ApiCollectionResponse[] }) => {
     if (collections.length === 0) {
         return <div className="col-span-1 lg:col-span-2 rounded-lg bg-muted p-6 flex flex-col items-center justify-center text-muted-foreground min-h-[300px] border border-dashed border-border">
             <p className="font-semibold text-foreground mb-1">No Curated Collections found.</p>
