@@ -10,6 +10,7 @@ app.use("*", requireAuth, requireAdmin);
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+const ALLOWED_FOLDERS = ["brands", "deals", "categories", "collections"] as const;
 
 const uploadRoute = createRoute({
     method: "post",
@@ -56,6 +57,9 @@ app.openapi(uploadRoute, async (c) => {
 
     if (!file) {
         throw new BadRequestError("No file provided");
+    }
+    if (folder && !ALLOWED_FOLDERS.includes(folder as (typeof ALLOWED_FOLDERS)[number])) {
+        throw new BadRequestError(`Folder must be one of: ${ALLOWED_FOLDERS.join(", ")}`);
     }
 
     // Validate file type

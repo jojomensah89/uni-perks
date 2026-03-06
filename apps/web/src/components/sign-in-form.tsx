@@ -1,11 +1,13 @@
 import { useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
 import { authClient } from "@/lib/auth-client";
 
 import Loader from "./loader";
+import { TurnstileWidget } from "./TurnstileWidget";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -13,6 +15,8 @@ import { Label } from "./ui/label";
 export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () => void }) {
   const router = useRouter();
   const { isPending } = authClient.useSession();
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   const form = useForm({
     defaultValues: {
@@ -24,6 +28,7 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
         {
           email: value.email,
           password: value.password,
+          turnstileToken,
         },
         {
           onSuccess: () => {
@@ -111,12 +116,14 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
             <Button
               type="submit"
               className="w-full"
-              disabled={!state.canSubmit || state.isSubmitting}
+              disabled={!state.canSubmit || state.isSubmitting || (!!turnstileSiteKey && !turnstileToken)}
             >
               {state.isSubmitting ? "Submitting..." : "Sign In"}
             </Button>
           )}
         </form.Subscribe>
+
+        <TurnstileWidget siteKey={turnstileSiteKey} onTokenChange={setTurnstileToken} />
       </form>
 
       <div className="mt-4 text-center">

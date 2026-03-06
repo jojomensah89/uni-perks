@@ -1,6 +1,7 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { trackDealClick } from "../services/deal.service";
 import { BadRequestError } from "../lib/errors";
+import { checkRateLimit, getClientIp } from "../lib/rate-limit";
 
 const app = new OpenAPIHono();
 
@@ -42,10 +43,26 @@ const trackClickRoute = createRoute({
             },
             description: "Invalid request",
         },
+        429: {
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        message: z.string(),
+                    }),
+                },
+            },
+            description: "Too many requests",
+        },
     },
 });
 
 app.openapi(trackClickRoute, async (c) => {
+    const ip = getClientIp(c);
+    const rate = await checkRateLimit(c, `click:${ip}`, 20, 60);
+    if (!rate.allowed) {
+        c.header("Retry-After", String(rate.retryAfterSeconds));
+        return c.json({ message: "Too many click attempts. Please try again shortly." }, 429);
+    }
     const { dealId } = c.req.valid("param");
 
     if (!dealId) {

@@ -9,6 +9,8 @@ export const collections = sqliteTable("collections", {
     name: text("name").notNull(),
     description: text("description"),
     audience: text("audience"), // "cs-students", "designers", "all"
+    coverImageUrl: text("cover_image_url"),
+    icon: text("icon"),
 
     // Display
     isFeatured: integer("is_featured", { mode: "boolean" }).default(false),

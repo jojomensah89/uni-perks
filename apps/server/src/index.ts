@@ -12,13 +12,16 @@ import brandsRouter from "./routes/brands.routes";
 import collectionsRouter from "./routes/collections.routes";
 import categoriesRouter from "./routes/categories.routes";
 import clicksRouter from "./routes/clicks.routes";
-import suggestionsRouter from "./routes/suggestions.routes";
 import seedRouter from "./routes/seed.routes";
 import adminRouter from "./routes/admin.routes";
 import uploadRouter from "./routes/upload.routes";
 import imagesRouter from "./routes/images.routes";
 import settingsRouter from "./routes/settings.routes";
 import tagsRouter from "./routes/tags.routes";
+import goRouter from "./routes/go.routes";
+import newsletterRouter from "./routes/newsletter.routes";
+import { checkRateLimit, getClientIp } from "./lib/rate-limit";
+import { verifyTurnstile } from "./lib/turnstile";
 
 const app = new OpenAPIHono();
 
@@ -58,7 +61,32 @@ app.get(
 );
 
 // Auth routes
-app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+app.on(["POST", "GET"], "/api/auth/*", async (c) => {
+  if (c.req.method === "POST") {
+    const pathname = new URL(c.req.url).pathname;
+    const ip = getClientIp(c);
+    const rate = await checkRateLimit(c, `auth:${ip}:${pathname}`, 20, 300);
+    if (!rate.allowed) {
+      c.header("Retry-After", String(rate.retryAfterSeconds));
+      return c.json({ message: "Too many auth attempts. Please try again shortly." }, 429);
+    }
+
+    const requiresTurnstile = pathname.includes("/sign-in") || pathname.includes("/sign-up");
+    if (requiresTurnstile) {
+      const body = await c.req.raw.clone().json().catch(() => null) as Record<string, unknown> | null;
+      const turnstileToken =
+        body && typeof body.turnstileToken === "string"
+          ? body.turnstileToken
+          : null;
+      const turnstileOk = await verifyTurnstile(c, turnstileToken);
+      if (!turnstileOk) {
+        return c.json({ message: "Turnstile verification failed" }, 400);
+      }
+    }
+  }
+
+  return auth.handler(c.req.raw);
+});
 
 // API routes
 // All routes are now OpenAPIHono instances and will appear in the auto-generated spec
@@ -68,13 +96,14 @@ app.route("/api/brands", brandsRouter);
 app.route("/api/collections", collectionsRouter);
 app.route("/api/categories", categoriesRouter);
 app.route("/api/clicks", clicksRouter);
-app.route("/api/suggestions", suggestionsRouter);
 app.route("/api/seed", seedRouter);
 app.route("/api/admin", adminRouter);
 app.route("/api/upload", uploadRouter);
 app.route("/api/images", imagesRouter);
 app.route("/api/settings", settingsRouter);
 app.route("/api/tags", tagsRouter);
+app.route("/api/newsletter", newsletterRouter);
+app.route("/go", goRouter);
 
 // Health check
 app.get("/", (c) => {

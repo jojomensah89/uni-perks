@@ -38,6 +38,7 @@ import { Plus, Eye } from "lucide-react";
 import { fetchAPI } from "@/lib/api";
 import { ImageUpload } from "./ImageUpload";
 import DealCard from "@/components/DealCard";
+import { parseGeoOverridesFromText } from "@/lib/deal-geo-config";
 import type { ApiBrandResponse } from "@/app/admin/brands/page";
 import type { ApiCategoryResponse } from "@/app/admin/categories/page";
 
@@ -117,9 +118,12 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
             expirationDate: "",
             metaTitle: "",
             metaDescription: "",
+            geoOverridesJson: "[]",
         },
         onSubmit: async ({ value }) => {
             try {
+                const geoOverrides = parseGeoOverridesFromText(value.geoOverridesJson);
+                const { geoOverridesJson, ...rawValues } = value;
                 let coverImageUrl = value.coverImageUrl;
 
                 // Upload pending image if any
@@ -138,7 +142,7 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                 }
 
                 const submitData = {
-                    ...value,
+                    ...rawValues,
                     coverImageUrl,
                     discountValue: value.discountValue ? parseFloat(value.discountValue) : null,
                     originalPrice: value.originalPrice ? parseFloat(value.originalPrice) : null,
@@ -146,7 +150,18 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                     minimumSpend: value.minimumSpend ? parseFloat(value.minimumSpend) : null,
                     expirationDate: value.expirationDate ? new Date(value.expirationDate).getTime() : null,
                 };
+                const createdDeal = await createDealMutation.mutateAsync(submitData) as { id?: string };
 
+                if (createdDeal?.id && geoOverrides.length > 0) {
+                    await Promise.all(
+                        geoOverrides.map((geoOverride) =>
+                            fetchAPI(`/api/admin/deals/${createdDeal.id}/geo-config/${geoOverride.countryCode}`, {
+                                method: "PUT",
+                                body: JSON.stringify(geoOverride),
+                            })
+                        )
+                    );
+                }
                 await createDealMutation.mutateAsync(submitData);
 
                 toast.success("Deal created successfully!");
@@ -250,10 +265,11 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                         className={`py-4 max-h-[75vh] overflow-y-auto px-1 ${showPreview ? "flex-1" : "w-full"}`}
                     >
                         <Tabs defaultValue="basic" className="w-full">
-                            <TabsList className="grid w-full grid-cols-4 mb-4">
+                            <TabsList className="grid w-full grid-cols-5 mb-4">
                                 <TabsTrigger value="basic">Basic</TabsTrigger>
                                 <TabsTrigger value="pricing">Pricing</TabsTrigger>
                                 <TabsTrigger value="details">Details</TabsTrigger>
+                                <TabsTrigger value="geo">Geo</TabsTrigger>
                                 <TabsTrigger value="seo">SEO</TabsTrigger>
                             </TabsList>
 
@@ -485,6 +501,41 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                                     ))}
                                                 </SelectContent>
                                             </Select>
+                                        </div>
+                                    )}
+                                </form.Field>
+                            </TabsContent>
+
+                            <TabsContent value="geo" className="grid grid-cols-1 gap-4">
+                                <form.Field name="geoOverridesJson">
+                                    {(field) => (
+                                        <div className="grid gap-2">
+                                            <Label htmlFor={field.name}>Country Pricing & Links JSON</Label>
+                                            <Textarea
+                                                id={field.name}
+                                                value={field.state.value}
+                                                onChange={(e) => field.handleChange(e.target.value)}
+                                                rows={12}
+                                                placeholder={`[
+  {
+    "countryCode": "US",
+    "affiliateUrl": "https://...",
+    "claimUrl": "https://...",
+    "studentPrice": 4.99,
+    "originalPrice": 9.99,
+    "currency": "USD",
+    "discountLabel": "50% OFF",
+    "isAvailable": true
+  },
+  {
+    "countryCode": "GLOBAL",
+    "isAvailable": false
+  }
+]`}
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                Provide an array of country overrides. Use ISO alpha-2 country codes or <code>GLOBAL</code>.
+                                            </p>
                                         </div>
                                     )}
                                 </form.Field>

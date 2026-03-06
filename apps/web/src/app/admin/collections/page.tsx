@@ -24,6 +24,7 @@ export type ApiCollectionResponse = {
     isFeatured?: boolean | null;
     displayOrder?: number | null;
     coverImageUrl?: string | null;
+    icon?: string | null;
     createdAt?: string;
 };
 

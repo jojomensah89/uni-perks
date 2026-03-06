@@ -1,6 +1,7 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { getBrandBySlug, getAllBrands } from "../services/brand.service";
 import { BadRequestError } from "../lib/errors";
+import { withEdgeCache } from "../lib/edge-cache";
 
 const app = new OpenAPIHono();
 
@@ -40,8 +41,10 @@ const listBrandsRoute = createRoute({
 });
 
 app.openapi(listBrandsRoute, async (c) => {
-    const brands = await getAllBrands();
-    return c.json({ brands }, 200);
+    return withEdgeCache(c, 3600, async () => {
+        const brands = await getAllBrands();
+        return c.json({ brands }, 200);
+    });
 });
 
 const getBrandRoute = createRoute({

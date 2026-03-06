@@ -1,6 +1,8 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { getAllCategories, getCategoryBySlug } from "../services/category.service";
 import { BadRequestError } from "../lib/errors";
+import { withKV } from "../lib/kv-cache";
+import { withEdgeCache } from "../lib/edge-cache";
 
 const app = new OpenAPIHono();
 
@@ -37,8 +39,15 @@ const listCategoriesRoute = createRoute({
 });
 
 app.openapi(listCategoriesRoute, async (c) => {
-    const categories = await getAllCategories();
-    return c.json({ categories }, 200);
+    return withEdgeCache(c, 3600, async () => {
+        const categories = await withKV(
+            (c.env as { KV?: KVNamespace }).KV,
+            "categories:all",
+            3600,
+            () => getAllCategories()
+        );
+        return c.json({ categories }, 200);
+    });
 });
 
 const getCategoryRoute = createRoute({

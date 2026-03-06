@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAPI } from "@/lib/api";
+import { toast } from "sonner";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 
 type ApiCategoryResponse = {
     id: string;
@@ -14,6 +16,9 @@ type ApiCategoryResponse = {
 export const FooterSection = () => {
     const [email, setEmail] = useState("");
     const [subscribed, setSubscribed] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+    const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
     // Fetch categories from API
     const { data: categoriesData } = useQuery({
@@ -30,12 +35,27 @@ export const FooterSection = () => {
     const categories = categoriesData?.categories || [];
     const dealCount = dealsData?.meta?.total || 0;
 
-    const handleSubscribe = (e: React.FormEvent) => {
+    const handleSubscribe = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (email.trim()) {
-            // TODO: Connect to newsletter API
+        if (!email.trim()) return;
+
+        setIsSubmitting(true);
+        try {
+            await fetchAPI("/api/newsletter/subscribe", {
+                method: "POST",
+                body: JSON.stringify({
+                    email: email.trim(),
+                    source: "footer",
+                    turnstileToken,
+                }),
+            });
             setSubscribed(true);
             setEmail("");
+            toast.success("Check your inbox to confirm your subscription.");
+        } catch (error: any) {
+            toast.error(error?.message || "Failed to subscribe. Please try again.");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -54,21 +74,25 @@ export const FooterSection = () => {
                         You&apos;re in! Check your inbox.
                     </p>
                 ) : (
-                    <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto">
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="What's your uni email?"
-                            required
-                            className="flex-1 bg-white rounded-lg px-6 py-4 text-sm outline-none placeholder:text-muted-foreground"
-                        />
-                        <button
-                            type="submit"
-                            className="bg-foreground text-primary-foreground px-8 py-4 rounded-lg text-sm font-semibold hover:bg-foreground/90 transition-opacity whitespace-nowrap"
-                        >
-                            Subscribe
-                        </button>
+                    <form onSubmit={handleSubscribe} className="max-w-lg mx-auto space-y-3">
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="What's your uni email?"
+                                required
+                                className="flex-1 bg-white rounded-lg px-6 py-4 text-sm outline-none placeholder:text-muted-foreground"
+                            />
+                            <button
+                                type="submit"
+                                disabled={isSubmitting || (!!turnstileSiteKey && !turnstileToken)}
+                                className="bg-foreground disabled:opacity-60 text-primary-foreground px-8 py-4 rounded-lg text-sm font-semibold hover:bg-foreground/90 transition-opacity whitespace-nowrap"
+                            >
+                                {isSubmitting ? "Subscribing..." : "Subscribe"}
+                            </button>
+                        </div>
+                        <TurnstileWidget siteKey={turnstileSiteKey} onTokenChange={setTurnstileToken} />
                     </form>
                 )}
                 <p className="text-xs text-white/70 mt-4">

@@ -2,6 +2,7 @@ import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { getDeals, getDealDetail, trackDealView } from "../services/deal.service";
 import { getGeoData } from "../services/geo.service";
 import { BadRequestError } from "../lib/errors";
+import { withEdgeCache } from "../lib/edge-cache";
 
 const app = new OpenAPIHono();
 
@@ -20,6 +21,9 @@ const DealSchema = z.object({
     currency: z.string().nullable().optional(),
     verificationMethod: z.string(),
     claimUrl: z.string(),
+    affiliateUrl: z.string().nullable().optional(),
+    isAvailable: z.boolean().optional(),
+    resolvedCountry: z.string().optional(),
     isFeatured: z.boolean().nullable().optional(),
     isActive: z.boolean().nullable().optional(),
     brandId: z.string(),
@@ -51,7 +55,7 @@ const listDealsRoute = createRoute({
             collectionId: z.string().optional(),
             featured: z.string().optional().openapi({ example: "true" }),
             region: z.string().optional(),
-            q: z.string().optional(),
+            q: z.string().max(200).optional(),
             brandId: z.string().optional(),
             excludeDealId: z.string().optional(),
             limit: z.string().optional().default("50"),
@@ -85,28 +89,43 @@ app.openapi(listDealsRoute, async (c) => {
     const limit = parseInt(query.limit || "50");
     const offset = parseInt(query.offset || "0");
 
-    const results = await getDeals({
-        country: requestedCountry,
-        categorySlug,
-        collectionId,
-        featured,
-        regionCode,
-        searchQuery,
-        brandId,
-        excludeDealId,
-        limit,
-        offset,
-    });
-
-    return c.json({
-        deals: results as any, // Cast to any to avoid strict schema mismatch with Join results for now
-        meta: {
-            total: results.length,
+    const buildResponse = async () => {
+        const results = await getDeals({
             country: requestedCountry,
+            categorySlug,
+            collectionId,
+            featured,
+            regionCode,
+            searchQuery,
+            brandId,
+            excludeDealId,
             limit,
             offset,
-        },
-    }, 200);
+        });
+
+        return c.json({
+            deals: results as any, // Cast to any to avoid strict schema mismatch with Join results for now
+            meta: {
+                total: results.length,
+                country: requestedCountry,
+                limit,
+                offset,
+            },
+        }, 200);
+    };
+
+    const shouldCache =
+        !searchQuery &&
+        !brandId &&
+        !excludeDealId &&
+        (featured !== undefined || !!categorySlug);
+
+    if (shouldCache) {
+        const ttl = featured ? 600 : 300;
+        return withEdgeCache(c, ttl, buildResponse);
+    }
+
+    return buildResponse();
 });
 
 const getDealRoute = createRoute({
@@ -149,13 +168,20 @@ app.openapi(getDealRoute, async (c) => {
 
     const geoData = getGeoData(c.req.raw);
     const country = query.country || geoData.country;
+    const cacheKey = new Request(`${c.req.url}?_country=${country}`);
 
-    const result = await getDealDetail({ slug, country });
+    return withEdgeCache(c, 300, async () => {
+        const result = await getDealDetail({ slug, country });
 
-    // Track view asynchronously (fire and forget)
-    c.executionCtx.waitUntil(trackDealView(result.deal.id));
+        // Track view asynchronously (fire and forget)
+        if (c.executionCtx) {
+            c.executionCtx.waitUntil(trackDealView(result.deal.id));
+        } else {
+            void trackDealView(result.deal.id);
+        }
 
-    return c.json(result, 200);
+        return c.json(result, 200);
+    }, cacheKey);
 });
 
 export default app;

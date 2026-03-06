@@ -33,6 +33,7 @@ export function CollectionForm({ open, onClose, onSuccess, collection }: Collect
         isFeatured: false,
         displayOrder: 0,
         coverImageUrl: "",
+        icon: "",
     });
 
     const [prevCollectionId, setPrevCollectionId] = useState(collection?.id);
@@ -48,6 +49,7 @@ export function CollectionForm({ open, onClose, onSuccess, collection }: Collect
                 isFeatured: collection.isFeatured ?? false,
                 displayOrder: collection.displayOrder ?? 0,
                 coverImageUrl: collection.coverImageUrl || "",
+                icon: collection.icon || "",
             });
         } else {
             setFormData({
@@ -58,6 +60,7 @@ export function CollectionForm({ open, onClose, onSuccess, collection }: Collect
                 isFeatured: false,
                 displayOrder: 0,
                 coverImageUrl: "",
+                icon: "",
             });
         }
     }
@@ -169,6 +172,16 @@ export function CollectionForm({ open, onClose, onSuccess, collection }: Collect
                             value={formData.coverImageUrl}
                             onChange={(e) => setFormData({ ...formData, coverImageUrl: e.target.value })}
                             placeholder="https://..."
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="icon">Icon</Label>
+                        <Input
+                            id="icon"
+                            value={formData.icon}
+                            onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                            placeholder="e.g., 🎓 or icon key"
                         />
                     </div>
 

@@ -1,5 +1,7 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { db, siteSettings, eq } from "@uni-perks/db";
+import { withKV } from "../lib/kv-cache";
+import { withEdgeCache } from "../lib/edge-cache";
 
 const app = new OpenAPIHono();
 
@@ -35,22 +37,32 @@ const getTickerRoute = createRoute({
 });
 
 app.openapi(getTickerRoute, async (c) => {
-    const result = await db
-        .select()
-        .from(siteSettings)
-        .where(eq(siteSettings.key, "ticker_messages"))
-        .limit(1);
+    return withEdgeCache(c, 300, async () => {
+        const messages = await withKV(
+            (c.env as { KV?: KVNamespace }).KV,
+            "settings:ticker",
+            300,
+            async () => {
+                const result = await db
+                    .select()
+                    .from(siteSettings)
+                    .where(eq(siteSettings.key, "ticker_messages"))
+                    .limit(1);
 
-    if (result[0]?.value) {
-        try {
-            const messages = JSON.parse(result[0].value);
-            return c.json({ messages }, 200);
-        } catch {
-            // If parsing fails, return default
-        }
-    }
+                if (result[0]?.value) {
+                    try {
+                        return JSON.parse(result[0].value) as string[];
+                    } catch {
+                        return DEFAULT_TICKER_MESSAGES;
+                    }
+                }
 
-    return c.json({ messages: DEFAULT_TICKER_MESSAGES }, 200);
+                return DEFAULT_TICKER_MESSAGES;
+            }
+        );
+
+        return c.json({ messages }, 200);
+    });
 });
 
 export default app;
