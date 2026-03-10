@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
-import type { ApiDealResponse } from "@/app/admin/deals/page";
+import type { ApiDealResponse } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Edit, Trash, LayoutGrid, Table2 } from "lucide-react";
@@ -29,8 +29,8 @@ import { fetchAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import type { ApiBrandResponse } from "@/app/admin/brands/page";
-import type { ApiCategoryResponse } from "@/app/admin/categories/page";
+import type { ApiBrandResponse } from "@/types/api";
+import type { ApiCategoryResponse } from "@/types/api";
 import { DealEditDialog } from "./DealEditDialog";
 
 const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";

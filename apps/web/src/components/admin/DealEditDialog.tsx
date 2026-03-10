@@ -40,9 +40,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUpload } from "./ImageUpload";
 import { fetchAPI } from "@/lib/api";
 import { parseGeoOverridesFromText, serializeGeoOverrides, type DealGeoOverrideInput } from "@/lib/deal-geo-config";
-import type { ApiDealResponse } from "@/app/admin/deals/page";
-import type { ApiBrandResponse } from "@/app/admin/brands/page";
-import type { ApiCategoryResponse } from "@/app/admin/categories/page";
+import type { ApiDealResponse } from "@/types/api";
+import type { ApiBrandResponse } from "@/types/api";
+import type { ApiCategoryResponse } from "@/types/api";
 
 const VERIFICATION_METHODS = [
     { value: "edu_email", label: ".edu Email" },

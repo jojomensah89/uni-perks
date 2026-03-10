@@ -5,12 +5,7 @@ import { CategoriesTable } from "@/components/admin/CategoriesTable";
 import { CategoryForm } from "@/components/admin/CategoryForm";
 import { fetchAPI } from "@/lib/api";
 
-export type ApiCategoryResponse = {
-    id: string;
-    name: string;
-    slug: string;
-    icon?: string;
-};
+import type { ApiCategoryResponse } from "@/types/api";
 
 export default function AdminCategoriesPage() {
     const categoriesQuery = useQuery({

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
-import type { ApiCategoryResponse } from "@/app/admin/categories/page";
+import type { ApiCategoryResponse } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Edit, Trash } from "lucide-react";
