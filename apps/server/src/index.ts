@@ -44,25 +44,25 @@ app.use(
 
 
 // API Reference UI
-if (env.NODE_ENV !== "production") {
-  // OpenAPI Spec
-  app.doc("/doc", {
-    openapi: "3.0.0",
-    info: {
-      version: "1.0.0",
-      title: "Uni-Perks API",
-      description: "API for Uni-Perks student discount platform",
+// OpenAPI Spec
+app.doc("/doc", {
+  openapi: "3.0.0",
+  info: {
+    version: "1.0.0",
+    title: "Uni-Perks API",
+    description: "API for Uni-Perks student discount platform",
+  },
+});
+app.get(
+  "/reference",
+  Scalar({
+    spec: {
+      url: "/doc",
     },
-  });
-  app.get(
-    "/reference",
-    Scalar({
-      spec: {
-        url: "/doc",
-      },
-    } as any),
-  );
-}
+  } as any),
+);
+
+
 // Auth routes
 app.on(["POST", "GET"], "/api/auth/*", async (c) => {
   if (c.req.method === "POST") {
