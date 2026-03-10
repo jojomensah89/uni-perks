@@ -2,24 +2,24 @@ import * as adminRepo from "../repositories/admin.repository";
 
 export const adminService = {
     /**
-     * Get all perks for admin dashboard
+     * Get all deals for admin dashboard
      */
-    getAllPerks: adminRepo.getAllPerksForAdmin,
+    getAllDeals: adminRepo.getAllDealsForAdmin,
 
     /**
-     * Create a new perk
+     * Create a new deal
      */
-    createPerk: adminRepo.createPerk,
+    createDeal: adminRepo.createDeal,
 
     /**
-     * Update an existing perk
+     * Update an existing deal
      */
-    updatePerk: adminRepo.updatePerk,
+    updateDeal: adminRepo.updateDeal,
 
     /**
-     * Soft delete a perk
+     * Soft delete a deal
      */
-    deletePerk: adminRepo.deletePerk,
+    deleteDeal: adminRepo.deleteDeal,
 
     /**
      * Toggle featured status
@@ -27,7 +27,7 @@ export const adminService = {
     toggleFeatured: adminRepo.toggleFeatured,
 
     /**
-     * Set perk expiration date
+     * Set deal expiration date
      */
-    setPerkExpiration: adminRepo.setPerkExpiration,
+    setDealExpiration: adminRepo.setDealExpiration,
 };
