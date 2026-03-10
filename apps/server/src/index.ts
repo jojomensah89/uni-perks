@@ -120,4 +120,22 @@ app.get("/", (c) => {
 // 404 handler (must be last)
 app.notFound(notFoundHandler);
 
-export default app;
+export default {
+  fetch: app.fetch,
+  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
+    const { db, deals, sql } = await import("@uni-perks/db");
+    const now = Date.now();
+
+    const expired = await db
+      .update(deals)
+      .set({ isActive: false })
+      .where(
+        sql`${deals.expirationDate} IS NOT NULL
+                    AND ${deals.expirationDate} < ${now}
+                    AND ${deals.isActive} = 1`
+      )
+      .returning({ id: deals.id });
+
+    console.log(`[cron] Expired ${expired.length} deals at ${new Date(now).toISOString()}`);
+  },
+};
