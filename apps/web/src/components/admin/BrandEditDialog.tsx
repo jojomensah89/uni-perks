@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "./ImageUpload";
 import { fetchAPI } from "@/lib/api";
-import type { ApiBrandResponse } from "@/app/admin/brands/page";
+import type { ApiBrandResponse } from "@/types/api";
 
 const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
 

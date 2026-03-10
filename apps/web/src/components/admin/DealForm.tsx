@@ -39,8 +39,8 @@ import { fetchAPI } from "@/lib/api";
 import { ImageUpload } from "./ImageUpload";
 import DealCard from "@/components/DealCard";
 import { parseGeoOverridesFromText } from "@/lib/deal-geo-config";
-import type { ApiBrandResponse } from "@/app/admin/brands/page";
-import type { ApiCategoryResponse } from "@/app/admin/categories/page";
+import type { ApiBrandResponse } from "@/types/api";
+import type { ApiCategoryResponse } from "@/types/api";
 
 interface DealFormProps {
     brands: ApiBrandResponse[];

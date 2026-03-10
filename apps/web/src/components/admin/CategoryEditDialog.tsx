@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { fetchAPI } from "@/lib/api";
-import type { ApiCategoryResponse } from "@/app/admin/categories/page";
+import type { ApiCategoryResponse } from "@/types/api";
 
 interface CategoryEditDialogProps {
     category: ApiCategoryResponse;

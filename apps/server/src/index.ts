@@ -1,7 +1,7 @@
 import { auth } from "@uni-perks/auth";
 import { env } from "@uni-perks/env/server";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { apiReference } from "@scalar/hono-api-reference";
+import { Scalar } from "@scalar/hono-api-reference";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
@@ -13,7 +13,7 @@ import brandsRouter from "./routes/brands.routes";
 import collectionsRouter from "./routes/collections.routes";
 import categoriesRouter from "./routes/categories.routes";
 import clicksRouter from "./routes/clicks.routes";
-import seedRouter from "./routes/seed.routes";
+
 import adminRouter from "./routes/admin.routes";
 import uploadRouter from "./routes/upload.routes";
 import imagesRouter from "./routes/images.routes";
@@ -42,25 +42,29 @@ app.use(
   }),
 );
 
-// OpenAPI Spec
-app.doc("/doc", {
-  openapi: "3.0.0",
-  info: {
-    version: "1.0.0",
-    title: "Uni-Perks API",
-    description: "API for Uni-Perks student discount platform",
-  },
-});
 
+const isDevelopment = process.env.NODE_ENV === "development";
 // API Reference UI
-app.get(
-  "/reference",
-  apiReference({
-    spec: {
-      url: "/doc",
+// OpenAPI Spec
+if (isDevelopment) {
+  app.doc("/doc", {
+    openapi: "3.0.0",
+    info: {
+      version: "1.0.0",
+      title: "Uni-Perks API",
+      description: "API for Uni-Perks student discount platform",
     },
-  } as any),
-);
+  });
+  app.get(
+    "/reference",
+    Scalar({
+      spec: {
+        url: "/doc",
+      },
+    } as any),
+  );
+}
+
 
 // Auth routes
 app.on(["POST", "GET"], "/api/auth/*", async (c) => {
@@ -98,7 +102,7 @@ app.route("/api/brands", brandsRouter);
 app.route("/api/collections", collectionsRouter);
 app.route("/api/categories", categoriesRouter);
 app.route("/api/clicks", clicksRouter);
-app.route("/api/seed", seedRouter);
+
 app.route("/api/admin", adminRouter);
 app.route("/api/upload", uploadRouter);
 app.route("/api/images", imagesRouter);
@@ -119,4 +123,22 @@ app.get("/", (c) => {
 // 404 handler (must be last)
 app.notFound(notFoundHandler);
 
-export default app;
+export default {
+  fetch: app.fetch,
+  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
+    const { db, deals, sql } = await import("@uni-perks/db");
+    const now = Date.now();
+
+    const expired = await db
+      .update(deals)
+      .set({ isActive: false })
+      .where(
+        sql`${deals.expirationDate} IS NOT NULL
+                    AND ${deals.expirationDate} < ${now}
+                    AND ${deals.isActive} = 1`
+      )
+      .returning({ id: deals.id });
+
+    console.log(`[cron] Expired ${expired.length} deals at ${new Date(now).toISOString()}`);
+  },
+};

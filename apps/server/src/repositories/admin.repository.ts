@@ -1,7 +1,6 @@
 import { db, deals, categories, eq, desc, asc } from "@uni-perks/db";
-import { tryCatch } from "../lib/async-handler";
 
-export interface CreatePerkInput {
+export interface CreateDealInput {
     slug: string;
     title: string;
     shortDescription: string;
@@ -27,175 +26,163 @@ export interface CreatePerkInput {
     expirationDate?: Date;
 }
 
-export interface UpdatePerkInput extends Partial<CreatePerkInput> {
+export interface UpdateDealInput extends Partial<CreateDealInput> {
     id: string;
 }
 
 /**
- * Get all perks for admin (including inactive)
+ * Get all deals for admin (including inactive)
  */
-export async function getAllPerksForAdmin(options?: {
+export async function getAllDealsForAdmin(options?: {
     page?: number;
     limit?: number;
     sortBy?: "createdAt" | "updatedAt" | "viewCount" | "clickCount";
     sortOrder?: "asc" | "desc";
 }) {
-    return tryCatch(async () => {
-        const page = options?.page || 1;
-        const limit = options?.limit || 50;
-        const offset = (page - 1) * limit;
-        const sortBy = options?.sortBy || "createdAt";
-        const sortOrder = options?.sortOrder || "desc";
+    const page = options?.page || 1;
+    const limit = options?.limit || 50;
+    const offset = (page - 1) * limit;
+    const sortBy = options?.sortBy || "createdAt";
+    const sortOrder = options?.sortOrder || "desc";
 
-        const sortColumn = deals[sortBy];
-        const orderFn = sortOrder === "asc" ? asc : desc;
+    const sortColumn = deals[sortBy];
+    const orderFn = sortOrder === "asc" ? asc : desc;
 
-        const results = await db
-            .select({
-                perk: deals,
-                category: categories,
-            })
-            .from(deals)
-            .leftJoin(categories, eq(deals.categoryId, categories.id))
-            .orderBy(orderFn(sortColumn))
-            .limit(limit)
-            .offset(offset)
-            .all();
+    const results = await db
+        .select({
+            deal: deals,
+            category: categories,
+        })
+        .from(deals)
+        .leftJoin(categories, eq(deals.categoryId, categories.id))
+        .orderBy(orderFn(sortColumn))
+        .limit(limit)
+        .offset(offset)
+        .all();
 
-        const total = await db
-            .select({ count: deals.id })
-            .from(deals)
-            .all();
+    const total = await db
+        .select({ count: deals.id })
+        .from(deals)
+        .all();
 
-        return {
-            perks: results,
-            meta: {
-                page,
-                limit,
-                total: total.length,
-            },
-        };
-    }, "Failed to fetch perks for admin");
+    return {
+        deals: results,
+        meta: {
+            page,
+            limit,
+            total: total.length,
+        },
+    };
 }
 
 /**
- * Create a new perk
+ * Create a new deal
  */
-export async function createPerk(input: CreatePerkInput) {
-    return tryCatch(async () => {
-        const dealId = crypto.randomUUID();
+export async function createDeal(input: CreateDealInput) {
+    const dealId = crypto.randomUUID();
 
-        // Note: brandId property missing in input but required in schema. 
-        // This suggests input schema also needs update or we need to handle it.
-        // For now, mapping directly but this might fail runtime if schema enforcement is strict and input lacks brandId.
+    // Note: brandId property missing in input but required in schema. 
+    // This suggests input schema also needs update or we need to handle it.
+    // For now, mapping directly but this might fail runtime if schema enforcement is strict and input lacks brandId.
 
-        await db.insert(deals).values({
-            id: dealId,
-            ...input,
-            // Fallback content until we have brandId in input
-            brandId: "legacy-admin-placeholder",
-            discountType: "percentage", // Default
-            discountLabel: "Special Offer", // Default
-            isActive: true,
-            clickCount: 0,
-            viewCount: 0,
-        } as any);
+    await db.insert(deals).values({
+        id: dealId,
+        ...input,
+        // Fallback content until we have brandId in input
+        brandId: "legacy-admin-placeholder",
+        discountType: "percentage", // Default
+        discountLabel: "Special Offer", // Default
+        isActive: true,
+        clickCount: 0,
+        viewCount: 0,
+    } as any);
 
-        return await db
-            .select({ perk: deals, category: categories })
-            .from(deals)
-            .leftJoin(categories, eq(deals.categoryId, categories.id))
-            .where(eq(deals.id, dealId))
-            .get();
-    }, "Failed to create perk");
+    return await db
+        .select({ deal: deals, category: categories })
+        .from(deals)
+        .leftJoin(categories, eq(deals.categoryId, categories.id))
+        .where(eq(deals.id, dealId))
+        .get();
 }
 
 /**
- * Update a perk
+ * Update a deal
  */
-export async function updatePerk(input: UpdatePerkInput) {
-    return tryCatch(async () => {
-        const { id, ...updateData } = input;
+export async function updateDeal(input: UpdateDealInput) {
+    const { id, ...updateData } = input;
 
-        await db
-            .update(deals)
-            .set({
-                ...updateData,
-                updatedAt: new Date(),
-            })
-            .where(eq(deals.id, id))
-            .run();
+    await db
+        .update(deals)
+        .set({
+            ...updateData,
+            updatedAt: new Date(),
+        })
+        .where(eq(deals.id, id))
+        .run();
 
-        return await db
-            .select({ perk: deals, category: categories })
-            .from(deals)
-            .leftJoin(categories, eq(deals.categoryId, categories.id))
-            .where(eq(deals.id, id))
-            .get();
-    }, `Failed to update perk: ${input.id}`);
+    return await db
+        .select({ deal: deals, category: categories })
+        .from(deals)
+        .leftJoin(categories, eq(deals.categoryId, categories.id))
+        .where(eq(deals.id, id))
+        .get();
 }
 
 /**
- * Soft delete a perk (set isActive to false)
+ * Soft delete a deal (set isActive to false)
  */
-export async function deletePerk(perkId: string) {
-    return tryCatch(async () => {
-        await db
-            .update(deals)
-            .set({
-                isActive: false,
-                updatedAt: new Date(),
-            })
-            .where(eq(deals.id, perkId))
-            .run();
+export async function deleteDeal(dealId: string) {
+    await db
+        .update(deals)
+        .set({
+            isActive: false,
+            updatedAt: new Date(),
+        })
+        .where(eq(deals.id, dealId))
+        .run();
 
-        return { success: true };
-    }, `Failed to delete perk: ${perkId}`);
+    return { success: true };
 }
 
 /**
  * Toggle featured status
  */
-export async function toggleFeatured(perkId: string) {
-    return tryCatch(async () => {
-        const perk = await db
-            .select()
-            .from(deals)
-            .where(eq(deals.id, perkId))
-            .get();
+export async function toggleFeatured(dealId: string) {
+    const deal = await db
+        .select()
+        .from(deals)
+        .where(eq(deals.id, dealId))
+        .get();
 
-        if (!perk) {
-            throw new Error("Perk not found");
-        }
+    if (!deal) {
+        throw new Error("Deal not found");
+    }
 
-        await db
-            .update(deals)
-            .set({
-                isFeatured: !perk.isFeatured,
-                updatedAt: new Date(),
-            })
-            .where(eq(deals.id, perkId))
-            .run();
+    await db
+        .update(deals)
+        .set({
+            isFeatured: !deal.isFeatured,
+            updatedAt: new Date(),
+        })
+        .where(eq(deals.id, dealId))
+        .run();
 
-        return { isFeatured: !perk.isFeatured };
-    }, `Failed to toggle featured: ${perkId}`);
+    return { isFeatured: !deal.isFeatured };
 }
 
 /**
- * Set perk expiration
+ * Set deal expiration
  */
-export async function setPerkExpiration(perkId: string, expirationDate: Date | null) {
-    return tryCatch(async () => {
-        await db
-            .update(deals)
-            .set({
-                expirationDate,
-                isActive: expirationDate ? expirationDate > new Date() : true,
-                updatedAt: new Date(),
-            })
-            .where(eq(deals.id, perkId))
-            .run();
+export async function setDealExpiration(dealId: string, expirationDate: Date | null) {
+    await db
+        .update(deals)
+        .set({
+            expirationDate,
+            isActive: expirationDate ? expirationDate > new Date() : true,
+            updatedAt: new Date(),
+        })
+        .where(eq(deals.id, dealId))
+        .run();
 
-        return { success: true };
-    }, `Failed to set expiration: ${perkId}`);
+    return { success: true };
 }

@@ -37,7 +37,7 @@ const trackClickRoute = createRoute({
             content: {
                 "application/json": {
                     schema: z.object({
-                        message: z.string(),
+                        error: z.string(),
                     }),
                 },
             },
@@ -47,7 +47,7 @@ const trackClickRoute = createRoute({
             content: {
                 "application/json": {
                     schema: z.object({
-                        message: z.string(),
+                        error: z.string(),
                     }),
                 },
             },
@@ -61,7 +61,7 @@ app.openapi(trackClickRoute, async (c) => {
     const rate = await checkRateLimit(c, `click:${ip}`, 20, 60);
     if (!rate.allowed) {
         c.header("Retry-After", String(rate.retryAfterSeconds));
-        return c.json({ message: "Too many click attempts. Please try again shortly." }, 429);
+        return c.json({ error: "Too many click attempts. Please try again shortly." }, 429);
     }
     const { dealId } = c.req.valid("param");
 

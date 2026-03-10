@@ -29,11 +29,11 @@ function normalizeConditions(input?: string[] | string | null): string | null {
     return lines.length > 0 ? JSON.stringify(lines) : null;
 }
 
-function normalizeExpirationDate(input?: string | number | null): number | null {
+function normalizeExpirationDate(input?: string | number | null): Date | null {
     if (input === undefined || input === null) return null;
-    if (typeof input === "number") return input;
+    if (typeof input === "number") return new Date(input);
     const parsed = Date.parse(input);
-    return Number.isNaN(parsed) ? null : parsed;
+    return Number.isNaN(parsed) ? null : new Date(parsed);
 }
 
 const listDealsRoute = createRoute({
@@ -104,7 +104,7 @@ const getDealRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -153,7 +153,7 @@ const createDealRoute = createRoute({
         },
         400: {
             description: "Invalid request",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -164,8 +164,8 @@ app.openapi(createDealRoute, async (c) => {
     const payload = {
         slug: body.slug,
         title: body.title,
-        shortDescription: body.shortDescription,
-        longDescription: body.longDescription,
+        shortDescription: body.shortDescription ?? "",
+        longDescription: body.longDescription ?? "",
         brandId: body.brandId,
         categoryId: body.categoryId,
         discountType: body.discountType,
@@ -192,8 +192,9 @@ app.openapi(createDealRoute, async (c) => {
         metaDescription: body.metaDescription ?? null,
     };
 
-    const result = await db.insert(deals).values(payload).returning();
-    return c.json(result[0], 201);
+    const [created] = await db.insert(deals).values(payload).returning();
+    if (!created) throw new BadRequestError("Failed to create deal");
+    return c.json(created, 201);
 });
 
 const updateDealRoute = createRoute({
@@ -221,7 +222,7 @@ const updateDealRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -232,8 +233,8 @@ app.openapi(updateDealRoute, async (c) => {
 
     const payload = {
         ...(body.title !== undefined ? { title: body.title } : {}),
-        ...(body.shortDescription !== undefined ? { shortDescription: body.shortDescription } : {}),
-        ...(body.longDescription !== undefined ? { longDescription: body.longDescription } : {}),
+        ...(body.shortDescription !== undefined ? { shortDescription: body.shortDescription ?? "" } : {}),
+        ...(body.longDescription !== undefined ? { longDescription: body.longDescription ?? "" } : {}),
         ...(body.brandId !== undefined ? { brandId: body.brandId } : {}),
         ...(body.categoryId !== undefined ? { categoryId: body.categoryId } : {}),
         ...(body.discountType !== undefined ? { discountType: body.discountType } : {}),
@@ -260,17 +261,17 @@ app.openapi(updateDealRoute, async (c) => {
         ...(body.metaDescription !== undefined ? { metaDescription: body.metaDescription ?? null } : {}),
     };
 
-    const result = await db
+    const [updated] = await db
         .update(deals)
         .set(payload)
         .where(eq(deals.id, id))
         .returning();
 
-    if (!result[0]) {
+    if (!updated) {
         throw new BadRequestError("Deal not found");
     }
 
-    return c.json(result[0], 200);
+    return c.json(updated, 200);
 });
 
 const deleteDealRoute = createRoute({
@@ -291,7 +292,7 @@ const deleteDealRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -299,17 +300,17 @@ const deleteDealRoute = createRoute({
 app.openapi(deleteDealRoute, async (c) => {
     const { id } = c.req.valid("param");
 
-    const result = await db
+    const [deleted] = await db
         .update(deals)
         .set({ isActive: false })
         .where(eq(deals.id, id))
         .returning();
 
-    if (!result[0]) {
+    if (!deleted) {
         throw new BadRequestError("Deal not found");
     }
 
-    return c.json(result[0], 200);
+    return c.json(deleted, 200);
 });
 
 const DealGeoConfigSchema = z.object({
@@ -407,7 +408,7 @@ const upsertDealGeoConfigRoute = createRoute({
         },
         400: {
             description: "Invalid request",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } },
+            content: { "application/json": { schema: z.object({ error: z.string() }) } },
         },
     },
 });
@@ -438,7 +439,7 @@ app.openapi(upsertDealGeoConfigRoute, async (c) => {
     };
 
     if (!existing[0]) {
-        const inserted = await db
+        const [inserted] = await db
             .insert(dealGeoConfig)
             .values({
                 dealId: id,
@@ -452,20 +453,23 @@ app.openapi(upsertDealGeoConfigRoute, async (c) => {
                 isAvailable: body.isAvailable ?? true,
             })
             .returning();
-        return c.json(inserted[0], 200);
+        if (!inserted) throw new BadRequestError("Failed to insert deal geo config");
+        return c.json(inserted, 200);
     }
 
     if (Object.keys(payload).length === 0) {
         return c.json(existing[0], 200);
     }
 
-    const updated = await db
+    const [updated] = await db
         .update(dealGeoConfig)
         .set(payload)
         .where(eq(dealGeoConfig.id, existing[0].id))
         .returning();
 
-    return c.json(updated[0], 200);
+    if (!updated) throw new BadRequestError("Failed to update deal geo config");
+
+    return c.json(updated, 200);
 });
 
 const deleteDealGeoConfigRoute = createRoute({
@@ -561,7 +565,7 @@ const createBrandRoute = createRoute({
         },
         400: {
             description: "Invalid request",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -583,8 +587,9 @@ app.openapi(createBrandRoute, async (c) => {
         metaDescription: body.metaDescription ?? null,
     };
 
-    const result = await db.insert(brands).values(payload).returning();
-    return c.json(result[0], 201);
+    const [created] = await db.insert(brands).values(payload).returning();
+    if (!created) throw new BadRequestError("Failed to create brand");
+    return c.json(created, 201);
 });
 
 const updateBrandRoute = createRoute({
@@ -612,7 +617,7 @@ const updateBrandRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -634,17 +639,17 @@ app.openapi(updateBrandRoute, async (c) => {
         ...(body.metaDescription !== undefined ? { metaDescription: body.metaDescription ?? null } : {}),
     };
 
-    const result = await db
+    const [updated] = await db
         .update(brands)
         .set(payload)
         .where(eq(brands.id, id))
         .returning();
 
-    if (!result[0]) {
+    if (!updated) {
         throw new BadRequestError("Brand not found");
     }
 
-    return c.json(result[0], 200);
+    return c.json(updated, 200);
 });
 
 // ===== COLLECTIONS CRUD =====
@@ -705,7 +710,7 @@ const getCollectionRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -766,7 +771,7 @@ const createCollectionRoute = createRoute({
         },
         400: {
             description: "Invalid request",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -787,8 +792,9 @@ app.openapi(createCollectionRoute, async (c) => {
         metaDescription: body.metaDescription ?? null,
     };
 
-    const result = await db.insert(collections).values(payload).returning();
-    return c.json(result[0], 201);
+    const [created] = await db.insert(collections).values(payload).returning();
+    if (!created) throw new BadRequestError("Failed to create collection");
+    return c.json(created, 201);
 });
 
 const updateCollectionRoute = createRoute({
@@ -816,7 +822,7 @@ const updateCollectionRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -837,17 +843,17 @@ app.openapi(updateCollectionRoute, async (c) => {
         ...(body.metaDescription !== undefined ? { metaDescription: body.metaDescription ?? null } : {}),
     };
 
-    const result = await db
+    const [updated] = await db
         .update(collections)
         .set(payload)
         .where(eq(collections.id, id))
         .returning();
 
-    if (!result[0]) {
+    if (!updated) {
         throw new BadRequestError("Collection not found");
     }
 
-    return c.json(result[0], 200);
+    return c.json(updated, 200);
 });
 
 const deleteCollectionRoute = createRoute({
@@ -868,7 +874,7 @@ const deleteCollectionRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -880,9 +886,9 @@ app.openapi(deleteCollectionRoute, async (c) => {
     await db.delete(collectionDeals).where(eq(collectionDeals.collectionId, id));
 
     // Delete collection
-    const result = await db.delete(collections).where(eq(collections.id, id)).returning();
+    const [deleted] = await db.delete(collections).where(eq(collections.id, id)).returning();
 
-    if (!result[0]) {
+    if (!deleted) {
         throw new BadRequestError("Collection not found");
     }
 
@@ -919,7 +925,7 @@ const addDealToCollectionRoute = createRoute({
         },
         400: {
             description: "Invalid request",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -967,7 +973,7 @@ const removeDealFromCollectionRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -1171,7 +1177,7 @@ const createCategoryRoute = createRoute({
         },
         400: {
             description: "Invalid request",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -1190,9 +1196,10 @@ app.openapi(createCategoryRoute, async (c) => {
         metaDescription: body.metaDescription ?? null,
     };
 
-    const result = await db.insert(categories).values(payload).returning();
+    const [created] = await db.insert(categories).values(payload).returning();
+    if (!created) throw new BadRequestError("Failed to create category");
     await invalidateKV((c.env as { KV?: KVNamespace }).KV, "categories:all");
-    return c.json(result[0], 201);
+    return c.json(created, 201);
 });
 
 const updateCategoryRoute = createRoute({
@@ -1220,7 +1227,7 @@ const updateCategoryRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -1239,19 +1246,19 @@ app.openapi(updateCategoryRoute, async (c) => {
         ...(body.metaDescription !== undefined ? { metaDescription: body.metaDescription ?? null } : {}),
     };
 
-    const result = await db
+    const [updated] = await db
         .update(categories)
         .set(payload)
         .where(eq(categories.id, id))
         .returning();
 
-    if (!result[0]) {
+    if (!updated) {
         throw new BadRequestError("Category not found");
     }
 
     await invalidateKV((c.env as { KV?: KVNamespace }).KV, "categories:all");
 
-    return c.json(result[0], 200);
+    return c.json(updated, 200);
 });
 
 const deleteCategoryRoute = createRoute({
@@ -1272,7 +1279,7 @@ const deleteCategoryRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -1280,9 +1287,9 @@ const deleteCategoryRoute = createRoute({
 app.openapi(deleteCategoryRoute, async (c) => {
     const { id } = c.req.valid("param");
 
-    const result = await db.delete(categories).where(eq(categories.id, id)).returning();
+    const [deleted] = await db.delete(categories).where(eq(categories.id, id)).returning();
 
-    if (!result[0]) {
+    if (!deleted) {
         throw new BadRequestError("Category not found");
     }
 

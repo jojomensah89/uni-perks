@@ -12,12 +12,12 @@ app.get("/*", async (c) => {
     const key = c.req.path.replace(/^\/api\/images\//, "");
 
     if (!key) {
-        return c.json({ message: "Image key required" }, 404);
+        return c.json({ error: "Image key required" }, 404);
     }
 
     const bucket = (env as any).BUCKET;
     if (!bucket) {
-        return c.json({ message: "R2 bucket not configured" }, 404);
+        return c.json({ error: "R2 bucket not configured" }, 404);
     }
 
     // Decode the key in case it was URL-encoded
@@ -27,7 +27,7 @@ app.get("/*", async (c) => {
     const object = await bucket.get(decodedKey);
 
     if (!object) {
-        return c.json({ message: "Image not found" }, 404);
+        return c.json({ error: "Image not found" }, 404);
     }
 
     // Get the content type from the object's HTTP metadata or default to binary

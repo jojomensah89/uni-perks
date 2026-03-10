@@ -4,43 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { DealsTable } from "@/components/admin/DealsTable";
 import { DealForm } from "@/components/admin/DealForm";
 import { fetchAPI } from "@/lib/api";
-import type { ApiBrandResponse } from "@/app/admin/brands/page";
-import type { ApiCategoryResponse } from "@/app/admin/categories/page";
-
-// API returns nested structure: { deal: {...}, brand: {...}, category: {...} }
-export type ApiDealResponse = {
-    deal: {
-        id: string;
-        title: string;
-        slug: string;
-        discountType: string;
-        discountValue: number | null;
-        discountLabel: string;
-        shortDescription?: string;
-        longDescription?: string;
-        coverImageUrl?: string | null;
-        originalPrice?: number | null;
-        studentPrice?: number | null;
-        currency?: string;
-        claimUrl?: string;
-        affiliateUrl?: string;
-        verificationMethod?: string;
-        eligibilityNote?: string;
-        howToRedeem?: string;
-        conditions?: string;
-        termsUrl?: string;
-        minimumSpend?: number | null;
-        isNewCustomerOnly?: boolean;
-        isActive: boolean;
-        isFeatured: boolean;
-        isExclusive?: boolean;
-        expirationDate?: string | number | null;
-        metaTitle?: string;
-        metaDescription?: string;
-    };
-    brand: Pick<ApiBrandResponse, "id" | "name" | "slug" | "logoUrl">;
-    category: Pick<ApiCategoryResponse, "id" | "name" | "slug">;
-};
+import type { ApiDealResponse, ApiBrandResponse, ApiCategoryResponse } from "@/types/api";
 
 export default function AdminDealsPage() {
     const dealsQuery = useQuery({

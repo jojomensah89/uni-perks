@@ -13,7 +13,6 @@ export function ClaimButton({ perkSlug, source = "detail", available }: ClaimBut
     const serverOrigin = process.env.NEXT_PUBLIC_SERVER_URL;
     const claimPath = `/go/${perkSlug}?src=${source}`;
     const href = serverOrigin ? new URL(claimPath, serverOrigin).toString() : claimPath;
-    };
 
     return (
         <a

@@ -50,6 +50,7 @@ export const server = await Worker("server", {
   dev: {
     port: 3000,
   },
+  crons: ["0 2 * * *"], // Daily at 2am UTC
 });
 
 console.log(`Web    -> ${web.url}`);

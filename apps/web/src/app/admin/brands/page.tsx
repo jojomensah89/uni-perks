@@ -5,17 +5,7 @@ import { BrandsTable } from "@/components/admin/BrandsTable";
 import { BrandForm } from "@/components/admin/BrandForm";
 import { fetchAPI } from "@/lib/api";
 
-export type ApiBrandResponse = {
-    id: string;
-    name: string;
-    slug: string;
-    tagline?: string;
-    description?: string;
-    website?: string;
-    isVerified?: boolean;
-    logoUrl?: string;
-    coverImageUrl?: string | null;
-};
+import type { ApiBrandResponse } from "@/types/api";
 
 export default function AdminBrandsPage() {
     const brandsQuery = useQuery({

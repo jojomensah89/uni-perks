@@ -256,7 +256,7 @@ const subscribeRoute = createRoute({
             description: "Invalid request",
             content: {
                 "application/json": {
-                    schema: z.object({ message: z.string() }),
+                    schema: z.object({ error: z.string() }),
                 },
             },
         },
@@ -264,7 +264,7 @@ const subscribeRoute = createRoute({
             description: "Rate limited",
             content: {
                 "application/json": {
-                    schema: z.object({ message: z.string() }),
+                    schema: z.object({ error: z.string() }),
                 },
             },
         },
@@ -279,7 +279,7 @@ app.openapi(subscribeRoute, async (c) => {
     const rate = await checkRateLimit(c, `newsletter:subscribe:${ip}`, 3, 600);
     if (!rate.allowed) {
         c.header("Retry-After", String(rate.retryAfterSeconds));
-        return c.json({ message: "Too many subscription attempts. Please try again later." }, 429);
+        return c.json({ error: "Too many subscription attempts. Please try again later." }, 429);
     }
 
     const turnstileOk = await verifyTurnstile(c, body.turnstileToken ?? null);
@@ -469,7 +469,7 @@ const unsubscribeRoute = createRoute({
             description: "Invalid token or payload",
             content: {
                 "application/json": {
-                    schema: z.object({ message: z.string() }),
+                    schema: z.object({ error: z.string() }),
                 },
             },
         },
@@ -632,7 +632,7 @@ const previewNewsletterRoute = createRoute({
             description: "Invalid request",
             content: {
                 "application/json": {
-                    schema: z.object({ message: z.string() }),
+                    schema: z.object({ error: z.string() }),
                 },
             },
         },
@@ -706,7 +706,7 @@ const sendNewsletterRoute = createRoute({
             description: "Invalid request",
             content: {
                 "application/json": {
-                    schema: z.object({ message: z.string() }),
+                    schema: z.object({ error: z.string() }),
                 },
             },
         },
