@@ -34,9 +34,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         const regions = regionsData.regions || [];
 
         // Generate comparison URLs (brand pairs in same category)
-        const comparisonUrls: MetadataRoute.Sitemap = [];
+        const rawComparisonUrls: MetadataRoute.Sitemap = [];
         const brandsByCategory = new Map<string, any[]>();
-        
+
         for (const deal of deals) {
             const catSlug = deal.category?.slug;
             const brandSlug = deal.brand?.slug;
@@ -56,7 +56,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             for (let i = 0; i < catBrands.length; i++) {
                 for (let j = i + 1; j < catBrands.length; j++) {
                     const [a, b] = [catBrands[i].slug, catBrands[j].slug].sort();
-                    comparisonUrls.push({
+                    rawComparisonUrls.push({
                         url: `${SITE_URL}/compare/${a}-vs-${b}`,
                         lastModified: new Date(),
                         changeFrequency: 'weekly',
@@ -65,6 +65,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                 }
             }
         }
+
+        const MAX_COMPARISONS = 500;
+        const comparisonUrls = rawComparisonUrls.slice(0, MAX_COMPARISONS);
 
         return [
             // Homepage
@@ -149,13 +152,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                 changeFrequency: 'weekly' as const,
                 priority: 0.6,
             })),
-            // Auth pages
-            {
-                url: `${SITE_URL}/login`,
-                lastModified: new Date(),
-                changeFrequency: 'monthly',
-                priority: 0.3,
-            },
         ];
     } catch (error) {
         console.error('Error generating sitemap:', error);
