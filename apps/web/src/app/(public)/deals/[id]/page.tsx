@@ -21,8 +21,24 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     }
 }
 
-export default async function DealDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+function formatCurrencyValue(value: number | null | undefined, currency: string) {
+    if (value === null || value === undefined) return null;
+    try {
+        return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
+    } catch {
+        return `${value} ${currency}`;
+    }
+}
+
+export default async function DealDetailsPage({
+    params,
+    searchParams,
+}: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ unavailable?: string }>;
+}) {
     const { id: slug } = await params;
+    const { unavailable } = await searchParams;
 
     let responseData;
     let otherDeals: any[] = [];
@@ -37,6 +53,13 @@ export default async function DealDetailsPage({ params }: { params: Promise<{ id
     }
 
     const { deal, brand, category, tags = [], regions = [] } = responseData;
+    const serverOrigin = process.env.NEXT_PUBLIC_SERVER_URL;
+    const claimPath = `/go/${deal.slug}?src=detail`;
+    const claimHref = serverOrigin ? new URL(claimPath, serverOrigin).toString() : claimPath;
+    const isUnavailable = unavailable === "1" || (deal as any).isAvailable === false;
+    const displayCurrency = (deal.currency || "USD").toUpperCase();
+    const studentPriceLabel = formatCurrencyValue(deal.studentPrice, displayCurrency);
+    const originalPriceLabel = formatCurrencyValue(deal.originalPrice, displayCurrency);
 
     if (brand.id) {
         try {
@@ -173,6 +196,16 @@ export default async function DealDetailsPage({ params }: { params: Promise<{ id
 
                 <div className="space-y-4">
                     <div className="bg-card rounded-xl p-6 border border-border shadow-sm lg:sticky lg:top-6">
+                        {isUnavailable && (
+                            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-sm">
+                                <div className="flex items-start gap-2">
+                                    <XCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                                    <p className="text-foreground">
+                                        This offer is currently unavailable in your selected country.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                         {deal.coverImageUrl && (
                             <div className="mb-4 aspect-video w-full overflow-hidden rounded-lg bg-muted border border-border">
                                 <img
@@ -185,6 +218,21 @@ export default async function DealDetailsPage({ params }: { params: Promise<{ id
                         <div className="text-2xl font-black mb-1 ">{deal.discountLabel}</div>
                         <p className="text-sm text-muted-foreground mb-4">{deal.shortDescription}</p>
 
+                        {(studentPriceLabel || originalPriceLabel) && (
+                            <div className="mb-4 p-3 bg-muted rounded-lg border border-border space-y-1">
+                                {studentPriceLabel && (
+                                    <p className="text-sm font-semibold">
+                                        Student price: <span className="text-primary">{studentPriceLabel}</span>
+                                    </p>
+                                )}
+                                {originalPriceLabel && (
+                                    <p className="text-xs text-muted-foreground">
+                                        Original: {originalPriceLabel}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         {deal.verificationMethod && (
                             <div className="flex items-center gap-2 text-sm mb-4 p-3 bg-muted rounded-lg">
                                 <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
@@ -195,15 +243,25 @@ export default async function DealDetailsPage({ params }: { params: Promise<{ id
                             </div>
                         )}
 
-                        <a
-                            href={deal.claimUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full bg-primary text-primary-foreground py-3 rounded-full text-sm font-bold hover:opacity-80 transition-opacity flex items-center justify-center gap-2 no-underline"
-                        >
-                            Claim Offer
-                            <ExternalLink className="w-4 h-4" />
-                        </a>
+                        {isUnavailable ? (
+                            <button
+                                type="button"
+                                disabled
+                                className="w-full bg-muted text-muted-foreground py-3 rounded-full text-sm font-bold flex items-center justify-center gap-2 cursor-not-allowed"
+                            >
+                                Offer unavailable
+                            </button>
+                        ) : (
+                            <a
+                                href={claimHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full bg-primary text-primary-foreground py-3 rounded-full text-sm font-bold hover:opacity-80 transition-opacity flex items-center justify-center gap-2 no-underline"
+                            >
+                                Claim Offer
+                                <ExternalLink className="w-4 h-4" />
+                            </a>
+                        )}
 
                         <p className="text-xs text-muted-foreground text-center mt-3">
                             You&apos;ll be redirected to {brand.name}&apos;s website

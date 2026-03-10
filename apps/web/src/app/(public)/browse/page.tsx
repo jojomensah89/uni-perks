@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import DealCard, { type ApiDealResponse } from "@/components/DealCard";
 import { fetchAPI } from "@/lib/api";
+import { Input } from "@/components/ui/input";
 
 type ApiCategoryResponse = {
     id: string;
@@ -114,7 +115,7 @@ function BrowseContent() {
                 {/* Search */}
                 <div className="relative max-w-md mb-6">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
+                    <Input
                         type="text"
                         placeholder="Search brand, category, or discount..."
                         value={search}

@@ -6,7 +6,7 @@ import { DataTable } from "@/components/ui/data-table";
 import type { ApiDealResponse } from "@/app/admin/deals/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Edit, Trash } from "lucide-react";
+import { MoreHorizontal, Edit, Trash, LayoutGrid, Table2 } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -32,6 +32,26 @@ import { useRouter } from "next/navigation";
 import type { ApiBrandResponse } from "@/app/admin/brands/page";
 import type { ApiCategoryResponse } from "@/app/admin/categories/page";
 import { DealEditDialog } from "./DealEditDialog";
+
+const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
+
+function DealLogo({ logoUrl, name }: { logoUrl?: string | null; name: string }) {
+    if (logoUrl) {
+        return (
+            <img
+                src={`${API_URL}/api/images/${logoUrl}`}
+                alt={name}
+                className="h-6 w-6 rounded object-contain bg-muted shrink-0"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
+        );
+    }
+    return (
+        <span className="h-6 w-6 rounded bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0">
+            {name?.charAt(0)?.toUpperCase() || "?"}
+        </span>
+    );
+}
 
 function DealsTableActions({ row, brands, categories }: { row: ApiDealResponse; brands: ApiBrandResponse[]; categories: ApiCategoryResponse[] }) {
     const [deleteOpen, setDeleteOpen] = useState(false);
@@ -115,14 +135,18 @@ function DealsTableActions({ row, brands, categories }: { row: ApiDealResponse; 
     );
 }
 
-export function getDealsColumns(): ColumnDef<ApiDealResponse>[] {
+function getDealsColumns(brands: ApiBrandResponse[], categories: ApiCategoryResponse[]): ColumnDef<ApiDealResponse>[] {
     return [
         {
             accessorKey: "deal.title",
             header: "Title",
             cell: ({ row }) => (
-                <div>
-                    <div className="font-medium">{row.original.deal.title}</div>
+                <div className="flex items-center gap-2 min-w-0">
+                    <DealLogo
+                        logoUrl={row.original.brand?.logoUrl}
+                        name={row.original.brand?.name || "?"}
+                    />
+                    <span className="font-medium truncate">{row.original.deal.title}</span>
                 </div>
             ),
         },
@@ -164,19 +188,103 @@ export function getDealsColumns(): ColumnDef<ApiDealResponse>[] {
         },
         {
             id: "actions",
-            cell: ({ row }) => <DealsTableActions row={row.original} brands={[]} categories={[]} />,
+            cell: ({ row }) => <DealsTableActions row={row.original} brands={brands} categories={categories} />,
         },
     ];
 }
 
+// ---- Card view ----
+function DealCard({ deal: row, brands, categories }: { deal: ApiDealResponse; brands: ApiBrandResponse[]; categories: ApiCategoryResponse[] }) {
+    const deal = row.deal;
+    const coverUrl = deal.coverImageUrl
+        ? `${API_URL}/api/images/${deal.coverImageUrl}`
+        : null;
+
+    return (
+        <div className="group relative flex flex-col rounded-xl border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            {/* Cover image */}
+            <div className="h-32 bg-muted flex items-center justify-center overflow-hidden relative">
+                {coverUrl ? (
+                    <img src={coverUrl} alt={deal.title} className="w-full h-full object-cover" />
+                ) : (
+                    <span className="text-muted-foreground text-xs">No image</span>
+                )}
+                {/* Action button – always visible on mobile, hover on desktop */}
+                <div className="absolute top-2 right-2">
+                    <DealsTableActions row={row} brands={brands} categories={categories} />
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-3 flex flex-col gap-1.5 flex-1">
+                <div className="flex items-center gap-2 min-w-0">
+                    <DealLogo logoUrl={row.brand?.logoUrl} name={row.brand?.name || "?"} />
+                    <span className="text-xs text-muted-foreground truncate">{row.brand?.name}</span>
+                </div>
+                <p className="font-semibold text-sm leading-snug line-clamp-2">{deal.title}</p>
+                <div className="flex items-center gap-1.5 flex-wrap mt-auto pt-1">
+                    <Badge variant="outline" className="font-mono text-xs">
+                        {deal.discountLabel || `${deal.discountValue}${deal.discountType === "percentage" ? "%" : ""}`}
+                    </Badge>
+                    {deal.isFeatured && <Badge className="bg-primary text-xs">Featured</Badge>}
+                    {deal.isActive
+                        ? <Badge className="bg-green-600 text-xs">Active</Badge>
+                        : <Badge variant="secondary" className="text-xs">Inactive</Badge>}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ---- View toggle + combined component ----
 const EMPTY_BRANDS: ApiBrandResponse[] = [];
 const EMPTY_CATEGORIES: ApiCategoryResponse[] = [];
 
+type ViewMode = "table" | "card";
+
 export function DealsTable({ data, brands = EMPTY_BRANDS, categories = EMPTY_CATEGORIES }: { data: ApiDealResponse[]; brands?: ApiBrandResponse[]; categories?: ApiCategoryResponse[] }) {
-    const columns = getDealsColumns();
+    const [view, setView] = useState<ViewMode>("table");
+    const columns = getDealsColumns(brands, categories);
+
     return (
-        <div className="w-full">
-            <DataTable columns={columns} data={data} />
+        <div className="w-full space-y-3">
+            {/* Toggle buttons */}
+            <div className="flex justify-end">
+                <div className="flex rounded-lg border overflow-hidden">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`rounded-none px-3 gap-1.5 ${view === "table" ? "bg-muted font-semibold" : ""}`}
+                        onClick={() => setView("table")}
+                    >
+                        <Table2 className="h-4 w-4" />
+                        Table
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`rounded-none px-3 gap-1.5 border-l ${view === "card" ? "bg-muted font-semibold" : ""}`}
+                        onClick={() => setView("card")}
+                    >
+                        <LayoutGrid className="h-4 w-4" />
+                        Cards
+                    </Button>
+                </div>
+            </div>
+
+            {/* Views */}
+            {view === "table" ? (
+                <DataTable columns={columns} data={data} />
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {data.map((d) => (
+                        <DealCard key={d.deal.id} deal={d} brands={brands} categories={categories} />
+                    ))}
+                    {data.length === 0 && (
+                        <p className="col-span-full text-center text-muted-foreground py-12">No deals found.</p>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

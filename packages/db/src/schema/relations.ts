@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm";
 import { brands, categories, brandFaqs, brandProducts } from "./brands";
-import { deals } from "./deals";
+import { deals, dealGeoConfig } from "./deals";
 import { tags, dealTags } from "./tags";
 import { collections, collectionDeals } from "./collections";
 import { regions, dealRegions } from "./geo";
@@ -12,6 +12,12 @@ export const brandsRelations = relations(brands, ({ many }) => ({
     clicks: many(clicks),
     faqs: many(brandFaqs),
     products: many(brandProducts),
+}));
+export const dealGeoConfigRelations = relations(dealGeoConfig, ({ one }) => ({
+    deal: one(deals, {
+        fields: [dealGeoConfig.dealId],
+        references: [deals.id],
+    }),
 }));
 
 // ===== BRAND FAQ RELATIONS =====
@@ -41,6 +47,7 @@ export const dealsRelations = relations(deals, ({ one, many }) => ({
     }),
     dealTags: many(dealTags),
     dealRegions: many(dealRegions),
+    dealGeoConfig: many(dealGeoConfig),
     collectionDeals: many(collectionDeals),
     clicks: many(clicks),
     pageViews: many(pageViews),

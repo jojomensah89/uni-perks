@@ -1,9 +1,9 @@
 "use client";
 
 import { useForm, useStore } from "@tanstack/react-form";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Eye } from "lucide-react";
 
@@ -39,6 +39,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUpload } from "./ImageUpload";
 import { fetchAPI } from "@/lib/api";
+import { parseGeoOverridesFromText, serializeGeoOverrides, type DealGeoOverrideInput } from "@/lib/deal-geo-config";
 import type { ApiDealResponse } from "@/app/admin/deals/page";
 import type { ApiBrandResponse } from "@/app/admin/brands/page";
 import type { ApiCategoryResponse } from "@/app/admin/categories/page";
@@ -62,6 +63,11 @@ interface DealEditDialogProps {
     onOpenChange: (open: boolean) => void;
     brands?: ApiBrandResponse[];
     categories?: ApiCategoryResponse[];
+}
+
+interface DealGeoConfigResponse extends DealGeoOverrideInput {
+    id: string;
+    dealId: string;
 }
 
 const EMPTY_BRANDS: ApiBrandResponse[] = [];
@@ -103,9 +109,13 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
             isActive: d.isActive !== false,
             metaTitle: (d as any).metaTitle || "",
             metaDescription: (d as any).metaDescription || "",
+            geoOverridesJson: "[]",
         },
         onSubmit: async ({ value }) => {
             try {
+                const geoOverrides = parseGeoOverridesFromText(value.geoOverridesJson);
+                const existingGeoOverrides = geoConfigQuery.data?.geoConfig || [];
+                const { geoOverridesJson, ...rawValues } = value;
                 let coverImageUrl = value.coverImageUrl;
 
                 if (pendingFile) {
@@ -123,7 +133,7 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                 }
 
                 const submitData = {
-                    ...value,
+                    ...rawValues,
                     coverImageUrl,
                     discountValue: value.discountValue ? parseFloat(value.discountValue) : null,
                     originalPrice: value.originalPrice ? parseFloat(value.originalPrice) : null,
@@ -136,8 +146,31 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                     body: JSON.stringify(submitData),
                 });
 
+                if (geoOverrides.length > 0) {
+                    await Promise.all(
+                        geoOverrides.map((geoOverride) =>
+                            fetchAPI(`/api/admin/deals/${d.id}/geo-config/${geoOverride.countryCode}`, {
+                                method: "PUT",
+                                body: JSON.stringify(geoOverride),
+                            })
+                        )
+                    );
+                }
+
+                const nextCodes = new Set(geoOverrides.map((row) => row.countryCode));
+                const staleOverrides = existingGeoOverrides.filter((row) => !nextCodes.has(row.countryCode));
+                if (staleOverrides.length > 0) {
+                    await Promise.all(
+                        staleOverrides.map((staleRow) =>
+                            fetchAPI(`/api/admin/deals/${d.id}/geo-config/${staleRow.countryCode}`, {
+                                method: "DELETE",
+                            })
+                        )
+                    );
+                }
+
                 toast.success("Deal updated successfully!");
-                queryClient.invalidateQueries({ queryKey: ["adminDeals"] });
+                queryClient.invalidateQueries({ queryKey: ["admin_deals"] });
                 onOpenChange(false);
             } catch (error: any) {
                 toast.error(error.message || "Failed to update deal");
@@ -151,6 +184,17 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
 
     const [showPreview, setShowPreview] = useState(false);
     const [localImagePreview, setLocalImagePreview] = useState<string | null>(null);
+    const geoConfigQuery = useQuery({
+        queryKey: ["admin_deal_geo_config", d.id],
+        enabled: open,
+        queryFn: () => fetchAPI<{ geoConfig: DealGeoConfigResponse[] }>(`/api/admin/deals/${d.id}/geo-config`),
+    });
+
+    useEffect(() => {
+        const rows = geoConfigQuery.data?.geoConfig;
+        if (!rows) return;
+        form.setFieldValue("geoOverridesJson", serializeGeoOverrides(rows));
+    }, [form, geoConfigQuery.data?.geoConfig]);
 
     const previewData = {
         deal: {
@@ -224,10 +268,11 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                         className={`py-4 max-h-[75vh] overflow-y-auto px-1 ${showPreview ? "flex-1" : "w-full"}`}
                     >
                         <Tabs defaultValue="basic" className="w-full">
-                            <TabsList className="grid w-full grid-cols-3 mb-4">
+                            <TabsList className="grid w-full grid-cols-4 mb-4">
                                 <TabsTrigger value="basic">Basic</TabsTrigger>
                                 <TabsTrigger value="pricing">Pricing</TabsTrigger>
                                 <TabsTrigger value="details">Details</TabsTrigger>
+                                <TabsTrigger value="geo">Geo</TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="basic" className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -358,6 +403,37 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                                                     {VERIFICATION_METHODS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
                                                 </SelectContent>
                                             </Select>
+                                        </div>
+                                    )}
+                                </form.Field>
+                            </TabsContent>
+
+                            <TabsContent value="geo" className="grid grid-cols-1 gap-4">
+                                <form.Field name="geoOverridesJson">
+                                    {(field) => (
+                                        <div className="grid gap-2">
+                                            <Label htmlFor={field.name}>Country Pricing & Links JSON</Label>
+                                            <Textarea
+                                                id={field.name}
+                                                value={field.state.value}
+                                                onChange={(e) => field.handleChange(e.target.value)}
+                                                rows={12}
+                                                placeholder={`[
+  {
+    "countryCode": "US",
+    "affiliateUrl": "https://...",
+    "claimUrl": "https://...",
+    "studentPrice": 4.99,
+    "originalPrice": 9.99,
+    "currency": "USD",
+    "discountLabel": "50% OFF",
+    "isAvailable": true
+  }
+]`}
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                Keep this as a JSON array. Use ISO alpha-2 country codes or <code>GLOBAL</code>.
+                                            </p>
                                         </div>
                                     )}
                                 </form.Field>

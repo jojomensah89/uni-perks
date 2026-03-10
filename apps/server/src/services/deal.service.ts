@@ -3,6 +3,9 @@ import {
     findDealBySlug,
     incrementDealViewCount,
     incrementDealClickCount,
+    resolveDealRedirectBySlug,
+    insertDealClickEvent,
+    type InsertDealClickEventInput,
 } from "../repositories/deal.repository";
 
 export interface GetDealsOptions {
@@ -47,8 +50,8 @@ export async function getDeals(options: GetDealsOptions) {
  * Get deal detail with tags and regions
  */
 export async function getDealDetail(options: DealDetailOptions) {
-    const { slug } = options;
-    const result = await findDealBySlug(slug);
+    const { slug, country } = options;
+    const result = await findDealBySlug(slug, country);
     return result;
 }
 
@@ -64,4 +67,12 @@ export async function trackDealView(dealId: string) {
  */
 export async function trackDealClick(dealId: string) {
     return await incrementDealClickCount(dealId);
+}
+
+export async function resolveDealRedirect(slug: string, country: string) {
+    return await resolveDealRedirectBySlug(slug, country);
+}
+
+export async function trackDealClickEvent(input: InsertDealClickEventInput) {
+    return await insertDealClickEvent(input);
 }

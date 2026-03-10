@@ -1,5 +1,7 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { getGeoData, getRegions } from "../services/geo.service";
+import { withKV } from "../lib/kv-cache";
+import { withEdgeCache } from "../lib/edge-cache";
 
 const app = new OpenAPIHono();
 
@@ -64,8 +66,15 @@ const getRegionsRoute = createRoute({
 });
 
 app.openapi(getRegionsRoute, async (c) => {
-    const regions = await getRegions();
-    return c.json({ regions }, 200);
+    return withEdgeCache(c, 86400, async () => {
+        const regions = await withKV(
+            (c.env as { KV?: KVNamespace }).KV,
+            "regions:all",
+            86400,
+            () => getRegions()
+        );
+        return c.json({ regions }, 200);
+    });
 });
 
 export default app;

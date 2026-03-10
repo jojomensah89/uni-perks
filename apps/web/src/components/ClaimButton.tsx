@@ -3,29 +3,23 @@
 import { buttonVariants } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTrackClick } from "@/hooks/use-track-click";
 
 interface ClaimButtonProps {
-    perkId: string;
-    claimUrl: string;
+    perkSlug: string;
+    source?: "card" | "detail" | "featured" | "collection" | "newsletter" | "comparison" | "persona";
     available: boolean;
 }
-
-export function ClaimButton({ perkId, claimUrl, available }: ClaimButtonProps) {
-    const { trackClick } = useTrackClick({ perkId });
-
-    const handleClick = async (e: React.MouseEvent) => {
-        // Track the click
-        await trackClick();
-        // Let the link navigate naturally
+export function ClaimButton({ perkSlug, source = "detail", available }: ClaimButtonProps) {
+    const serverOrigin = process.env.NEXT_PUBLIC_SERVER_URL;
+    const claimPath = `/go/${perkSlug}?src=${source}`;
+    const href = serverOrigin ? new URL(claimPath, serverOrigin).toString() : claimPath;
     };
 
     return (
         <a
-            href={claimUrl || "#"}
+            href={href}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={handleClick}
             className={cn(
                 buttonVariants({
                     size: "lg",

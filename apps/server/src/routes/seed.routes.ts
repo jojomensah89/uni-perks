@@ -744,6 +744,10 @@ const seedRoute = createRoute({
 });
 
 app.openapi(seedRoute, async (c) => {
+    const nodeEnv = (c.env as Record<string, string | undefined>).NODE_ENV ?? process.env.NODE_ENV;
+    if (nodeEnv === "production") {
+        return c.json({ error: "Disabled in production" }, 403);
+    }
     try {
         console.log('🌱 Seeding database via API...');
 

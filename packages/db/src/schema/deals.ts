@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 // Schema definition for deals
-import { sqliteTable, text, integer, real, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, index, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { brands } from "./brands";
 import { categories } from "./brands";
 
@@ -74,5 +74,25 @@ export const deals = sqliteTable("deals", {
     activeIdx: index("deals_active_idx").on(table.isActive),
     popularityIdx: index("deals_popularity_idx").on(table.popularity),
 }));
+export const dealGeoConfig = sqliteTable("deal_geo_config", {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    dealId: text("deal_id").notNull().references(() => deals.id, { onDelete: "cascade" }),
+    countryCode: text("country_code").notNull(),
+    affiliateUrl: text("affiliate_url"),
+    claimUrl: text("claim_url"),
+    studentPrice: real("student_price"),
+    originalPrice: real("original_price"),
+    currency: text("currency"),
+    discountLabel: text("discount_label"),
+    isAvailable: integer("is_available", { mode: "boolean" }).default(true),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+        .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+        .notNull(),
+}, (table) => ({
+    dealCountryUnique: uniqueIndex("deal_geo_config_deal_country_uidx").on(table.dealId, table.countryCode),
+    dealIdx: index("deal_geo_config_deal_idx").on(table.dealId),
+    countryIdx: index("deal_geo_config_country_idx").on(table.countryCode),
+}));
 
 export type Deal = typeof deals.$inferSelect;
+export type DealGeoConfig = typeof dealGeoConfig.$inferSelect;

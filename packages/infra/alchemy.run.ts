@@ -3,6 +3,7 @@ import { Nextjs } from "alchemy/cloudflare";
 import { Worker } from "alchemy/cloudflare";
 import { D1Database } from "alchemy/cloudflare";
 import { R2Bucket } from "alchemy/cloudflare";
+import { KVNamespace } from "alchemy/cloudflare";
 import { config } from "dotenv";
 
 config({ path: "./.env" });
@@ -17,6 +18,7 @@ const db = await D1Database("database", {
 
 // R2 Bucket for image storage
 const bucket = await R2Bucket("images");
+const kv = await KVNamespace("kv-cache");
 
 export const web = await Nextjs("web", {
   cwd: "../../apps/web",
@@ -40,6 +42,7 @@ export const server = await Worker("server", {
   bindings: {
     DB: db,
     BUCKET: bucket,
+    KV: kv,
     CORS_ORIGIN: alchemy.env.CORS_ORIGIN!,
     BETTER_AUTH_SECRET: alchemy.secret.env.BETTER_AUTH_SECRET!,
     BETTER_AUTH_URL: alchemy.env.BETTER_AUTH_URL!,

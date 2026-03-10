@@ -1,12 +1,40 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware";
 import { BadRequestError } from "../lib/errors";
-import { db, deals, brands, categories, collections, collectionDeals, siteSettings, eq, desc, sql } from "@uni-perks/db";
+import { db, deals, brands, categories, collections, collectionDeals, siteSettings, dealGeoConfig, eq, and, desc, sql } from "@uni-perks/db";
+import {
+    CreateBrandSchema,
+    CreateCategorySchema,
+    CreateCollectionSchema,
+    CreateDealSchema,
+    UpdateBrandSchema,
+    UpdateCategorySchema,
+    UpdateCollectionSchema,
+    UpdateDealSchema,
+} from "../schemas/admin.schemas";
+import { invalidateKV } from "../lib/kv-cache";
 
 const app = new OpenAPIHono();
 
 // Apply auth middleware to all admin routes
 app.use("*", requireAuth, requireAdmin);
+
+function normalizeConditions(input?: string[] | string | null): string | null {
+    if (!input) return null;
+    if (Array.isArray(input)) return input.length > 0 ? JSON.stringify(input) : null;
+    const lines = input
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+    return lines.length > 0 ? JSON.stringify(lines) : null;
+}
+
+function normalizeExpirationDate(input?: string | number | null): number | null {
+    if (input === undefined || input === null) return null;
+    if (typeof input === "number") return input;
+    const parsed = Date.parse(input);
+    return Number.isNaN(parsed) ? null : parsed;
+}
 
 const listDealsRoute = createRoute({
     method: "get",
@@ -16,8 +44,8 @@ const listDealsRoute = createRoute({
     description: "Get all deals with pagination (Admin only).",
     request: {
         query: z.object({
-            page: z.string().optional().default("1"),
-            limit: z.string().optional().default("50"),
+            page: z.string().regex(/^\d+$/).optional().default("1"),
+            limit: z.string().regex(/^\d+$/).refine((val) => parseInt(val) <= 100, "Maximum limit is 100").optional().default("50"),
         }),
     },
     responses: {
@@ -113,7 +141,7 @@ const createDealRoute = createRoute({
         body: {
             content: {
                 "application/json": {
-                    schema: z.any(), // Refine later with CreateDealInputSchema
+                    schema: CreateDealSchema,
                 },
             },
         },
@@ -131,14 +159,40 @@ const createDealRoute = createRoute({
 });
 
 app.openapi(createDealRoute, async (c) => {
-    const body = await c.req.json();
+    const body = c.req.valid("json");
 
-    // Basic validation (zod should handle this if we define schema, but keeping legacy check for now)
-    if (!body.title || !body.brandId || !body.categoryId || !body.claimUrl || !body.verificationMethod) {
-        throw new BadRequestError("Missing required fields");
-    }
+    const payload = {
+        slug: body.slug,
+        title: body.title,
+        shortDescription: body.shortDescription,
+        longDescription: body.longDescription,
+        brandId: body.brandId,
+        categoryId: body.categoryId,
+        discountType: body.discountType,
+        discountLabel: body.discountLabel,
+        discountValue: body.discountValue ?? null,
+        originalPrice: body.originalPrice ?? null,
+        studentPrice: body.studentPrice ?? null,
+        currency: body.currency ?? "USD",
+        verificationMethod: body.verificationMethod,
+        claimUrl: body.claimUrl,
+        affiliateUrl: body.affiliateUrl ?? null,
+        coverImageUrl: body.coverImageUrl ?? null,
+        howToRedeem: body.howToRedeem ?? null,
+        eligibilityNote: body.eligibilityNote ?? null,
+        termsUrl: body.termsUrl ?? null,
+        minimumSpend: body.minimumSpend ?? null,
+        isFeatured: body.isFeatured ?? false,
+        isActive: body.isActive ?? true,
+        isExclusive: body.isExclusive ?? false,
+        isNewCustomerOnly: body.isNewCustomerOnly ?? false,
+        conditions: normalizeConditions(body.conditions),
+        expirationDate: normalizeExpirationDate(body.expirationDate),
+        metaTitle: body.metaTitle ?? null,
+        metaDescription: body.metaDescription ?? null,
+    };
 
-    const result = await db.insert(deals).values(body).returning();
+    const result = await db.insert(deals).values(payload).returning();
     return c.json(result[0], 201);
 });
 
@@ -155,7 +209,7 @@ const updateDealRoute = createRoute({
         body: {
             content: {
                 "application/json": {
-                    schema: z.any(), // Refine later
+                    schema: UpdateDealSchema,
                 },
             },
         },
@@ -174,11 +228,41 @@ const updateDealRoute = createRoute({
 
 app.openapi(updateDealRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const body = await c.req.json();
+    const body = c.req.valid("json");
+
+    const payload = {
+        ...(body.title !== undefined ? { title: body.title } : {}),
+        ...(body.shortDescription !== undefined ? { shortDescription: body.shortDescription } : {}),
+        ...(body.longDescription !== undefined ? { longDescription: body.longDescription } : {}),
+        ...(body.brandId !== undefined ? { brandId: body.brandId } : {}),
+        ...(body.categoryId !== undefined ? { categoryId: body.categoryId } : {}),
+        ...(body.discountType !== undefined ? { discountType: body.discountType } : {}),
+        ...(body.discountLabel !== undefined ? { discountLabel: body.discountLabel } : {}),
+        ...(body.discountValue !== undefined ? { discountValue: body.discountValue ?? null } : {}),
+        ...(body.originalPrice !== undefined ? { originalPrice: body.originalPrice ?? null } : {}),
+        ...(body.studentPrice !== undefined ? { studentPrice: body.studentPrice ?? null } : {}),
+        ...(body.currency !== undefined ? { currency: body.currency } : {}),
+        ...(body.verificationMethod !== undefined ? { verificationMethod: body.verificationMethod } : {}),
+        ...(body.claimUrl !== undefined ? { claimUrl: body.claimUrl } : {}),
+        ...(body.affiliateUrl !== undefined ? { affiliateUrl: body.affiliateUrl ?? null } : {}),
+        ...(body.coverImageUrl !== undefined ? { coverImageUrl: body.coverImageUrl ?? null } : {}),
+        ...(body.howToRedeem !== undefined ? { howToRedeem: body.howToRedeem ?? null } : {}),
+        ...(body.eligibilityNote !== undefined ? { eligibilityNote: body.eligibilityNote ?? null } : {}),
+        ...(body.termsUrl !== undefined ? { termsUrl: body.termsUrl ?? null } : {}),
+        ...(body.minimumSpend !== undefined ? { minimumSpend: body.minimumSpend ?? null } : {}),
+        ...(body.isFeatured !== undefined ? { isFeatured: body.isFeatured } : {}),
+        ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
+        ...(body.isExclusive !== undefined ? { isExclusive: body.isExclusive } : {}),
+        ...(body.isNewCustomerOnly !== undefined ? { isNewCustomerOnly: body.isNewCustomerOnly } : {}),
+        ...(body.conditions !== undefined ? { conditions: normalizeConditions(body.conditions ?? null) } : {}),
+        ...(body.expirationDate !== undefined ? { expirationDate: normalizeExpirationDate(body.expirationDate) } : {}),
+        ...(body.metaTitle !== undefined ? { metaTitle: body.metaTitle ?? null } : {}),
+        ...(body.metaDescription !== undefined ? { metaDescription: body.metaDescription ?? null } : {}),
+    };
 
     const result = await db
         .update(deals)
-        .set(body)
+        .set(payload)
         .where(eq(deals.id, id))
         .returning();
 
@@ -228,6 +312,196 @@ app.openapi(deleteDealRoute, async (c) => {
     return c.json(result[0], 200);
 });
 
+const DealGeoConfigSchema = z.object({
+    id: z.string(),
+    dealId: z.string(),
+    countryCode: z.string(),
+    affiliateUrl: z.string().nullable().optional(),
+    claimUrl: z.string().nullable().optional(),
+    studentPrice: z.number().nullable().optional(),
+    originalPrice: z.number().nullable().optional(),
+    currency: z.string().nullable().optional(),
+    discountLabel: z.string().nullable().optional(),
+    isAvailable: z.boolean().nullable().optional(),
+    createdAt: z.string().optional(),
+});
+
+const UpsertDealGeoConfigSchema = z.object({
+    affiliateUrl: z.string().url().max(2000).optional().nullable(),
+    claimUrl: z.string().url().max(2000).optional().nullable(),
+    studentPrice: z.number().min(0).optional().nullable(),
+    originalPrice: z.number().min(0).optional().nullable(),
+    currency: z.string().length(3).optional().nullable(),
+    discountLabel: z.string().max(100).optional().nullable(),
+    isAvailable: z.boolean().optional(),
+});
+
+const CountryCodeParamSchema = z
+    .string()
+    .toUpperCase()
+    .regex(/^(GLOBAL|[A-Z]{2})$/);
+
+const listDealGeoConfigRoute = createRoute({
+    method: "get",
+    path: "/deals/{id}/geo-config",
+    tags: ["Admin"],
+    summary: "List deal geo config (Admin)",
+    description: "List all country-specific deal overrides for a deal.",
+    request: {
+        params: z.object({
+            id: z.string(),
+        }),
+    },
+    responses: {
+        200: {
+            description: "Deal geo configuration rows",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        geoConfig: z.array(DealGeoConfigSchema),
+                    }),
+                },
+            },
+        },
+    },
+});
+
+app.openapi(listDealGeoConfigRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const rows = await db
+        .select()
+        .from(dealGeoConfig)
+        .where(eq(dealGeoConfig.dealId, id))
+        .orderBy(dealGeoConfig.countryCode);
+
+    return c.json({ geoConfig: rows }, 200);
+});
+
+const upsertDealGeoConfigRoute = createRoute({
+    method: "put",
+    path: "/deals/{id}/geo-config/{countryCode}",
+    tags: ["Admin"],
+    summary: "Upsert deal geo config (Admin)",
+    description: "Create or update a country-specific deal override row.",
+    request: {
+        params: z.object({
+            id: z.string(),
+            countryCode: CountryCodeParamSchema,
+        }),
+        body: {
+            content: {
+                "application/json": {
+                    schema: UpsertDealGeoConfigSchema,
+                },
+            },
+        },
+    },
+    responses: {
+        200: {
+            description: "Geo configuration upserted",
+            content: {
+                "application/json": {
+                    schema: DealGeoConfigSchema,
+                },
+            },
+        },
+        400: {
+            description: "Invalid request",
+            content: { "application/json": { schema: z.object({ message: z.string() }) } },
+        },
+    },
+});
+
+app.openapi(upsertDealGeoConfigRoute, async (c) => {
+    const { id, countryCode } = c.req.valid("param");
+    const body = c.req.valid("json");
+
+    const dealExists = await db.select({ id: deals.id }).from(deals).where(eq(deals.id, id)).limit(1);
+    if (!dealExists[0]) {
+        throw new BadRequestError("Deal not found");
+    }
+
+    const existing = await db
+        .select()
+        .from(dealGeoConfig)
+        .where(and(eq(dealGeoConfig.dealId, id), eq(dealGeoConfig.countryCode, countryCode)))
+        .limit(1);
+
+    const payload = {
+        ...(body.affiliateUrl !== undefined ? { affiliateUrl: body.affiliateUrl ?? null } : {}),
+        ...(body.claimUrl !== undefined ? { claimUrl: body.claimUrl ?? null } : {}),
+        ...(body.studentPrice !== undefined ? { studentPrice: body.studentPrice ?? null } : {}),
+        ...(body.originalPrice !== undefined ? { originalPrice: body.originalPrice ?? null } : {}),
+        ...(body.currency !== undefined ? { currency: body.currency ?? null } : {}),
+        ...(body.discountLabel !== undefined ? { discountLabel: body.discountLabel ?? null } : {}),
+        ...(body.isAvailable !== undefined ? { isAvailable: body.isAvailable } : {}),
+    };
+
+    if (!existing[0]) {
+        const inserted = await db
+            .insert(dealGeoConfig)
+            .values({
+                dealId: id,
+                countryCode,
+                affiliateUrl: body.affiliateUrl ?? null,
+                claimUrl: body.claimUrl ?? null,
+                studentPrice: body.studentPrice ?? null,
+                originalPrice: body.originalPrice ?? null,
+                currency: body.currency ?? null,
+                discountLabel: body.discountLabel ?? null,
+                isAvailable: body.isAvailable ?? true,
+            })
+            .returning();
+        return c.json(inserted[0], 200);
+    }
+
+    if (Object.keys(payload).length === 0) {
+        return c.json(existing[0], 200);
+    }
+
+    const updated = await db
+        .update(dealGeoConfig)
+        .set(payload)
+        .where(eq(dealGeoConfig.id, existing[0].id))
+        .returning();
+
+    return c.json(updated[0], 200);
+});
+
+const deleteDealGeoConfigRoute = createRoute({
+    method: "delete",
+    path: "/deals/{id}/geo-config/{countryCode}",
+    tags: ["Admin"],
+    summary: "Delete deal geo config (Admin)",
+    description: "Delete a country-specific deal override row.",
+    request: {
+        params: z.object({
+            id: z.string(),
+            countryCode: CountryCodeParamSchema,
+        }),
+    },
+    responses: {
+        200: {
+            description: "Geo configuration deleted",
+            content: {
+                "application/json": {
+                    schema: z.object({ success: z.boolean() }),
+                },
+            },
+        },
+    },
+});
+
+app.openapi(deleteDealGeoConfigRoute, async (c) => {
+    const { id, countryCode } = c.req.valid("param");
+
+    await db
+        .delete(dealGeoConfig)
+        .where(and(eq(dealGeoConfig.dealId, id), eq(dealGeoConfig.countryCode, countryCode)));
+
+    return c.json({ success: true }, 200);
+});
+
 const BrandSchema = z.object({
     id: z.string(),
     name: z.string(),
@@ -275,7 +549,7 @@ const createBrandRoute = createRoute({
         body: {
             content: {
                 "application/json": {
-                    schema: z.any(), // Refine later
+                    schema: CreateBrandSchema,
                 },
             },
         },
@@ -293,13 +567,23 @@ const createBrandRoute = createRoute({
 });
 
 app.openapi(createBrandRoute, async (c) => {
-    const body = await c.req.json();
+    const body = c.req.valid("json");
 
-    if (!body.name || !body.slug) {
-        throw new BadRequestError("Missing required fields");
-    }
+    const payload = {
+        name: body.name,
+        slug: body.slug,
+        tagline: body.tagline ?? null,
+        description: body.description ?? null,
+        website: body.website ?? null,
+        logoUrl: body.logoUrl ?? null,
+        coverImageUrl: body.coverImageUrl ?? null,
+        whyWeLoveIt: body.whyWeLoveIt ?? null,
+        isVerified: body.isVerified ?? false,
+        metaTitle: body.metaTitle ?? null,
+        metaDescription: body.metaDescription ?? null,
+    };
 
-    const result = await db.insert(brands).values(body).returning();
+    const result = await db.insert(brands).values(payload).returning();
     return c.json(result[0], 201);
 });
 
@@ -316,7 +600,7 @@ const updateBrandRoute = createRoute({
         body: {
             content: {
                 "application/json": {
-                    schema: z.any(), // Refine later
+                    schema: UpdateBrandSchema,
                 },
             },
         },
@@ -335,11 +619,24 @@ const updateBrandRoute = createRoute({
 
 app.openapi(updateBrandRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const body = await c.req.json();
+    const body = c.req.valid("json");
+
+    const payload = {
+        ...(body.name !== undefined ? { name: body.name } : {}),
+        ...(body.tagline !== undefined ? { tagline: body.tagline ?? null } : {}),
+        ...(body.description !== undefined ? { description: body.description ?? null } : {}),
+        ...(body.website !== undefined ? { website: body.website ?? null } : {}),
+        ...(body.logoUrl !== undefined ? { logoUrl: body.logoUrl ?? null } : {}),
+        ...(body.coverImageUrl !== undefined ? { coverImageUrl: body.coverImageUrl ?? null } : {}),
+        ...(body.whyWeLoveIt !== undefined ? { whyWeLoveIt: body.whyWeLoveIt ?? null } : {}),
+        ...(body.isVerified !== undefined ? { isVerified: body.isVerified } : {}),
+        ...(body.metaTitle !== undefined ? { metaTitle: body.metaTitle ?? null } : {}),
+        ...(body.metaDescription !== undefined ? { metaDescription: body.metaDescription ?? null } : {}),
+    };
 
     const result = await db
         .update(brands)
-        .set(body)
+        .set(payload)
         .where(eq(brands.id, id))
         .returning();
 
@@ -361,6 +658,7 @@ const CollectionSchema = z.object({
     isFeatured: z.boolean().nullable().optional(),
     displayOrder: z.number().nullable().optional(),
     coverImageUrl: z.string().nullable().optional(),
+    icon: z.string().nullable().optional(),
     createdAt: z.string().optional(),
 });
 
@@ -456,15 +754,7 @@ const createCollectionRoute = createRoute({
         body: {
             content: {
                 "application/json": {
-                    schema: z.object({
-                        name: z.string(),
-                        slug: z.string(),
-                        description: z.string().optional(),
-                        audience: z.string().optional(),
-                        isFeatured: z.boolean().optional(),
-                        displayOrder: z.number().optional(),
-                        coverImageUrl: z.string().optional(),
-                    }),
+                    schema: CreateCollectionSchema,
                 },
             },
         },
@@ -482,13 +772,22 @@ const createCollectionRoute = createRoute({
 });
 
 app.openapi(createCollectionRoute, async (c) => {
-    const body = await c.req.json();
+    const body = c.req.valid("json");
 
-    if (!body.name || !body.slug) {
-        throw new BadRequestError("Missing required fields: name, slug");
-    }
+    const payload = {
+        name: body.name,
+        slug: body.slug,
+        description: body.description ?? null,
+        audience: body.audience ?? null,
+        isFeatured: body.isFeatured ?? false,
+        displayOrder: body.displayOrder ?? 0,
+        coverImageUrl: body.coverImageUrl ?? null,
+        icon: body.icon ?? null,
+        metaTitle: body.metaTitle ?? null,
+        metaDescription: body.metaDescription ?? null,
+    };
 
-    const result = await db.insert(collections).values(body).returning();
+    const result = await db.insert(collections).values(payload).returning();
     return c.json(result[0], 201);
 });
 
@@ -505,7 +804,7 @@ const updateCollectionRoute = createRoute({
         body: {
             content: {
                 "application/json": {
-                    schema: z.any(),
+                    schema: UpdateCollectionSchema,
                 },
             },
         },
@@ -524,11 +823,23 @@ const updateCollectionRoute = createRoute({
 
 app.openapi(updateCollectionRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const body = await c.req.json();
+    const body = c.req.valid("json");
+
+    const payload = {
+        ...(body.name !== undefined ? { name: body.name } : {}),
+        ...(body.description !== undefined ? { description: body.description ?? null } : {}),
+        ...(body.audience !== undefined ? { audience: body.audience ?? null } : {}),
+        ...(body.isFeatured !== undefined ? { isFeatured: body.isFeatured } : {}),
+        ...(body.displayOrder !== undefined ? { displayOrder: body.displayOrder } : {}),
+        ...(body.coverImageUrl !== undefined ? { coverImageUrl: body.coverImageUrl ?? null } : {}),
+        ...(body.icon !== undefined ? { icon: body.icon ?? null } : {}),
+        ...(body.metaTitle !== undefined ? { metaTitle: body.metaTitle ?? null } : {}),
+        ...(body.metaDescription !== undefined ? { metaDescription: body.metaDescription ?? null } : {}),
+    };
 
     const result = await db
         .update(collections)
-        .set(body)
+        .set(payload)
         .where(eq(collections.id, id))
         .returning();
 
@@ -831,6 +1142,8 @@ app.openapi(updateTickerRoute, async (c) => {
         });
     }
 
+    await invalidateKV((c.env as { KV?: KVNamespace }).KV, "settings:ticker");
+
     return c.json({ success: true }, 200);
 });
 
@@ -846,16 +1159,7 @@ const createCategoryRoute = createRoute({
         body: {
             content: {
                 "application/json": {
-                    schema: z.object({
-                        name: z.string(),
-                        slug: z.string(),
-                        icon: z.string().optional(),
-                        color: z.string().optional(),
-                        coverImageUrl: z.string().optional(),
-                        displayOrder: z.number().optional(),
-                        metaTitle: z.string().optional(),
-                        metaDescription: z.string().optional(),
-                    }),
+                    schema: CreateCategorySchema,
                 },
             },
         },
@@ -873,13 +1177,21 @@ const createCategoryRoute = createRoute({
 });
 
 app.openapi(createCategoryRoute, async (c) => {
-    const body = await c.req.json();
+    const body = c.req.valid("json");
 
-    if (!body.name || !body.slug) {
-        throw new BadRequestError("Missing required fields: name, slug");
-    }
+    const payload = {
+        name: body.name,
+        slug: body.slug,
+        icon: body.icon ?? null,
+        color: body.color ?? null,
+        coverImageUrl: body.coverImageUrl ?? null,
+        displayOrder: body.displayOrder ?? 0,
+        metaTitle: body.metaTitle ?? null,
+        metaDescription: body.metaDescription ?? null,
+    };
 
-    const result = await db.insert(categories).values(body).returning();
+    const result = await db.insert(categories).values(payload).returning();
+    await invalidateKV((c.env as { KV?: KVNamespace }).KV, "categories:all");
     return c.json(result[0], 201);
 });
 
@@ -896,7 +1208,7 @@ const updateCategoryRoute = createRoute({
         body: {
             content: {
                 "application/json": {
-                    schema: z.any(),
+                    schema: UpdateCategorySchema,
                 },
             },
         },
@@ -915,17 +1227,29 @@ const updateCategoryRoute = createRoute({
 
 app.openapi(updateCategoryRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const body = await c.req.json();
+    const body = c.req.valid("json");
+
+    const payload = {
+        ...(body.name !== undefined ? { name: body.name } : {}),
+        ...(body.icon !== undefined ? { icon: body.icon ?? null } : {}),
+        ...(body.color !== undefined ? { color: body.color ?? null } : {}),
+        ...(body.coverImageUrl !== undefined ? { coverImageUrl: body.coverImageUrl ?? null } : {}),
+        ...(body.displayOrder !== undefined ? { displayOrder: body.displayOrder } : {}),
+        ...(body.metaTitle !== undefined ? { metaTitle: body.metaTitle ?? null } : {}),
+        ...(body.metaDescription !== undefined ? { metaDescription: body.metaDescription ?? null } : {}),
+    };
 
     const result = await db
         .update(categories)
-        .set(body)
+        .set(payload)
         .where(eq(categories.id, id))
         .returning();
 
     if (!result[0]) {
         throw new BadRequestError("Category not found");
     }
+
+    await invalidateKV((c.env as { KV?: KVNamespace }).KV, "categories:all");
 
     return c.json(result[0], 200);
 });
@@ -961,6 +1285,8 @@ app.openapi(deleteCategoryRoute, async (c) => {
     if (!result[0]) {
         throw new BadRequestError("Category not found");
     }
+
+    await invalidateKV((c.env as { KV?: KVNamespace }).KV, "categories:all");
 
     return c.json({ success: true }, 200);
 });

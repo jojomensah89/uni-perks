@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Tag, Building2, TicketPercent, LogOut, Layers, Zap, Eye, Settings } from "lucide-react";
+import { LayoutDashboard, Tag, Building2, TicketPercent, LogOut, Layers, Eye, Settings } from "lucide-react";
 import {
     Sidebar,
     SidebarContent,
@@ -24,7 +24,6 @@ const navItems = [
     { title: "Brands", href: "/admin/brands", icon: Building2 },
     { title: "Categories", href: "/admin/categories", icon: Tag },
     { title: "Collections", href: "/admin/collections", icon: Layers },
-    { title: "Suggestions", href: "/admin/suggestions", icon: Zap },
     { title: "Analytics", href: "/admin/analytics", icon: Eye },
     { title: "Settings", href: "/admin/settings", icon: Settings },
 ] as const;

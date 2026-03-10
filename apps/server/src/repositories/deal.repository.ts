@@ -1,4 +1,4 @@
-import { db, deals, brands, categories, regions, tags, dealRegions, dealTags, eq, and, desc, inArray, sql } from "@uni-perks/db";
+import { db, deals, brands, categories, regions, tags, dealRegions, dealTags, dealGeoConfig, clicks, eq, and, desc, inArray, sql } from "@uni-perks/db";
 import { NotFoundError } from "../lib/errors";
 
 export interface FindManyDealsOptions {
@@ -114,7 +114,7 @@ export async function findManyDeals(options: FindManyDealsOptions) {
     return results;
 }
 
-export async function findDealBySlug(slug: string) {
+export async function findDealBySlug(slug: string, countryCode?: string) {
     const result = await db
         .select({
             deal: deals,
@@ -131,6 +131,31 @@ export async function findDealBySlug(slug: string) {
         throw new NotFoundError("Deal not found");
     }
 
+    const normalizedCountryCode = countryCode?.trim().toUpperCase();
+    let selectedOverride: typeof dealGeoConfig.$inferSelect | null = null;
+    let resolvedCountry = "default";
+
+    if (normalizedCountryCode) {
+        const overrides = await db
+            .select()
+            .from(dealGeoConfig)
+            .where(
+                and(
+                    eq(dealGeoConfig.dealId, result[0].deal.id),
+                    inArray(dealGeoConfig.countryCode, [normalizedCountryCode, "GLOBAL"])
+                )
+            );
+
+        const countryOverride = overrides.find((item) => item.countryCode === normalizedCountryCode);
+        const globalOverride = overrides.find((item) => item.countryCode === "GLOBAL");
+        selectedOverride = countryOverride ?? globalOverride ?? null;
+        if (countryOverride) {
+            resolvedCountry = normalizedCountryCode;
+        } else if (globalOverride) {
+            resolvedCountry = "GLOBAL";
+        }
+    }
+
     // Get tags for this deal
     const dealTagsResult = await db
         .select({ tag: tags })
@@ -145,8 +170,21 @@ export async function findDealBySlug(slug: string) {
         .innerJoin(regions, eq(dealRegions.regionId, regions.id))
         .where(eq(dealRegions.dealId, result[0].deal.id));
 
+    const resolvedDeal = {
+        ...result[0].deal,
+        claimUrl: selectedOverride?.claimUrl ?? result[0].deal.claimUrl,
+        affiliateUrl: selectedOverride?.affiliateUrl ?? result[0].deal.affiliateUrl,
+        studentPrice: selectedOverride?.studentPrice ?? result[0].deal.studentPrice,
+        originalPrice: selectedOverride?.originalPrice ?? result[0].deal.originalPrice,
+        currency: selectedOverride?.currency ?? result[0].deal.currency,
+        discountLabel: selectedOverride?.discountLabel ?? result[0].deal.discountLabel,
+        isAvailable: selectedOverride?.isAvailable ?? true,
+        resolvedCountry,
+    };
+
     return {
         ...result[0],
+        deal: resolvedDeal,
         tags: dealTagsResult.map(t => t.tag),
         regions: dealRegionsResult.map(r => r.region),
     };
@@ -164,4 +202,79 @@ export async function incrementDealClickCount(dealId: string) {
         .update(deals)
         .set({ clickCount: sql`${deals.clickCount} + 1` })
         .where(eq(deals.id, dealId));
+}
+
+export interface DealRedirectResolution {
+    deal: typeof deals.$inferSelect;
+    destinationUrl: string | null;
+    isAvailable: boolean;
+}
+
+export async function resolveDealRedirectBySlug(slug: string, countryCode: string): Promise<DealRedirectResolution> {
+    const result = await db
+        .select({ deal: deals })
+        .from(deals)
+        .where(and(eq(deals.slug, slug), eq(deals.isActive, true)))
+        .limit(1);
+
+    if (!result[0]) {
+        throw new NotFoundError("Deal not found");
+    }
+
+    const deal = result[0].deal;
+    const normalizedCountryCode = countryCode.trim().toUpperCase();
+
+    const overrides = await db
+        .select()
+        .from(dealGeoConfig)
+        .where(
+            and(
+                eq(dealGeoConfig.dealId, deal.id),
+                inArray(dealGeoConfig.countryCode, [normalizedCountryCode, "GLOBAL"])
+            )
+        );
+
+    const countryOverride = overrides.find((item) => item.countryCode === normalizedCountryCode);
+    const globalOverride = overrides.find((item) => item.countryCode === "GLOBAL");
+    const selectedOverride = countryOverride ?? globalOverride ?? null;
+
+    const destinationUrl =
+        selectedOverride?.affiliateUrl ??
+        selectedOverride?.claimUrl ??
+        deal.affiliateUrl ??
+        deal.claimUrl;
+
+    const isAvailable = selectedOverride?.isAvailable ?? true;
+
+    return {
+        deal,
+        destinationUrl: destinationUrl ?? null,
+        isAvailable,
+    };
+}
+
+export interface InsertDealClickEventInput {
+    dealId: string;
+    brandId?: string | null;
+    source?: string | null;
+    referrer?: string | null;
+    userAgent?: string | null;
+    device?: string | null;
+    country?: string | null;
+    regionCode?: string | null;
+    city?: string | null;
+}
+
+export async function insertDealClickEvent(input: InsertDealClickEventInput) {
+    await db.insert(clicks).values({
+        dealId: input.dealId,
+        brandId: input.brandId ?? null,
+        source: input.source ?? null,
+        referrer: input.referrer ?? null,
+        userAgent: input.userAgent ?? null,
+        device: input.device ?? null,
+        country: input.country ?? null,
+        regionCode: input.regionCode ?? null,
+        city: input.city ?? null,
+    });
 }

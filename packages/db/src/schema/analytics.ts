@@ -5,7 +5,9 @@ import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 export const subscribers = sqliteTable("subscribers", {
     id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
     email: text("email").notNull().unique(),
+    source: text("source").default("website"),
     isVerified: integer("is_verified", { mode: "boolean" }).default(false),
+    verificationToken: text("verification_token"),
     verifiedAt: integer("verified_at", { mode: "timestamp_ms" }),
 
     // Preferences
