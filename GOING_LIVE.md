@@ -13,6 +13,11 @@
 - [ ] (Optional) Submit `sitemap.xml` to Google Search Console.
 - [ ] Verify meta tags (Title, Description) are present on all pages.
 
+## Configuration
+
+- [ ] Uncomment `cookieCache` setting in `packages/auth/src/index.ts` when deploying to Cloudflare using `*.workers.dev` domains.
+- [ ] Uncomment `crossSubDomainCookies` setting in `packages/auth/src/index.ts` replacing `<your-workers-subdomain>` with your actual workers subdomain when deploying.
+
 ## Verification
 
 - [ ] Test all affiliate/perk links in production.

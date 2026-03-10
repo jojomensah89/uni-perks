@@ -42,26 +42,27 @@ app.use(
   }),
 );
 
-// OpenAPI Spec
-app.doc("/doc", {
-  openapi: "3.0.0",
-  info: {
-    version: "1.0.0",
-    title: "Uni-Perks API",
-    description: "API for Uni-Perks student discount platform",
-  },
-});
 
 // API Reference UI
-app.get(
-  "/reference",
-  Scalar({
-    spec: {
-      url: "/doc",
+if (env.NODE_ENV !== "production") {
+  // OpenAPI Spec
+  app.doc("/doc", {
+    openapi: "3.0.0",
+    info: {
+      version: "1.0.0",
+      title: "Uni-Perks API",
+      description: "API for Uni-Perks student discount platform",
     },
-  } as any),
-);
-
+  });
+  app.get(
+    "/reference",
+    Scalar({
+      spec: {
+        url: "/doc",
+      },
+    } as any),
+  );
+}
 // Auth routes
 app.on(["POST", "GET"], "/api/auth/*", async (c) => {
   if (c.req.method === "POST") {
