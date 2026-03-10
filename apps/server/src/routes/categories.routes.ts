@@ -72,7 +72,7 @@ const getCategoryRoute = createRoute({
         },
         400: {
             description: "Bad Request",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });

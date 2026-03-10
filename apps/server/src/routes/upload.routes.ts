@@ -44,7 +44,7 @@ const uploadRoute = createRoute({
         },
         400: {
             description: "Invalid request",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } },
+            content: { "application/json": { schema: z.object({ error: z.string() }) } },
         },
     },
 });
@@ -123,7 +123,7 @@ const deleteRoute = createRoute({
         },
         400: {
             description: "Invalid request",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } },
+            content: { "application/json": { schema: z.object({ error: z.string() }) } },
         },
     },
 });

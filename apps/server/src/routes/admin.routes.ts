@@ -104,7 +104,7 @@ const getDealRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -153,7 +153,7 @@ const createDealRoute = createRoute({
         },
         400: {
             description: "Invalid request",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -222,7 +222,7 @@ const updateDealRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -292,7 +292,7 @@ const deleteDealRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -408,7 +408,7 @@ const upsertDealGeoConfigRoute = createRoute({
         },
         400: {
             description: "Invalid request",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } },
+            content: { "application/json": { schema: z.object({ error: z.string() }) } },
         },
     },
 });
@@ -565,7 +565,7 @@ const createBrandRoute = createRoute({
         },
         400: {
             description: "Invalid request",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -617,7 +617,7 @@ const updateBrandRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -710,7 +710,7 @@ const getCollectionRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -771,7 +771,7 @@ const createCollectionRoute = createRoute({
         },
         400: {
             description: "Invalid request",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -822,7 +822,7 @@ const updateCollectionRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -874,7 +874,7 @@ const deleteCollectionRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -925,7 +925,7 @@ const addDealToCollectionRoute = createRoute({
         },
         400: {
             description: "Invalid request",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -973,7 +973,7 @@ const removeDealFromCollectionRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -1177,7 +1177,7 @@ const createCategoryRoute = createRoute({
         },
         400: {
             description: "Invalid request",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -1227,7 +1227,7 @@ const updateCategoryRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });
@@ -1279,7 +1279,7 @@ const deleteCategoryRoute = createRoute({
         },
         400: {
             description: "Not found",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     },
 });

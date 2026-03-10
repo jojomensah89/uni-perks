@@ -10,13 +10,7 @@ export async function errorHandler(error: Error, c: Context) {
     const appError = error as any;
     if (appError && typeof appError.statusCode === 'number' && appError.isOperational !== undefined) {
         return c.json(
-            {
-                error: {
-                    message: appError.message,
-                    statusCode: appError.statusCode,
-                    ...(appError.errors ? { errors: appError.errors } : {}),
-                },
-            },
+            { error: appError.message },
             appError.statusCode as any
         );
     }
@@ -25,13 +19,9 @@ export async function errorHandler(error: Error, c: Context) {
     const isDevelopment = process.env.NODE_ENV === "development";
     return c.json(
         {
-            error: {
-                message: isDevelopment
-                    ? (error as Error).message
-                    : "Internal server error",
-                statusCode: 500,
-                ...(isDevelopment && { stack: (error as Error).stack }),
-            },
+            error: isDevelopment
+                ? (error as Error).message
+                : "Internal server error"
         },
         500
     );
@@ -42,13 +32,7 @@ export async function errorHandler(error: Error, c: Context) {
  */
 export function notFoundHandler(c: Context) {
     return c.json(
-        {
-            error: {
-                message: "Route not found",
-                statusCode: 404,
-                path: c.req.path,
-            },
-        },
+        { error: "Route not found" },
         404
     );
 }

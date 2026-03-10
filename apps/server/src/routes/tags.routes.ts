@@ -30,7 +30,7 @@ const getTagsRoute = createRoute({
         },
         500: {
             description: "Internal Server Error",
-            content: { "application/json": { schema: z.object({ message: z.string() }) } }
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
         }
     }
 });

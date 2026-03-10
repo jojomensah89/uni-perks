@@ -43,24 +43,27 @@ app.use(
 );
 
 
+const isDevelopment = process.env.NODE_ENV === "development";
 // API Reference UI
 // OpenAPI Spec
-app.doc("/doc", {
-  openapi: "3.0.0",
-  info: {
-    version: "1.0.0",
-    title: "Uni-Perks API",
-    description: "API for Uni-Perks student discount platform",
-  },
-});
-app.get(
-  "/reference",
-  Scalar({
-    spec: {
-      url: "/doc",
+if (isDevelopment) {
+  app.doc("/doc", {
+    openapi: "3.0.0",
+    info: {
+      version: "1.0.0",
+      title: "Uni-Perks API",
+      description: "API for Uni-Perks student discount platform",
     },
-  } as any),
-);
+  });
+  app.get(
+    "/reference",
+    Scalar({
+      spec: {
+        url: "/doc",
+      },
+    } as any),
+  );
+}
 
 
 // Auth routes
