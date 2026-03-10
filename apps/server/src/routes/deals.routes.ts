@@ -58,8 +58,8 @@ const listDealsRoute = createRoute({
             q: z.string().max(200).optional(),
             brandId: z.string().optional(),
             excludeDealId: z.string().optional(),
-            limit: z.string().optional().default("50"),
-            offset: z.string().optional().default("0"),
+            limit: z.string().regex(/^\d+$/).refine((val) => parseInt(val) <= 100, "Maximum limit is 100").optional().default("50"),
+            offset: z.string().regex(/^\d+$/).optional().default("0"),
         }),
     },
     responses: {

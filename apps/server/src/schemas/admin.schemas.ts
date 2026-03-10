@@ -58,7 +58,21 @@ export const CreateDealSchema = z.object({
     metaDescription: z.string().max(160).optional().nullable(),
 });
 
-export const UpdateDealSchema = CreateDealSchema.partial().omit({ slug: true });
+// For updates, optional text/URL fields must accept empty strings (transformed to null)
+// so that a PATCH with only isFeatured doesn't fail when shortDescription/affiliateUrl etc are empty.
+export const UpdateDealSchema = CreateDealSchema
+    .partial()
+    .omit({ slug: true })
+    .extend({
+        shortDescription: z.string().min(10).max(500).optional().nullable()
+            .or(z.literal("").transform(() => null)),
+        longDescription: z.string().min(10).max(5000).optional().nullable()
+            .or(z.literal("").transform(() => null)),
+        affiliateUrl: z.string().url().max(2000).optional().nullable()
+            .or(z.literal("").transform(() => null)),
+        termsUrl: z.string().url().max(2000).optional().nullable()
+            .or(z.literal("").transform(() => null)),
+    });
 
 export const CreateBrandSchema = z.object({
     name: z.string().min(1).max(200),

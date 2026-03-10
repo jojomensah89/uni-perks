@@ -170,7 +170,7 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                 }
 
                 toast.success("Deal updated successfully!");
-                queryClient.invalidateQueries({ queryKey: ["adminDeals"] });
+                queryClient.invalidateQueries({ queryKey: ["admin_deals"] });
                 onOpenChange(false);
             } catch (error: any) {
                 toast.error(error.message || "Failed to update deal");

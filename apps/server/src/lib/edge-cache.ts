@@ -16,7 +16,8 @@ export async function withEdgeCache(
 
     const response = await handler();
     if (response.status === 200) {
-        const toCache = new Response(response.body, response);
+        const clonedResponse = response.clone();
+        const toCache = new Response(clonedResponse.body, response);
         toCache.headers.set("Cache-Control", `public, max-age=${ttlSeconds}, s-maxage=${ttlSeconds}`);
         if (c.executionCtx) {
             c.executionCtx.waitUntil(cache.put(key, toCache));

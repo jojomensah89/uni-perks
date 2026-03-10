@@ -4,6 +4,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { apiReference } from "@scalar/hono-api-reference";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { secureHeaders } from "hono/secure-headers";
 
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
 import geoRouter from "./routes/geo.routes";
@@ -30,6 +31,7 @@ app.onError(errorHandler);
 
 // Middleware
 app.use(logger());
+app.use(secureHeaders());
 app.use(
   "/*",
   cors({

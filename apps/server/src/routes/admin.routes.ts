@@ -44,8 +44,8 @@ const listDealsRoute = createRoute({
     description: "Get all deals with pagination (Admin only).",
     request: {
         query: z.object({
-            page: z.string().optional().default("1"),
-            limit: z.string().optional().default("50"),
+            page: z.string().regex(/^\d+$/).optional().default("1"),
+            limit: z.string().regex(/^\d+$/).refine((val) => parseInt(val) <= 100, "Maximum limit is 100").optional().default("50"),
         }),
     },
     responses: {
