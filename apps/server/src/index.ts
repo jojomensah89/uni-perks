@@ -1,7 +1,7 @@
 import { auth } from "@uni-perks/auth";
 import { env } from "@uni-perks/env/server";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { apiReference } from "@scalar/hono-api-reference";
+import { Scalar } from "@scalar/hono-api-reference";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
@@ -13,7 +13,7 @@ import brandsRouter from "./routes/brands.routes";
 import collectionsRouter from "./routes/collections.routes";
 import categoriesRouter from "./routes/categories.routes";
 import clicksRouter from "./routes/clicks.routes";
-import seedRouter from "./routes/seed.routes";
+
 import adminRouter from "./routes/admin.routes";
 import uploadRouter from "./routes/upload.routes";
 import imagesRouter from "./routes/images.routes";
@@ -55,7 +55,7 @@ app.doc("/doc", {
 // API Reference UI
 app.get(
   "/reference",
-  apiReference({
+  Scalar({
     spec: {
       url: "/doc",
     },
@@ -98,7 +98,7 @@ app.route("/api/brands", brandsRouter);
 app.route("/api/collections", collectionsRouter);
 app.route("/api/categories", categoriesRouter);
 app.route("/api/clicks", clicksRouter);
-app.route("/api/seed", seedRouter);
+
 app.route("/api/admin", adminRouter);
 app.route("/api/upload", uploadRouter);
 app.route("/api/images", imagesRouter);
