@@ -1,6 +1,18 @@
+import { toast } from 'sonner';
+
 export const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000';
 
-export async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
+/**
+ * Fetch wrapper for API calls.
+ * @param path - API path (e.g. '/api/deals')
+ * @param options - Standard fetch options
+ * @param silent - If true, suppresses the automatic error toast (caller handles the error)
+ */
+export async function fetchAPI<T>(
+    path: string,
+    options?: RequestInit,
+    silent = false,
+): Promise<T> {
     const url = `${API_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
     const res = await fetch(url, {
@@ -18,6 +30,12 @@ export async function fetchAPI<T>(path: string, options?: RequestInit): Promise<
     if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { error?: string; message?: string };
         const message = body.error ?? body.message ?? `${res.status} ${res.statusText}`;
+        if (!silent) {
+            toast.error(message, {
+                description: `HTTP ${res.status}`,
+                duration: 5000,
+            });
+        }
         throw new Error(message);
     }
 
