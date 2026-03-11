@@ -32,7 +32,9 @@ app.onError(errorHandler);
 
 // Middleware
 app.use(logger());
-app.use(secureHeaders());
+app.use(secureHeaders({
+  crossOriginResourcePolicy: "cross-origin",
+}));
 app.use(
   "/*",
   cors({
