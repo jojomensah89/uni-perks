@@ -1,6 +1,7 @@
 import { auth } from "@uni-perks/auth";
 import { env } from "@uni-perks/env/server";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { db, deals, sql } from "@uni-perks/db";
 import { Scalar } from "@scalar/hono-api-reference";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -125,8 +126,8 @@ app.notFound(notFoundHandler);
 
 export default {
   fetch: app.fetch,
+
   async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
-    const { db, deals, sql } = await import("@uni-perks/db");
     const now = Date.now();
 
     const expired = await db
@@ -134,11 +135,18 @@ export default {
       .set({ isActive: false })
       .where(
         sql`${deals.expirationDate} IS NOT NULL
-                    AND ${deals.expirationDate} < ${now}
-                    AND ${deals.isActive} = 1`
+          AND ${deals.expirationDate} < ${now}
+          AND ${deals.isActive} = 1`
       )
       .returning({ id: deals.id });
 
     console.log(`[cron] Expired ${expired.length} deals at ${new Date(now).toISOString()}`);
+
+    // Invalidate KV cache for featured deals if any expired
+    if (expired.length > 0) {
+      ctx.waitUntil(
+        (env as any).KV?.delete('deals:featured').catch(() => { })
+      );
+    }
   },
 };
