@@ -35,7 +35,7 @@ export function WordRotate({
     }, [words, duration])
 
     return (
-        <span className="inline-grid overflow-hidden text-left">
+        <span className="inline-grid overflow-hidden text-center">
             <span className={cn(className, "col-start-1 row-start-1 opacity-0 pointer-events-none")}>
                 {words.reduce((a, b) => (a.length > b.length ? a : b), "")}
             </span>

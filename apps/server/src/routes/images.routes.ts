@@ -39,6 +39,8 @@ app.get("/*", async (c) => {
             "Content-Type": contentType,
             "Cache-Control": "public, max-age=31536000, immutable", // 1 year cache
             "ETag": object.etag,
+            "Cross-Origin-Resource-Policy": "cross-origin",
+            "Access-Control-Allow-Origin": (env as any).CORS_ORIGIN as string,
         },
     });
 });
