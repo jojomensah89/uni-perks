@@ -40,11 +40,9 @@ const HeroSection = () => {
             </div>
 
             {/* Main headline with word rotate */}
-            <h1 className="text-[clamp(3rem,9vw,7rem)] font-black leading-[0.93] tracking-tight uppercase mb-5">
-                SEARCH EVERY
-                <br />
-                <span className="text-primary">
-                    STUDENT{" "}
+            <h1 className="text-[clamp(3rem,9vw,7rem)] font-black leading-[0.93] tracking-tight uppercase mb-5 flex flex-col items-center justify-center">
+                <span>EVERY STUDENT</span>
+                <span className="text-primary mt-2">
                     <WordRotate words={["DEAL", "DISCOUNT", "PERK", "OFFER", "SAVING"]} />
                 </span>
             </h1>
