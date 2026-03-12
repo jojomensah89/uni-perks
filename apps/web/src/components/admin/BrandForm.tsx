@@ -62,7 +62,7 @@ export function BrandForm({ onSuccess }: BrandFormProps) {
                 toast.success("Brand created successfully!");
                 setOpen(false);
                 form.reset();
-                queryClient.invalidateQueries({ queryKey: ["adminBrands"] });
+                queryClient.invalidateQueries({ queryKey: ["admin_brands"] });
                 if (onSuccess) onSuccess();
             } catch (error: any) {
                 toast.error(error.message || "Failed to create brand");

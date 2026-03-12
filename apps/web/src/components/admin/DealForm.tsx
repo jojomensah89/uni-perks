@@ -162,14 +162,13 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                         )
                     );
                 }
-                await createDealMutation.mutateAsync(submitData);
 
                 toast.success("Deal created successfully!");
                 setOpen(false);
                 form.reset();
                 pendingImageRef.file = null;
                 setLocalImagePreview(null);
-                queryClient.invalidateQueries({ queryKey: ["adminDeals"] });
+                queryClient.invalidateQueries({ queryKey: ["admin_deals"] });
                 if (onSuccess) onSuccess();
             } catch (error: any) {
                 toast.error(error.message || "Failed to create deal");

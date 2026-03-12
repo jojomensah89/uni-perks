@@ -1,29 +1,35 @@
-import { db, deals, categories, eq, desc, asc } from "@uni-perks/db";
+import { db, deals, brands, categories, eq, desc, asc, sql } from "@uni-perks/db";
 
+// Input types matching the current deals schema
 export interface CreateDealInput {
     slug: string;
     title: string;
     shortDescription: string;
     longDescription: string;
-    company: string;
-    companyLogo?: string;
-    valueAmount?: number;
-    valueCurrency?: string;
+    brandId: string;
     categoryId: string;
-    availableCountries?: string[];
-    excludedCountries?: string[];
-    isGlobal?: boolean;
-    region?: string;
-    regionNotes?: string;
-    displayPriority?: number;
-    countryUrls?: Record<string, string>;
-    countryValues?: Record<string, number>;
+    discountType: string;
+    discountLabel: string;
+    discountValue?: number | null;
+    originalPrice?: number | null;
+    studentPrice?: number | null;
+    currency?: string;
     verificationMethod: string;
-    eligibilityNote?: string;
     claimUrl: string;
-    affiliateUrl?: string;
+    affiliateUrl?: string | null;
+    coverImageUrl?: string | null;
+    howToRedeem?: string | null;
+    eligibilityNote?: string | null;
+    termsUrl?: string | null;
+    minimumSpend?: number | null;
+    isNewCustomerOnly?: boolean;
     isFeatured?: boolean;
-    expirationDate?: Date;
+    isExclusive?: boolean;
+    isActive?: boolean;
+    conditions?: string | null;
+    expirationDate?: Date | null;
+    metaTitle?: string | null;
+    metaDescription?: string | null;
 }
 
 export interface UpdateDealInput extends Partial<CreateDealInput> {
@@ -31,7 +37,7 @@ export interface UpdateDealInput extends Partial<CreateDealInput> {
 }
 
 /**
- * Get all deals for admin (including inactive)
+ * Get all deals for admin (including inactive) with brand and category joins
  */
 export async function getAllDealsForAdmin(options?: {
     page?: number;
@@ -51,26 +57,27 @@ export async function getAllDealsForAdmin(options?: {
     const results = await db
         .select({
             deal: deals,
+            brand: brands,
             category: categories,
         })
         .from(deals)
+        .leftJoin(brands, eq(deals.brandId, brands.id))
         .leftJoin(categories, eq(deals.categoryId, categories.id))
         .orderBy(orderFn(sortColumn))
         .limit(limit)
         .offset(offset)
         .all();
 
-    const total = await db
-        .select({ count: deals.id })
-        .from(deals)
-        .all();
+    const [totalResult] = await db
+        .select({ total: sql<number>`count(*)` })
+        .from(deals);
 
     return {
         deals: results,
         meta: {
             page,
             limit,
-            total: total.length,
+            total: totalResult?.total || 0,
         },
     };
 }
@@ -79,30 +86,57 @@ export async function getAllDealsForAdmin(options?: {
  * Create a new deal
  */
 export async function createDeal(input: CreateDealInput) {
-    const dealId = crypto.randomUUID();
+    const [created] = await db
+        .insert(deals)
+        .values({
+            slug: input.slug,
+            title: input.title,
+            shortDescription: input.shortDescription,
+            longDescription: input.longDescription,
+            brandId: input.brandId,
+            categoryId: input.categoryId,
+            discountType: input.discountType,
+            discountLabel: input.discountLabel,
+            discountValue: input.discountValue ?? null,
+            originalPrice: input.originalPrice ?? null,
+            studentPrice: input.studentPrice ?? null,
+            currency: input.currency ?? "USD",
+            verificationMethod: input.verificationMethod,
+            claimUrl: input.claimUrl,
+            affiliateUrl: input.affiliateUrl ?? null,
+            coverImageUrl: input.coverImageUrl ?? null,
+            howToRedeem: input.howToRedeem ?? null,
+            eligibilityNote: input.eligibilityNote ?? null,
+            termsUrl: input.termsUrl ?? null,
+            minimumSpend: input.minimumSpend ?? null,
+            isNewCustomerOnly: input.isNewCustomerOnly ?? false,
+            isFeatured: input.isFeatured ?? false,
+            isExclusive: input.isExclusive ?? false,
+            isActive: input.isActive ?? true,
+            conditions: input.conditions ?? null,
+            expirationDate: input.expirationDate ?? null,
+            metaTitle: input.metaTitle ?? null,
+            metaDescription: input.metaDescription ?? null,
+        })
+        .returning();
 
-    // Note: brandId property missing in input but required in schema. 
-    // This suggests input schema also needs update or we need to handle it.
-    // For now, mapping directly but this might fail runtime if schema enforcement is strict and input lacks brandId.
+    if (!created) {
+        throw new Error("Failed to create deal");
+    }
 
-    await db.insert(deals).values({
-        id: dealId,
-        ...input,
-        // Fallback content until we have brandId in input
-        brandId: "legacy-admin-placeholder",
-        discountType: "percentage", // Default
-        discountLabel: "Special Offer", // Default
-        isActive: true,
-        clickCount: 0,
-        viewCount: 0,
-    } as any);
-
-    return await db
-        .select({ deal: deals, category: categories })
+    // Fetch with joins for response
+    const [result] = await db
+        .select({
+            deal: deals,
+            brand: brands,
+            category: categories,
+        })
         .from(deals)
+        .leftJoin(brands, eq(deals.brandId, brands.id))
         .leftJoin(categories, eq(deals.categoryId, categories.id))
-        .where(eq(deals.id, dealId))
-        .get();
+        .where(eq(deals.id, created.id));
+
+    return result;
 }
 
 /**
@@ -111,21 +145,56 @@ export async function createDeal(input: CreateDealInput) {
 export async function updateDeal(input: UpdateDealInput) {
     const { id, ...updateData } = input;
 
+    // Build update object with only provided fields
+    const updatePayload: Record<string, unknown> = {};
+
+    if (updateData.slug !== undefined) updatePayload.slug = updateData.slug;
+    if (updateData.title !== undefined) updatePayload.title = updateData.title;
+    if (updateData.shortDescription !== undefined) updatePayload.shortDescription = updateData.shortDescription;
+    if (updateData.longDescription !== undefined) updatePayload.longDescription = updateData.longDescription;
+    if (updateData.brandId !== undefined) updatePayload.brandId = updateData.brandId;
+    if (updateData.categoryId !== undefined) updatePayload.categoryId = updateData.categoryId;
+    if (updateData.discountType !== undefined) updatePayload.discountType = updateData.discountType;
+    if (updateData.discountLabel !== undefined) updatePayload.discountLabel = updateData.discountLabel;
+    if (updateData.discountValue !== undefined) updatePayload.discountValue = updateData.discountValue;
+    if (updateData.originalPrice !== undefined) updatePayload.originalPrice = updateData.originalPrice;
+    if (updateData.studentPrice !== undefined) updatePayload.studentPrice = updateData.studentPrice;
+    if (updateData.currency !== undefined) updatePayload.currency = updateData.currency;
+    if (updateData.verificationMethod !== undefined) updatePayload.verificationMethod = updateData.verificationMethod;
+    if (updateData.claimUrl !== undefined) updatePayload.claimUrl = updateData.claimUrl;
+    if (updateData.affiliateUrl !== undefined) updatePayload.affiliateUrl = updateData.affiliateUrl;
+    if (updateData.coverImageUrl !== undefined) updatePayload.coverImageUrl = updateData.coverImageUrl;
+    if (updateData.howToRedeem !== undefined) updatePayload.howToRedeem = updateData.howToRedeem;
+    if (updateData.eligibilityNote !== undefined) updatePayload.eligibilityNote = updateData.eligibilityNote;
+    if (updateData.termsUrl !== undefined) updatePayload.termsUrl = updateData.termsUrl;
+    if (updateData.minimumSpend !== undefined) updatePayload.minimumSpend = updateData.minimumSpend;
+    if (updateData.isNewCustomerOnly !== undefined) updatePayload.isNewCustomerOnly = updateData.isNewCustomerOnly;
+    if (updateData.isFeatured !== undefined) updatePayload.isFeatured = updateData.isFeatured;
+    if (updateData.isExclusive !== undefined) updatePayload.isExclusive = updateData.isExclusive;
+    if (updateData.isActive !== undefined) updatePayload.isActive = updateData.isActive;
+    if (updateData.conditions !== undefined) updatePayload.conditions = updateData.conditions;
+    if (updateData.expirationDate !== undefined) updatePayload.expirationDate = updateData.expirationDate;
+    if (updateData.metaTitle !== undefined) updatePayload.metaTitle = updateData.metaTitle;
+    if (updateData.metaDescription !== undefined) updatePayload.metaDescription = updateData.metaDescription;
+
     await db
         .update(deals)
-        .set({
-            ...updateData,
-            updatedAt: new Date(),
-        })
-        .where(eq(deals.id, id))
-        .run();
+        .set(updatePayload)
+        .where(eq(deals.id, id));
 
-    return await db
-        .select({ deal: deals, category: categories })
+    // Fetch with joins for response
+    const [result] = await db
+        .select({
+            deal: deals,
+            brand: brands,
+            category: categories,
+        })
         .from(deals)
+        .leftJoin(brands, eq(deals.brandId, brands.id))
         .leftJoin(categories, eq(deals.categoryId, categories.id))
-        .where(eq(deals.id, id))
-        .get();
+        .where(eq(deals.id, id));
+
+    return result;
 }
 
 /**
@@ -136,10 +205,8 @@ export async function deleteDeal(dealId: string) {
         .update(deals)
         .set({
             isActive: false,
-            updatedAt: new Date(),
         })
-        .where(eq(deals.id, dealId))
-        .run();
+        .where(eq(deals.id, dealId));
 
     return { success: true };
 }
@@ -162,10 +229,8 @@ export async function toggleFeatured(dealId: string) {
         .update(deals)
         .set({
             isFeatured: !deal.isFeatured,
-            updatedAt: new Date(),
         })
-        .where(eq(deals.id, dealId))
-        .run();
+        .where(eq(deals.id, dealId));
 
     return { isFeatured: !deal.isFeatured };
 }
@@ -179,10 +244,8 @@ export async function setDealExpiration(dealId: string, expirationDate: Date | n
         .set({
             expirationDate,
             isActive: expirationDate ? expirationDate > new Date() : true,
-            updatedAt: new Date(),
         })
-        .where(eq(deals.id, dealId))
-        .run();
+        .where(eq(deals.id, dealId));
 
     return { success: true };
 }

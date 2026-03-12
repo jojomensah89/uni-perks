@@ -72,7 +72,7 @@ export function CollectionForm({ open, onClose, onSuccess, collection }: Collect
                 body: JSON.stringify(data),
             }),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["adminCollections"] });
+            queryClient.invalidateQueries({ queryKey: ["admin_collections"] });
             onSuccess();
         },
     });
@@ -84,7 +84,7 @@ export function CollectionForm({ open, onClose, onSuccess, collection }: Collect
                 body: JSON.stringify(data),
             }),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["adminCollections"] });
+            queryClient.invalidateQueries({ queryKey: ["admin_collections"] });
             onSuccess();
         },
     });

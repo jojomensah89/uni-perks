@@ -14,7 +14,7 @@ export default function AdminDealsPage() {
 
     const brandsQuery = useQuery({
         queryKey: ["admin_brands"],
-        queryFn: () => fetchAPI<{ brands: ApiBrandResponse[] }>("/api/brands"),
+        queryFn: () => fetchAPI<{ brands: ApiBrandResponse[] }>("/api/admin/brands"),
     });
 
     const categoriesQuery = useQuery({

@@ -55,7 +55,7 @@ export function CategoryForm({ onSuccess }: CategoryFormProps) {
                 toast.success("Category created successfully!");
                 setOpen(false);
                 form.reset();
-                queryClient.invalidateQueries({ queryKey: ["adminCategories"] });
+                queryClient.invalidateQueries({ queryKey: ["admin_categories"] });
                 if (onSuccess) onSuccess();
             } catch (error: any) {
                 toast.error(error.message || "Failed to create category");

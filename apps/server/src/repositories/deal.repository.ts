@@ -52,10 +52,20 @@ export async function findManyDeals(options: FindManyDealsOptions) {
     }
 
     if (searchQuery) {
-        // Search across deal title, description, and brand name
-        conditions.push(
-            sql`(${deals.title} LIKE ${`%${searchQuery}%`} OR ${deals.shortDescription} LIKE ${`%${searchQuery}%`} OR ${brands.name} LIKE ${`%${searchQuery}%`} OR ${categories.name} LIKE ${`%${searchQuery}%`})`
-        );
+        // Use FTS5 for full-text search across deal title, description, brand name, and category name
+        // FTS5 provides better relevance ranking and performance than LIKE queries
+        const ftsResults = await db.all(sql`
+            SELECT deal_id FROM deals_fts 
+            WHERE deals_fts MATCH ${searchQuery + '*'}
+            ORDER BY rank
+        `);
+        const dealIds = ftsResults.map((r: any) => r.deal_id);
+        if (dealIds.length > 0) {
+            conditions.push(inArray(deals.id, dealIds));
+        } else {
+            // No FTS matches, force empty results
+            conditions.push(sql`1 = 0`);
+        }
     }
 
     if (options.brandId) {

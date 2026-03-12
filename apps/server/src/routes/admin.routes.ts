@@ -932,7 +932,7 @@ const addDealToCollectionRoute = createRoute({
 
 app.openapi(addDealToCollectionRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const body = await c.req.json();
+    const body = c.req.valid("json");
 
     // Check if already exists
     const existing = await db
@@ -1021,7 +1021,7 @@ const reorderCollectionDealsRoute = createRoute({
 
 app.openapi(reorderCollectionDealsRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const { orders } = await c.req.json();
+    const { orders } = c.req.valid("json");
 
     // Update each deal's display order
     for (const order of orders) {
@@ -1124,7 +1124,7 @@ const updateTickerRoute = createRoute({
 });
 
 app.openapi(updateTickerRoute, async (c) => {
-    const { messages } = await c.req.json();
+    const { messages } = c.req.valid("json");
 
     const value = JSON.stringify(messages);
 

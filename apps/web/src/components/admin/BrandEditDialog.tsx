@@ -89,7 +89,7 @@ export function BrandEditDialog({ brand, open, onOpenChange }: BrandEditDialogPr
                 await updateBrandMutation.mutateAsync({ ...value, logoUrl, coverImageUrl });
 
                 toast.success("Brand updated successfully!");
-                queryClient.invalidateQueries({ queryKey: ["adminBrands"] });
+                queryClient.invalidateQueries({ queryKey: ["admin_brands"] });
                 onOpenChange(false);
             } catch (error: any) {
                 toast.error(error.message || "Failed to update brand");

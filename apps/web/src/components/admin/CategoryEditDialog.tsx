@@ -48,7 +48,7 @@ export function CategoryEditDialog({ category, open, onOpenChange }: CategoryEdi
                 await updateCategoryMutation.mutateAsync(value);
 
                 toast.success("Category updated!");
-                queryClient.invalidateQueries({ queryKey: ["adminCategories"] });
+                queryClient.invalidateQueries({ queryKey: ["admin_categories"] });
                 onOpenChange(false);
             } catch (error: any) {
                 toast.error(error.message || "Failed to update category");
