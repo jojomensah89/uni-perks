@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { fetchAPI } from "@/lib/api";
 import type { ApiCollectionResponse } from "@/app/admin/collections/page";
+import { ImageUpload } from "./ImageUpload";
+import { toast } from "sonner";
 
 interface CollectionFormProps {
     open: boolean;
@@ -23,8 +25,11 @@ interface CollectionFormProps {
     collection: ApiCollectionResponse | null;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
+
 export function CollectionForm({ open, onClose, onSuccess, collection }: CollectionFormProps) {
     const queryClient = useQueryClient();
+    const [pendingFile, setPendingFile] = useState<File | null>(null);
     const [formData, setFormData] = useState({
         name: "",
         slug: "",
@@ -38,32 +43,35 @@ export function CollectionForm({ open, onClose, onSuccess, collection }: Collect
 
     const [prevCollectionId, setPrevCollectionId] = useState(collection?.id);
 
-    if (collection?.id !== prevCollectionId) {
-        setPrevCollectionId(collection?.id);
-        if (collection) {
-            setFormData({
-                name: collection.name,
-                slug: collection.slug,
-                description: collection.description || "",
-                audience: collection.audience || "",
-                isFeatured: collection.isFeatured ?? false,
-                displayOrder: collection.displayOrder ?? 0,
-                coverImageUrl: collection.coverImageUrl || "",
-                icon: collection.icon || "",
-            });
-        } else {
-            setFormData({
-                name: "",
-                slug: "",
-                description: "",
-                audience: "",
-                isFeatured: false,
-                displayOrder: 0,
-                coverImageUrl: "",
-                icon: "",
-            });
+    useEffect(() => {
+        if (collection?.id !== prevCollectionId) {
+            setPrevCollectionId(collection?.id);
+            if (collection) {
+                setFormData({
+                    name: collection.name,
+                    slug: collection.slug,
+                    description: collection.description || "",
+                    audience: collection.audience || "",
+                    isFeatured: collection.isFeatured ?? false,
+                    displayOrder: collection.displayOrder ?? 0,
+                    coverImageUrl: collection.coverImageUrl || "",
+                    icon: collection.icon || "",
+                });
+            } else {
+                setFormData({
+                    name: "",
+                    slug: "",
+                    description: "",
+                    audience: "",
+                    isFeatured: false,
+                    displayOrder: 0,
+                    coverImageUrl: "",
+                    icon: "",
+                });
+            }
+            setPendingFile(null);
         }
-    }
+    }, [collection, prevCollectionId]);
 
     const createMutation = useMutation({
         mutationFn: (data: typeof formData) =>
@@ -89,12 +97,37 @@ export function CollectionForm({ open, onClose, onSuccess, collection }: Collect
         },
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (collection) {
-            updateMutation.mutate(formData);
-        } else {
-            createMutation.mutate(formData);
+        
+        try {
+            let coverImageUrl = formData.coverImageUrl;
+
+            if (pendingFile) {
+                const uploadData = new FormData();
+                uploadData.append("file", pendingFile);
+                uploadData.append("folder", "collections");
+                const uploadRes = await fetch(`${API_URL}/api/upload`, {
+                    method: "POST",
+                    body: uploadData,
+                    credentials: "include",
+                });
+                if (!uploadRes.ok) throw new Error("Image upload failed");
+                const resJson = await uploadRes.json() as { key: string };
+                coverImageUrl = resJson.key;
+            }
+
+            const finalData = { ...formData, coverImageUrl };
+
+            if (collection) {
+                await updateMutation.mutateAsync(finalData);
+                toast.success("Collection updated successfully");
+            } else {
+                await createMutation.mutateAsync(finalData);
+                toast.success("Collection created successfully");
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Failed to save collection");
         }
     };
 
@@ -165,15 +198,13 @@ export function CollectionForm({ open, onClose, onSuccess, collection }: Collect
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="coverImageUrl">Cover Image URL</Label>
-                        <Input
-                            id="coverImageUrl"
-                            value={formData.coverImageUrl}
-                            onChange={(e) => setFormData({ ...formData, coverImageUrl: e.target.value })}
-                            placeholder="https://..."
-                        />
-                    </div>
+                    <ImageUpload
+                        label="Cover Image"
+                        value={formData.coverImageUrl}
+                        onChange={(key) => setFormData({ ...formData, coverImageUrl: key })}
+                        onFileSelected={(file) => setPendingFile(file)}
+                        folder="collections"
+                    />
 
                     <div className="space-y-2">
                         <Label htmlFor="icon">Icon</Label>

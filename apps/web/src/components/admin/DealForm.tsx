@@ -509,12 +509,25 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                 <form.Field name="geoOverridesJson">
                                     {(field) => (
                                         <div className="grid gap-2">
-                                            <Label htmlFor={field.name}>Country Pricing & Links JSON</Label>
+                                            <Label htmlFor={field.name}>Country Overrides (JSON)</Label>
+                                            <div className="text-xs text-muted-foreground mb-2 p-3 bg-muted rounded-md border border-dashed border-border">
+                                                <p className="font-medium mb-1">Example: USA (US)</p>
+                                                <pre className="text-[10px] overflow-x-auto">
+{`{
+  "countryCode": "US",
+  "currency": "USD",
+  "studentPrice": 4.99,
+  "originalPrice": 9.99,
+  "claimUrl": "https://..."
+}`}
+                                                </pre>
+                                            </div>
                                             <Textarea
                                                 id={field.name}
                                                 value={field.state.value}
                                                 onChange={(e) => field.handleChange(e.target.value)}
                                                 rows={12}
+                                                className="font-mono text-xs"
                                                 placeholder={`[
   {
     "countryCode": "US",
@@ -525,16 +538,19 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
     "currency": "USD",
     "discountLabel": "50% OFF",
     "isAvailable": true
-  },
-  {
-    "countryCode": "GLOBAL",
-    "isAvailable": false
   }
 ]`}
                                             />
-                                            <p className="text-xs text-muted-foreground">
-                                                Provide an array of country overrides. Use ISO alpha-2 country codes or <code>GLOBAL</code>.
-                                            </p>
+                                            <div className="space-y-1 mt-2">
+                                                <p className="text-xs text-muted-foreground font-medium">Common ISO Codes:</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">US (USA)</span>
+                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">GB (UK)</span>
+                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">CA (Canada)</span>
+                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">AU (Australia)</span>
+                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">GLOBAL</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
                                 </form.Field>

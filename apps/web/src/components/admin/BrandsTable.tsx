@@ -108,7 +108,33 @@ function BrandsTableActions({ row }: { row: ApiBrandResponse }) {
     );
 }
 
+const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
+
 const columns: ColumnDef<ApiBrandResponse>[] = [
+    {
+        id: "logo",
+        header: "Logo",
+        cell: ({ row }) => {
+            const logoUrl = row.original.logoUrl;
+            if (logoUrl) {
+                return (
+                    <div className="h-8 w-8 rounded bg-muted flex items-center justify-center overflow-hidden border border-border">
+                        <img
+                            src={`${API_URL}/api/images/${logoUrl}`}
+                            alt={row.original.name}
+                            className="h-full w-full object-contain"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                    </div>
+                );
+            }
+            return (
+                <div className="h-8 w-8 rounded bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground border border-border">
+                    {row.original.name?.charAt(0)?.toUpperCase() || "?"}
+                </div>
+            );
+        },
+    },
     {
         accessorKey: "name",
         header: "Name",

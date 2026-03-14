@@ -140,13 +140,13 @@ export function ImageUpload({
             <Label>{label}</Label>
 
             {imagePreview ? (
-                <div className={cn("relative group", previewClassName)}>
+                <div className={cn("relative group w-full h-48", previewClassName)}>
                     <Image
                         src={imagePreview}
                         alt="Preview"
                         fill
                         className="object-cover rounded-lg border border-border"
-                        unoptimized={imagePreview.startsWith("data:")}
+                        unoptimized={true}
                     />
                     <button
                         type="button"

@@ -28,9 +28,12 @@ interface BrandFormProps {
 
 export function BrandForm({ onSuccess }: BrandFormProps) {
     const [open, setOpen] = useState(false);
+    const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+    const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null);
     const router = useRouter();
     const queryClient = useQueryClient();
 
+    const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
 
     const createBrandMutation = useMutation({
         mutationFn: async (data: any) => {
@@ -57,11 +60,42 @@ export function BrandForm({ onSuccess }: BrandFormProps) {
         },
         onSubmit: async ({ value }) => {
             try {
-                await createBrandMutation.mutateAsync(value);
+                let logoUrl = value.logoUrl;
+                let coverImageUrl = value.coverImageUrl;
+
+                if (pendingLogoFile) {
+                    const formData = new FormData();
+                    formData.append("file", pendingLogoFile);
+                    formData.append("folder", "brands");
+                    const uploadRes = await fetch(`${API_URL}/api/upload`, {
+                        method: "POST",
+                        body: formData,
+                        credentials: "include",
+                    });
+                    if (!uploadRes.ok) throw new Error("Logo upload failed");
+                    logoUrl = (await uploadRes.json() as { key: string }).key;
+                }
+
+                if (pendingCoverFile) {
+                    const formData = new FormData();
+                    formData.append("file", pendingCoverFile);
+                    formData.append("folder", "brands");
+                    const uploadRes = await fetch(`${API_URL}/api/upload`, {
+                        method: "POST",
+                        body: formData,
+                        credentials: "include",
+                    });
+                    if (!uploadRes.ok) throw new Error("Cover image upload failed");
+                    coverImageUrl = (await uploadRes.json() as { key: string }).key;
+                }
+
+                await createBrandMutation.mutateAsync({ ...value, logoUrl, coverImageUrl });
 
                 toast.success("Brand created successfully!");
                 setOpen(false);
                 form.reset();
+                setPendingLogoFile(null);
+                setPendingCoverFile(null);
                 queryClient.invalidateQueries({ queryKey: ["admin_brands"] });
                 if (onSuccess) onSuccess();
             } catch (error: any) {
@@ -71,14 +105,20 @@ export function BrandForm({ onSuccess }: BrandFormProps) {
     });
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(o) => {
+            setOpen(o);
+            if (!o) {
+                setPendingLogoFile(null);
+                setPendingCoverFile(null);
+            }
+        }}>
             <DialogTrigger>
                 <div className="flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 cursor-pointer">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Brand
                 </div>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-lg max-w-[95vw]">
+            <DialogContent className="sm:max-w-2xl max-w-[95vw]">
                 <DialogHeader>
                     <DialogTitle>Add New Brand</DialogTitle>
                     <DialogDescription>
@@ -206,14 +246,16 @@ export function BrandForm({ onSuccess }: BrandFormProps) {
                         )}
                     </form.Field>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <form.Field name="logoUrl">
                             {(field) => (
                                 <ImageUpload
                                     label="Logo"
                                     value={field.state.value}
-                                    onChange={(key) => field.handleChange(key)}
-                                    folder="brands/logos"
+                                    onChange={(key) => field.handleChange(key ?? "")}
+                                    onFileSelected={(file) => setPendingLogoFile(file)}
+                                    folder="brands"
+                                    immediateUpload={false}
                                 />
                             )}
                         </form.Field>
@@ -223,8 +265,10 @@ export function BrandForm({ onSuccess }: BrandFormProps) {
                                 <ImageUpload
                                     label="Cover Image"
                                     value={field.state.value}
-                                    onChange={(key) => field.handleChange(key)}
-                                    folder="brands/covers"
+                                    onChange={(key) => field.handleChange(key ?? "")}
+                                    onFileSelected={(file) => setPendingCoverFile(file)}
+                                    folder="brands"
+                                    immediateUpload={false}
                                 />
                             )}
                         </form.Field>

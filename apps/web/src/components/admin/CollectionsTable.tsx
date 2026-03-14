@@ -23,6 +23,8 @@ import { fetchAPI } from "@/lib/api";
 import type { ApiCollectionResponse } from "@/app/admin/collections/page";
 import Link from "next/link";
 
+const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
+
 interface CollectionsTableProps {
     data: ApiCollectionResponse[];
     onEdit: (collection: ApiCollectionResponse) => void;
@@ -32,6 +34,12 @@ interface CollectionsTableProps {
 export function CollectionsTable({ data, onEdit, onManageDeals }: CollectionsTableProps) {
     const queryClient = useQueryClient();
     const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    const getImageUrl = (keyOrUrl: string | null | undefined) => {
+        if (!keyOrUrl) return null;
+        if (keyOrUrl.startsWith("http://") || keyOrUrl.startsWith("https://")) return keyOrUrl;
+        return `${API_URL}/api/images/${keyOrUrl}`;
+    };
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => fetchAPI(`/api/admin/collections/${id}`, { method: "DELETE" }),
@@ -78,11 +86,14 @@ export function CollectionsTable({ data, onEdit, onManageDeals }: CollectionsTab
                             <TableCell>
                                 <div className="flex items-center gap-3">
                                     {collection.coverImageUrl && (
-                                        <img
-                                            src={collection.coverImageUrl}
-                                            alt={collection.name}
-                                            className="w-10 h-10 object-cover rounded"
-                                        />
+                                        <div className="w-10 h-10 rounded overflow-hidden bg-muted border border-border">
+                                            <img
+                                                src={getImageUrl(collection.coverImageUrl)!}
+                                                alt={collection.name}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                                            />
+                                        </div>
                                     )}
                                     <div>
                                         <p className="font-medium">{collection.name}</p>

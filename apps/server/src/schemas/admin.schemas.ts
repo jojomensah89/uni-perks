@@ -72,6 +72,10 @@ export const UpdateDealSchema = CreateDealSchema
             .or(z.literal("").transform(() => null)),
         termsUrl: z.string().url().max(2000).optional().nullable()
             .or(z.literal("").transform(() => null)),
+        howToRedeem: z.string().max(5000).optional().nullable()
+            .or(z.literal("").transform(() => null)),
+        eligibilityNote: z.string().max(1000).optional().nullable()
+            .or(z.literal("").transform(() => null)),
     });
 
 export const CreateBrandSchema = z.object({

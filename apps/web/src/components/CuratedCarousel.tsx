@@ -18,6 +18,7 @@ export type ApiCollectionResponse = {
     name: string;
     description: string | null;
     audience: string | null;
+    coverImageUrl?: string | null;
     isFeatured: boolean;
 };
 
