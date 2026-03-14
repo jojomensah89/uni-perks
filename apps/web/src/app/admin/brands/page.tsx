@@ -10,7 +10,7 @@ import type { ApiBrandResponse } from "@/types/api";
 export default function AdminBrandsPage() {
     const brandsQuery = useQuery({
         queryKey: ["admin_brands"],
-        queryFn: () => fetchAPI<{ brands: ApiBrandResponse[] }>("/api/brands"),
+        queryFn: () => fetchAPI<{ brands: ApiBrandResponse[] }>("/api/admin/brands"),
     });
 
     if (brandsQuery.isLoading) {

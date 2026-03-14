@@ -116,6 +116,24 @@ const columns: ColumnDef<ApiCategoryResponse>[] = [
         ),
     },
     {
+        accessorKey: "coverImageUrl",
+        header: "Image",
+        cell: ({ row }) => {
+            const val = row.original.coverImageUrl;
+            if (!val) return <span className="text-muted-foreground">-</span>;
+            
+            // if it's already an absolute URL, use it, else prepend API_URL
+            const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
+            const imageUrl = val.startsWith('http') ? val : `${API_URL}/api/images/${val}`;
+            
+            return (
+                <div className="w-10 h-10 overflow-hidden rounded-md border bg-muted flex items-center justify-center">
+                    <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+                </div>
+            );
+        },
+    },
+    {
         accessorKey: "icon",
         header: "Icon",
         cell: ({ row }) => <span>{row.original.icon || "-"}</span>,

@@ -17,6 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { fetchAPI } from "@/lib/api";
 import type { ApiCategoryResponse } from "@/types/api";
+import { ImageUpload } from "./ImageUpload";
+import { useState } from "react";
+
+const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
 
 interface CategoryEditDialogProps {
     category: ApiCategoryResponse;
@@ -27,6 +31,7 @@ interface CategoryEditDialogProps {
 export function CategoryEditDialog({ category, open, onOpenChange }: CategoryEditDialogProps) {
     const queryClient = useQueryClient();
     const router = useRouter();
+    const [pendingFile, setPendingFile] = useState<File | null>(null);
 
     const updateCategoryMutation = useMutation({
         mutationFn: async (data: any) => {
@@ -42,12 +47,34 @@ export function CategoryEditDialog({ category, open, onOpenChange }: CategoryEdi
             name: category.name || "",
             slug: category.slug || "",
             icon: category.icon || "",
+            coverImageUrl: category.coverImageUrl || "",
         },
         onSubmit: async ({ value }) => {
             try {
-                await updateCategoryMutation.mutateAsync(value);
+                let finalCoverImageUrl = value.coverImageUrl;
+
+                if (pendingFile) {
+                    const uploadData = new FormData();
+                    uploadData.append("file", pendingFile);
+                    uploadData.append("folder", "categories");
+                    const uploadRes = await fetch(`${API_URL}/api/upload`, {
+                        method: "POST",
+                        body: uploadData,
+                        credentials: "include",
+                    });
+                    
+                    if (!uploadRes.ok) {
+                        throw new Error("Failed to upload image");
+                    }
+                    const resJson = await uploadRes.json() as { key: string };
+                    finalCoverImageUrl = resJson.key;
+                }
+
+                const finalData = { ...value, coverImageUrl: finalCoverImageUrl };
+                await updateCategoryMutation.mutateAsync(finalData);
 
                 toast.success("Category updated!");
+                setPendingFile(null);
                 queryClient.invalidateQueries({ queryKey: ["admin_categories"] });
                 onOpenChange(false);
             } catch (error: any) {
@@ -94,6 +121,18 @@ export function CategoryEditDialog({ category, open, onOpenChange }: CategoryEdi
                                 <Label>Icon (emoji or text)</Label>
                                 <Input value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="e.g. 🎓 or tech" />
                             </div>
+                        )}
+                    </form.Field>
+
+                    <form.Field name="coverImageUrl">
+                        {(field) => (
+                            <ImageUpload
+                                label="Cover Image"
+                                value={field.state.value}
+                                onChange={(key) => field.handleChange(key)}
+                                onFileSelected={(file) => setPendingFile(file)}
+                                folder="categories"
+                            />
                         )}
                     </form.Field>
 

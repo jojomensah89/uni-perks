@@ -11,9 +11,13 @@ export async function withEdgeCache(
 
     const cached = await cache.match(key);
     if (cached) {
-        return cached;
+        console.log(`[EDGE CACHE] HIT: ${c.req.url}`);
+        const response = new Response(cached.body, cached);
+        response.headers.set("x-cache", "hit");
+        return response;
     }
 
+    console.log(`[EDGE CACHE] MISS: ${c.req.url}`);
     const response = await handler();
     if (response.status === 200) {
         const clonedResponse = response.clone();
@@ -26,5 +30,7 @@ export async function withEdgeCache(
         }
     }
 
-    return response;
+    const finalResponse = new Response(response.body, response);
+    finalResponse.headers.set("x-cache", "miss");
+    return finalResponse;
 }

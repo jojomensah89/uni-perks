@@ -19,7 +19,7 @@ export default function AdminDealsPage() {
 
     const categoriesQuery = useQuery({
         queryKey: ["admin_categories"],
-        queryFn: () => fetchAPI<{ categories: ApiCategoryResponse[] }>("/api/categories"),
+        queryFn: () => fetchAPI<{ categories: ApiCategoryResponse[] }>("/api/admin/categories"),
     });
 
     const isLoading = dealsQuery.isLoading || brandsQuery.isLoading || categoriesQuery.isLoading;

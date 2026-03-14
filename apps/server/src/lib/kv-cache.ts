@@ -10,9 +10,11 @@ export async function withKV<T>(
 
     const cached = await kv.get(key, "json") as T | null;
     if (cached !== null) {
+        console.log(`[KV CACHE] HIT: ${key}`);
         return cached;
     }
 
+    console.log(`[KV CACHE] MISS: ${key}`);
     const fresh = await fetchFn();
     void kv.put(key, JSON.stringify(fresh), { expirationTtl: ttlSeconds });
     return fresh;

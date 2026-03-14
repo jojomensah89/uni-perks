@@ -334,19 +334,23 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                         onChange: ({ value }) => !value ? "Brand is required" : undefined,
                                     }}
                                 >
-                                    {(field) => (
+                                    {(field) => {
+                                        const selectedBrandObj = brands.find((b) => b.id === field.state.value);
+                                        const comboValue = selectedBrandObj ? { value: selectedBrandObj.id, label: selectedBrandObj.name } : null;
+                                        return (
                                         <div className="grid gap-2">
                                             <Label htmlFor={field.name}>Brand *</Label>
                                             <Combobox
-                                                value={field.state.value}
-                                                onValueChange={(v) => field.handleChange(v ?? "")}
+                                                value={comboValue}
+                                                onValueChange={(v: any) => field.handleChange(v?.value ?? "")}
+                                                isItemEqualToValue={(item: any, selected: any) => item.value === selected.value}
                                             >
                                                 <ComboboxInput showTrigger placeholder="Search Brand..." className="w-full h-9" />
                                                 <ComboboxContent>
-                                                    <ComboboxEmpty>No brand found.</ComboboxEmpty>
+                                                    {brands.length === 0 && <ComboboxEmpty>No brand found.</ComboboxEmpty>}
                                                     <ComboboxList>
                                                         {brands.map((b) => (
-                                                            <ComboboxItem key={b.id} value={b.id}>
+                                                            <ComboboxItem key={b.id} value={{ value: b.id, label: b.name }}>
                                                                 {b.name}
                                                             </ComboboxItem>
                                                         ))}
@@ -357,7 +361,7 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                                 <p className="text-sm text-destructive">{field.state.meta.errors.join(", ")}</p>
                                             )}
                                         </div>
-                                    )}
+                                    )}}
                                 </form.Field>
 
                                 {/* Category */}
@@ -367,19 +371,23 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                         onChange: ({ value }) => !value ? "Category is required" : undefined,
                                     }}
                                 >
-                                    {(field) => (
+                                    {(field) => {
+                                        const selectedCatObj = categories.find((c) => c.id === field.state.value);
+                                        const comboValue = selectedCatObj ? { value: selectedCatObj.id, label: selectedCatObj.name } : null;
+                                        return (
                                         <div className="grid gap-2">
                                             <Label htmlFor={field.name}>Category *</Label>
                                             <Combobox
-                                                value={field.state.value}
-                                                onValueChange={(v) => field.handleChange(v ?? "")}
+                                                value={comboValue}
+                                                onValueChange={(v: any) => field.handleChange(v?.value ?? "")}
+                                                isItemEqualToValue={(item: any, selected: any) => item.value === selected.value}
                                             >
                                                 <ComboboxInput showTrigger placeholder="Search Category..." className="w-full h-9" />
                                                 <ComboboxContent>
-                                                    <ComboboxEmpty>No category found.</ComboboxEmpty>
+                                                    {categories.length === 0 && <ComboboxEmpty>No category found.</ComboboxEmpty>}
                                                     <ComboboxList>
                                                         {categories.map((c) => (
-                                                            <ComboboxItem key={c.id} value={c.id}>
+                                                            <ComboboxItem key={c.id} value={{ value: c.id, label: c.name }}>
                                                                 {c.name}
                                                             </ComboboxItem>
                                                         ))}
@@ -390,7 +398,7 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                                 <p className="text-sm text-destructive">{field.state.meta.errors.join(", ")}</p>
                                             )}
                                         </div>
-                                    )}
+                                    )}}
                                 </form.Field>
 
                                 {/* Discount Label */}

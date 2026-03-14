@@ -1,7 +1,7 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware";
 import { BadRequestError } from "../lib/errors";
-import { db, deals, brands, categories, collections, collectionDeals, siteSettings, dealGeoConfig, eq, and, desc, sql } from "@uni-perks/db";
+import { db, deals, brands, categories, collections, collectionDeals, siteSettings, dealGeoConfig, user, eq, and, desc, sql } from "@uni-perks/db";
 import {
     CreateBrandSchema,
     CreateCategorySchema,
@@ -1296,6 +1296,61 @@ app.openapi(deleteCategoryRoute, async (c) => {
     await invalidateKV((c.env as { KV?: KVNamespace }).KV, "categories:all");
 
     return c.json({ success: true }, 200);
+});
+
+const listCategoriesRoute = createRoute({
+    method: "get",
+    path: "/categories",
+    tags: ["Admin"],
+    summary: "List Categories (Admin)",
+    description: "Get all categories (Admin only).",
+    responses: {
+        200: {
+            description: "List of categories",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        categories: z.array(z.any()),
+                    }),
+                },
+            },
+        },
+    },
+});
+
+app.openapi(listCategoriesRoute, async (c) => {
+    const results = await db.select().from(categories).orderBy(categories.displayOrder);
+    return c.json({ categories: results }, 200);
+});
+
+const listUsersRoute = createRoute({
+    method: "get",
+    path: "/users",
+    tags: ["Admin"],
+    summary: "List Users (Admin)",
+    description: "Get all users (Admin only).",
+    responses: {
+        200: {
+            description: "List of users",
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        users: z.array(z.any()),
+                    }),
+                },
+            },
+        },
+    },
+});
+
+app.openapi(listUsersRoute, async (c) => {
+    // Requires importing user from the db schema.
+    // However, user is imported via @uni-perks/auth or schema. Wait, let's just query from the DB.
+    // The user schema isn't exported in the top-level db imports yet in this file, we'll need to add it.
+    // Alternatively, we can use sql queries.
+    // Actually, let's add the import to the top of the file in another chunk.
+    const results = await db.select().from(user).orderBy(desc(user.createdAt));
+    return c.json({ users: results }, 200);
 });
 
 export default app;
