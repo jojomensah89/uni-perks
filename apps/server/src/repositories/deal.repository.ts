@@ -52,10 +52,43 @@ export async function findManyDeals(options: FindManyDealsOptions) {
     }
 
     if (searchQuery) {
-        // Search across deal title, description, and brand name
-        conditions.push(
-            sql`(${deals.title} LIKE ${`%${searchQuery}%`} OR ${deals.shortDescription} LIKE ${`%${searchQuery}%`} OR ${brands.name} LIKE ${`%${searchQuery}%`} OR ${categories.name} LIKE ${`%${searchQuery}%`})`
-        );
+        // Use FTS5 for full-text search across deal title, description, brand name, and category name
+        // FTS5 provides better relevance ranking and performance than LIKE queries
+        try {
+            // Escape special FTS5 characters to prevent query errors
+            // Use double quotes for phrases and * for prefix matching
+            const escapedQuery = searchQuery.replace(/["]/g, '""');
+            const ftsResults = await db.all(sql`
+                SELECT rowid FROM deals_fts 
+                WHERE deals_fts MATCH ${escapedQuery + '*'}
+                ORDER BY rank
+            `);
+
+            const rowIds = ftsResults
+                .map((result) => {
+                    if (result && typeof result === "object" && "rowid" in result) {
+                        return result.rowid;
+                    }
+                    return null;
+                })
+                .filter((value): value is number => value !== null);
+
+            if (rowIds.length > 0) {
+                // Map rowids back to internal IDs using a subquery or inArray
+                // Since D1 rowid corresponds to deals table rowid (due to external content)
+                conditions.push(sql`${deals.id} IN (SELECT id FROM deals WHERE rowid IN (${sql.join(rowIds, sql`, `)}))`);
+            } else {
+                // No FTS matches, force empty results
+                conditions.push(sql`1 = 0`);
+            }
+        } catch (error) {
+            console.error("FTS search failed, falling back to LIKE:", error);
+            // Fallback to simple LIKE search if FTS fails
+            const pattern = `%${searchQuery}%`;
+            conditions.push(
+                sql`(${deals.title} LIKE ${pattern} OR ${deals.shortDescription} LIKE ${pattern} OR ${brands.name} LIKE ${pattern} OR ${categories.name} LIKE ${pattern})`
+            );
+        }
     }
 
     if (options.brandId) {

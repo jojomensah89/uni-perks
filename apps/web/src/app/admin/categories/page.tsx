@@ -10,7 +10,7 @@ import type { ApiCategoryResponse } from "@/types/api";
 export default function AdminCategoriesPage() {
     const categoriesQuery = useQuery({
         queryKey: ["admin_categories"],
-        queryFn: () => fetchAPI<{ categories: ApiCategoryResponse[] }>("/api/categories"),
+        queryFn: () => fetchAPI<{ categories: ApiCategoryResponse[] }>("/api/admin/categories"),
     });
 
     if (categoriesQuery.isLoading) {

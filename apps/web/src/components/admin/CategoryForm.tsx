@@ -18,13 +18,17 @@ import {
 } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 import { fetchAPI } from "@/lib/api";
+import { ImageUpload } from "./ImageUpload";
 
 interface CategoryFormProps {
     onSuccess?: () => void;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
+
 export function CategoryForm({ onSuccess }: CategoryFormProps) {
     const [open, setOpen] = useState(false);
+    const [pendingFile, setPendingFile] = useState<File | null>(null);
     const router = useRouter();
     const queryClient = useQueryClient();
 
@@ -50,12 +54,33 @@ export function CategoryForm({ onSuccess }: CategoryFormProps) {
         },
         onSubmit: async ({ value }) => {
             try {
-                await createCategoryMutation.mutateAsync(value);
+                let finalCoverImageUrl = value.coverImageUrl;
+
+                if (pendingFile) {
+                    const uploadData = new FormData();
+                    uploadData.append("file", pendingFile);
+                    uploadData.append("folder", "categories");
+                    const uploadRes = await fetch(`${API_URL}/api/upload`, {
+                        method: "POST",
+                        body: uploadData,
+                        credentials: "include", // send session cookie if needed
+                    });
+                    
+                    if (!uploadRes.ok) {
+                        throw new Error("Failed to upload image");
+                    }
+                    const resJson = await uploadRes.json() as { key: string };
+                    finalCoverImageUrl = resJson.key;
+                }
+
+                const finalData = { ...value, coverImageUrl: finalCoverImageUrl };
+                await createCategoryMutation.mutateAsync(finalData);
 
                 toast.success("Category created successfully!");
                 setOpen(false);
+                setPendingFile(null);
                 form.reset();
-                queryClient.invalidateQueries({ queryKey: ["adminCategories"] });
+                queryClient.invalidateQueries({ queryKey: ["admin_categories"] });
                 if (onSuccess) onSuccess();
             } catch (error: any) {
                 toast.error(error.message || "Failed to create category");
@@ -173,16 +198,13 @@ export function CategoryForm({ onSuccess }: CategoryFormProps) {
 
                     <form.Field name="coverImageUrl">
                         {(field) => (
-                            <div className="grid gap-2">
-                                <Label htmlFor={field.name}>Cover Image URL</Label>
-                                <Input
-                                    id={field.name}
-                                    type="url"
-                                    value={field.state.value}
-                                    onChange={(e) => field.handleChange(e.target.value)}
-                                    placeholder="https://... or R2 key"
-                                />
-                            </div>
+                            <ImageUpload
+                                label="Cover Image"
+                                value={field.state.value}
+                                onChange={(key) => field.handleChange(key)}
+                                onFileSelected={(file) => setPendingFile(file)}
+                                folder="categories"
+                            />
                         )}
                     </form.Field>
 

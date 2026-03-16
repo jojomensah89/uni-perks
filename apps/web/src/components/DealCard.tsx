@@ -108,7 +108,7 @@ const DealCard = ({ dealData, className = "", variant = "default", _localImageOv
             href={`/deals/${deal.slug}`}
             className={cn("no-underline block h-full", className)}
         >
-            <article className="group relative bg-card rounded-lg overflow-hidden border border-border shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">
+            <article className="group relative bg-card rounded-lg overflow-hidden border border-foreground/10 shadow-lg hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">
                 {/* Image Section - 4:3 aspect ratio */}
                 <div className="relative aspect-[4/3] overflow-hidden bg-muted">
                     {coverImage ? (
@@ -141,7 +141,7 @@ const DealCard = ({ dealData, className = "", variant = "default", _localImageOv
 
                     {/* Logo Badge - Bottom Left on Image */}
                     {brand.logoUrl && (
-                        <div className="absolute bottom-3 left-3 h-12 w-12 md:h-16 md:w-16 bg-card rounded-lg border border-border shadow-md flex items-center justify-center overflow-hidden">
+                        <div className="absolute bottom-3 left-3 h-12 w-12 md:h-16 md:w-16 bg-card rounded-lg border border-foreground/10 shadow-md flex items-center justify-center overflow-hidden">
                             <Image
                                 src={getImageUrl(brand.logoUrl) || ""}
                                 alt={`${brand.name} logo`}

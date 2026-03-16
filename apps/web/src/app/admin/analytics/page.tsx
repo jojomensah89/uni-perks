@@ -2,7 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, MousePointerClick, TrendingUp, Globe, Smartphone, Monitor } from "lucide-react";
+import { AlertCircle, Eye, MousePointerClick, TrendingUp, Globe, Smartphone, Monitor } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { fetchAPI } from "@/lib/api";
 
 interface AnalyticsData {
@@ -15,56 +16,60 @@ interface AnalyticsData {
     clicksBySource: { source: string; count: number }[];
 }
 
+const MOCK_DATA: AnalyticsData = {
+    totalViews: 15420,
+    totalClicks: 3280,
+    topDeals: [
+        { id: "1", title: "Spotify Premium Student", views: 4200, clicks: 890 },
+        { id: "2", title: "GitHub Student Pack", views: 3800, clicks: 720 },
+        { id: "3", title: "Adobe CC Student", views: 2900, clicks: 580 },
+        { id: "4", title: "Apple Education", views: 2100, clicks: 420 },
+        { id: "5", title: "Notion Student", views: 1800, clicks: 350 },
+    ],
+    topBrands: [
+        { id: "1", name: "Spotify", clicks: 890 },
+        { id: "2", name: "GitHub", clicks: 720 },
+        { id: "3", name: "Adobe", clicks: 580 },
+        { id: "4", name: "Apple", clicks: 420 },
+        { id: "5", name: "Notion", clicks: 350 },
+    ],
+    viewsByDevice: [
+        { device: "desktop", count: 9250 },
+        { device: "mobile", count: 5170 },
+        { device: "tablet", count: 1000 },
+    ],
+    viewsByCountry: [
+        { country: "United States", count: 7800 },
+        { country: "United Kingdom", count: 3200 },
+        { country: "Canada", count: 1800 },
+        { country: "Germany", count: 1200 },
+        { country: "Australia", count: 900 },
+    ],
+    clicksBySource: [
+        { source: "homepage", count: 1450 },
+        { source: "browse", count: 980 },
+        { source: "search", count: 420 },
+        { source: "category", count: 280 },
+        { source: "collection", count: 150 },
+    ],
+};
+
 export default function AdminAnalyticsPage() {
     const analyticsQuery = useQuery({
         queryKey: ["admin_analytics"],
-        queryFn: async () => {
+        queryFn: async (): Promise<AnalyticsData | { data: AnalyticsData; isMock: true }> => {
             try {
                 return await fetchAPI<AnalyticsData>("/api/admin/analytics");
             } catch {
                 // Return mock data if API not available
-                return {
-                    totalViews: 15420,
-                    totalClicks: 3280,
-                    topDeals: [
-                        { id: "1", title: "Spotify Premium Student", views: 4200, clicks: 890 },
-                        { id: "2", title: "GitHub Student Pack", views: 3800, clicks: 720 },
-                        { id: "3", title: "Adobe CC Student", views: 2900, clicks: 580 },
-                        { id: "4", title: "Apple Education", views: 2100, clicks: 420 },
-                        { id: "5", title: "Notion Student", views: 1800, clicks: 350 },
-                    ],
-                    topBrands: [
-                        { id: "1", name: "Spotify", clicks: 890 },
-                        { id: "2", name: "GitHub", clicks: 720 },
-                        { id: "3", name: "Adobe", clicks: 580 },
-                        { id: "4", name: "Apple", clicks: 420 },
-                        { id: "5", name: "Notion", clicks: 350 },
-                    ],
-                    viewsByDevice: [
-                        { device: "desktop", count: 9250 },
-                        { device: "mobile", count: 5170 },
-                        { device: "tablet", count: 1000 },
-                    ],
-                    viewsByCountry: [
-                        { country: "United States", count: 7800 },
-                        { country: "United Kingdom", count: 3200 },
-                        { country: "Canada", count: 1800 },
-                        { country: "Germany", count: 1200 },
-                        { country: "Australia", count: 900 },
-                    ],
-                    clicksBySource: [
-                        { source: "homepage", count: 1450 },
-                        { source: "browse", count: 980 },
-                        { source: "search", count: 420 },
-                        { source: "category", count: 280 },
-                        { source: "collection", count: 150 },
-                    ],
-                } as AnalyticsData;
+                return { data: MOCK_DATA, isMock: true };
             }
         },
     });
 
-    const data = analyticsQuery.data;
+    const result = analyticsQuery.data;
+    const isMockData = result && "isMock" in result && result.isMock;
+    const data = result && "data" in result ? result.data : result;
     const isLoading = analyticsQuery.isLoading;
 
     const formatNumber = (num: number) => num.toLocaleString();
@@ -88,6 +93,16 @@ export default function AdminAnalyticsPage() {
                     Track views, clicks, and user engagement across your deals.
                 </p>
             </div>
+
+            {isMockData && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Data Unavailable</AlertTitle>
+                    <AlertDescription>
+                        The analytics API is not yet available. Showing sample data for demonstration purposes.
+                    </AlertDescription>
+                </Alert>
+            )}
 
             {isLoading ? (
                 <div className="flex items-center justify-center py-16">

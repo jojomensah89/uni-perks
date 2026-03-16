@@ -17,13 +17,15 @@ import {
 
 export type ApiCollectionResponse = {
     id: string;
-    name: string;
     slug: string;
-    description?: string | null;
-    audience?: string | null;
-    isFeatured?: boolean | null;
-    displayOrder?: number | null;
+    name: string;
+    description: string | null;
+    audience: string | null;
     coverImageUrl?: string | null;
+    isFeatured: boolean;
+    _count?: {
+        deals: number;
+    };
     icon?: string | null;
     createdAt?: string;
 };

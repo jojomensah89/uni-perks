@@ -15,8 +15,12 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
-          const existingUsers = await db.select().from(schema.user).limit(1);
-          if (existingUsers.length === 0) {
+          const canCreateAdmin = await db.transaction(async (tx) => {
+            const existingUsers = await tx.select().from(schema.user).limit(1);
+            return existingUsers.length === 0;
+          });
+
+          if (canCreateAdmin) {
             return {
               data: {
                 ...user,

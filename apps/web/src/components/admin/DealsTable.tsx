@@ -138,14 +138,37 @@ function DealsTableActions({ row, brands, categories }: { row: ApiDealResponse; 
 function getDealsColumns(brands: ApiBrandResponse[], categories: ApiCategoryResponse[]): ColumnDef<ApiDealResponse>[] {
     return [
         {
+            id: "image",
+            header: "Image",
+            cell: ({ row }) => {
+                const deal = row.original.deal;
+                const brand = row.original.brand;
+                const imageUrl = deal.coverImageUrl || brand?.logoUrl;
+                
+                if (imageUrl) {
+                    return (
+                        <div className="h-10 w-16 relative rounded-md overflow-hidden bg-muted border border-border">
+                            <img
+                                src={`${API_URL}/api/images/${imageUrl}`}
+                                alt={deal.title}
+                                className="object-cover w-full h-full"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                            />
+                        </div>
+                    );
+                }
+                return (
+                    <div className="h-10 w-16 rounded-md bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground border border-border">
+                        NO IMG
+                    </div>
+                );
+            },
+        },
+        {
             accessorKey: "deal.title",
             header: "Title",
             cell: ({ row }) => (
                 <div className="flex items-center gap-2 min-w-0">
-                    <DealLogo
-                        logoUrl={row.original.brand?.logoUrl}
-                        name={row.original.brand?.name || "?"}
-                    />
                     <span className="font-medium truncate">{row.original.deal.title}</span>
                 </div>
             ),
@@ -201,7 +224,7 @@ function DealCard({ deal: row, brands, categories }: { deal: ApiDealResponse; br
         : null;
 
     return (
-        <div className="group relative flex flex-col rounded-xl border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+        <div className="group relative flex flex-col rounded-xl border border-foreground/10 bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
             {/* Cover image */}
             <div className="h-32 bg-muted flex items-center justify-center overflow-hidden relative">
                 {coverUrl ? (
@@ -223,7 +246,7 @@ function DealCard({ deal: row, brands, categories }: { deal: ApiDealResponse; br
                 </div>
                 <p className="font-semibold text-sm leading-snug line-clamp-2">{deal.title}</p>
                 <div className="flex items-center gap-1.5 flex-wrap mt-auto pt-1">
-                    <Badge variant="outline" className="font-mono text-xs">
+                    <Badge variant="outline" className="font-mono text-xs border border-foreground/10">
                         {deal.discountLabel || `${deal.discountValue}${deal.discountType === "percentage" ? "%" : ""}`}
                     </Badge>
                     {deal.isFeatured && <Badge className="bg-primary text-xs">Featured</Badge>}

@@ -1,16 +1,28 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Bebas_Neue, Syne } from "next/font/google";
+import { Plus_Jakarta_Sans, Fraunces } from "next/font/google";
+
 import "../index.css";
 import Providers from "@/components/providers";
 
-const fontSans = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-});
+// const fontSans = Inter({
+//   variable: "--font-sans",
+//   subsets: ["latin"],
+// });
 
 const fontMono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
+});
+
+const fontSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
+const fontSerif = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-serif",
 });
 
 const fontBebas = Bebas_Neue({
@@ -50,7 +62,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${fontSans.variable} ${fontMono.variable} ${fontBebas.variable} ${fontSyne.variable} antialiased`}>
+      <body className={`${fontSans.variable} ${fontMono.variable} ${fontBebas.variable} ${fontSyne.variable} ${fontSerif.variable} antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>
