@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import { logInfo } from "./logger";
 
 export async function withEdgeCache(
     c: Context,
@@ -11,13 +12,13 @@ export async function withEdgeCache(
 
     const cached = await cache.match(key);
     if (cached) {
-        console.log(`[EDGE CACHE] HIT: ${c.req.url}`);
+        logInfo("edge-cache", "cache hit", { url: c.req.url });
         const response = new Response(cached.body, cached);
         response.headers.set("x-cache", "hit");
         return response;
     }
 
-    console.log(`[EDGE CACHE] MISS: ${c.req.url}`);
+    logInfo("edge-cache", "cache miss", { url: c.req.url });
     const response = await handler();
     if (response.status === 200) {
         const clonedResponse = response.clone();

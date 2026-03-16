@@ -1,3 +1,5 @@
+import { logInfo } from "./logger";
+
 export async function withKV<T>(
     kv: KVNamespace | undefined,
     key: string,
@@ -10,11 +12,11 @@ export async function withKV<T>(
 
     const cached = await kv.get(key, "json") as T | null;
     if (cached !== null) {
-        console.log(`[KV CACHE] HIT: ${key}`);
+        logInfo("kv-cache", "cache hit", { key });
         return cached;
     }
 
-    console.log(`[KV CACHE] MISS: ${key}`);
+    logInfo("kv-cache", "cache miss", { key });
     const fresh = await fetchFn();
     void kv.put(key, JSON.stringify(fresh), { expirationTtl: ttlSeconds });
     return fresh;
