@@ -30,8 +30,8 @@ const ExpirationDateSchema = z
 export const CreateDealSchema = z.object({
     slug: SlugSchema,
     title: z.string().min(2).max(500),
-    shortDescription: z.string().min(10).max(500),
-    longDescription: z.string().min(10).max(5000),
+    shortDescription: z.string().max(500),
+    longDescription: z.string().max(5000),
     brandId: z.string().uuid(),
     categoryId: z.string().uuid(),
     discountType: DiscountTypeSchema,
@@ -42,11 +42,11 @@ export const CreateDealSchema = z.object({
     currency: z.string().length(3).default("USD"),
     verificationMethod: VerificationMethodSchema,
     claimUrl: z.string().url().max(2000),
-    affiliateUrl: z.string().url().max(2000).optional().nullable(),
+    affiliateUrl: z.string().url().max(2000).optional().nullable().or(z.literal("").transform(() => null)),
     coverImageUrl: z.string().max(500).optional().nullable(),
     howToRedeem: z.string().max(5000).optional().nullable(),
     eligibilityNote: z.string().max(1000).optional().nullable(),
-    termsUrl: z.string().url().max(2000).optional().nullable(),
+    termsUrl: z.string().url().max(2000).optional().nullable().or(z.literal("").transform(() => null)),
     minimumSpend: z.number().min(0).optional().nullable(),
     isFeatured: z.boolean().default(false),
     isActive: z.boolean().default(true),
@@ -62,28 +62,14 @@ export const CreateDealSchema = z.object({
 // so that a PATCH with only isFeatured doesn't fail when shortDescription/affiliateUrl etc are empty.
 export const UpdateDealSchema = CreateDealSchema
     .partial()
-    .omit({ slug: true })
-    .extend({
-        shortDescription: z.string().min(10).max(500).optional().nullable()
-            .or(z.literal("").transform(() => null)),
-        longDescription: z.string().min(10).max(5000).optional().nullable()
-            .or(z.literal("").transform(() => null)),
-        affiliateUrl: z.string().url().max(2000).optional().nullable()
-            .or(z.literal("").transform(() => null)),
-        termsUrl: z.string().url().max(2000).optional().nullable()
-            .or(z.literal("").transform(() => null)),
-        howToRedeem: z.string().max(5000).optional().nullable()
-            .or(z.literal("").transform(() => null)),
-        eligibilityNote: z.string().max(1000).optional().nullable()
-            .or(z.literal("").transform(() => null)),
-    });
+    .omit({ slug: true });
 
 export const CreateBrandSchema = z.object({
     name: z.string().min(1).max(200),
     slug: SlugSchema,
     tagline: z.string().max(300).optional().nullable(),
     description: z.string().max(2000).optional().nullable(),
-    website: z.string().url().max(500).optional().nullable(),
+    website: z.string().url().max(500).optional().nullable().or(z.literal("").transform(() => null)),
     logoUrl: z.string().max(500).optional().nullable(),
     coverImageUrl: z.string().max(500).optional().nullable(),
     whyWeLoveIt: z.string().max(1000).optional().nullable(),
@@ -98,7 +84,7 @@ export const CreateCategorySchema = z.object({
     name: z.string().min(1).max(200),
     slug: SlugSchema,
     icon: z.string().max(100).optional().nullable(),
-    color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().nullable(),
+    color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().nullable().or(z.literal("").transform(() => null)),
     coverImageUrl: z.string().max(500).optional().nullable(),
     displayOrder: z.number().int().min(0).default(0),
     metaTitle: z.string().max(70).optional().nullable(),
