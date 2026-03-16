@@ -50,6 +50,7 @@ tmp
 temp
 
 docs/*
+example-data/*
 
 # Skills and AI tools
 .agents/
