@@ -58,3 +58,16 @@ export async function checkRateLimit(
         retryAfterSeconds,
     };
 }
+
+export function setRateLimitHeaders(
+    c: Context,
+    limit: number,
+    remaining: number,
+    retryAfterSeconds: number
+) {
+    c.header("X-RateLimit-Limit", String(limit));
+    c.header("X-RateLimit-Remaining", String(remaining));
+    if (retryAfterSeconds > 0) {
+        c.header("X-RateLimit-Reset", String(retryAfterSeconds));
+    }
+}

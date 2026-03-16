@@ -1,6 +1,7 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { db } from "@uni-perks/db";
 import { InternalServerError } from "../lib/errors";
+import { logError } from "../lib/logger";
 
 const app = new OpenAPIHono();
 
@@ -43,7 +44,9 @@ app.openapi(getTagsRoute, async (c) => {
 
         return c.json({ tags: allTags }, 200);
     } catch (error) {
-        console.error("Error fetching tags:", error);
+        logError("tags-route", "failed to fetch tags", {
+            message: error instanceof Error ? error.message : String(error),
+        });
         throw new InternalServerError("Failed to fetch tags");
     }
 });

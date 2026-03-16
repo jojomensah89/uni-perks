@@ -22,13 +22,47 @@ function BrowseContent() {
     const [activeCategory, setActiveCategory] = useState<string | null>(
         searchParams.get("cat") || null
     );
-    const [search, setSearch] = useState(searchParams.get("q") || "");
 
+    // Filter state
+    const [search, setSearch] = useState(searchParams.get("q") || "");
+    const [debouncedSearch, setDebouncedSearch] = useState(search);
+
+    // Update debounced search term after a delay
     useEffect(() => {
-        const q = searchParams.get("q");
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+        }, 400); // 400ms debounce
+        return () => clearTimeout(timer);
+    }, [search]);
+
+    // Handle URL updates when search or category changes
+    useEffect(() => {
+        const params = new URLSearchParams(searchParams.toString());
+
+        if (debouncedSearch.trim()) {
+            params.set("q", debouncedSearch.trim());
+        } else {
+            params.delete("q");
+        }
+
+        if (activeCategory) {
+            params.set("cat", activeCategory);
+        } else {
+            params.delete("cat");
+        }
+
+        const newPath = `/browse?${params.toString()}`;
+        if (window.location.search !== `?${params.toString()}`) {
+            router.push(newPath as any, { scroll: false });
+        }
+    }, [debouncedSearch, activeCategory, router]);
+
+    // Sync state with URL params (e.g. browser back button)
+    useEffect(() => {
+        const q = searchParams.get("q") || "";
         const cat = searchParams.get("cat");
-        if (q) setSearch(q);
-        if (cat) setActiveCategory(cat);
+        if (q !== search) setSearch(q);
+        if (cat !== activeCategory) setActiveCategory(cat);
     }, [searchParams]);
 
     // Fetch deals from API (all deals when no category is selected, for counting)
@@ -45,12 +79,12 @@ function BrowseContent() {
 
     // Fetch filtered deals from API
     const dealsQuery = useQuery({
-        queryKey: ["deals", activeCategory, search],
+        queryKey: ["deals", activeCategory, debouncedSearch],
         queryFn: () => {
             const params = new URLSearchParams();
             params.set("limit", "100");
             if (activeCategory) params.set("category", activeCategory);
-            if (search.trim()) params.set("q", search.trim());
+            if (debouncedSearch.trim()) params.set("q", debouncedSearch.trim());
             return fetchAPI<{ deals: ApiDealResponse[]; meta: { total: number } }>(
                 `/api/deals?${params.toString()}`
             );
@@ -89,18 +123,10 @@ function BrowseContent() {
 
     const handleSearch = (value: string) => {
         setSearch(value);
-        const params = new URLSearchParams();
-        if (value.trim()) params.set("q", value);
-        if (activeCategory) params.set("cat", activeCategory);
-        router.push(`/browse?${params.toString()}`);
     };
 
     const handleCategory = (cat: string | null) => {
         setActiveCategory(cat);
-        const params = new URLSearchParams();
-        if (search.trim()) params.set("q", search);
-        if (cat) params.set("cat", cat);
-        router.push(`/browse?${params.toString()}`);
     };
 
     return (
