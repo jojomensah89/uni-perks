@@ -29,7 +29,7 @@
     "@types/node": "^22.13.14",
     "@uni-perks/config": "workspace:*",
     "alchemy": "catalog:",
-    "tsdown": "^0.16.5",
+    "tsdown": "^0.21.3",
     "typescript": "catalog:",
     "wrangler": "catalog:"
   }
