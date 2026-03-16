@@ -78,19 +78,3 @@ export const brandFaqs = sqliteTable("brand_faqs", {
 }));
 
 export type BrandFaq = typeof brandFaqs.$inferSelect;
-
-// ===== BRAND FEATURED PRODUCTS =====
-// Trending products from a brand shown on the brand profile page (e.g. Huel's Daily Greens, Apple's iPad Air)
-export const brandProducts = sqliteTable("brand_products", {
-    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-    brandId: text("brand_id").notNull().references(() => brands.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),           // "Daily Greens"
-    imageUrl: text("image_url"),            // Product image
-    productUrl: text("product_url"),        // Direct link to product
-    displayOrder: integer("display_order").default(0),
-}, (table) => ({
-    brandIdx: index("brand_products_brand_idx").on(table.brandId),
-    orderIdx: index("brand_products_order_idx").on(table.displayOrder),
-}));
-
-export type BrandProduct = typeof brandProducts.$inferSelect;

@@ -22,7 +22,7 @@ export interface Perk {
     claimUrl: string;
     affiliateUrl?: string;
     isFeatured: boolean;
-    isActive: boolean;
+    status: 'draft' | 'published' | 'archived';
     expirationDate?: string;
     lastVerified?: string;
     metaTitle?: string;

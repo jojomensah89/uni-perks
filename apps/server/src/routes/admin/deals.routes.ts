@@ -1,5 +1,5 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import { db, deals, brands, categories, dealGeoConfig, eq, and, desc } from "@uni-perks/db";
+import { db, deals, brands, categories, eq, desc } from "@uni-perks/db";
 import { BadRequestError } from "../../lib/errors";
 import { CreateDealSchema, UpdateDealSchema } from "../../schemas/admin.schemas";
 import { normalizeConditions, normalizeExpirationDate } from "./shared";
@@ -153,9 +153,8 @@ app.openapi(createDealRoute, async (c) => {
         termsUrl: body.termsUrl ?? null,
         minimumSpend: body.minimumSpend ?? null,
         isFeatured: body.isFeatured ?? false,
-        isActive: body.isActive ?? true,
-        isExclusive: body.isExclusive ?? false,
         isNewCustomerOnly: body.isNewCustomerOnly ?? false,
+        status: body.status ?? "draft",
         conditions: normalizeConditions(body.conditions),
         expirationDate: normalizeExpirationDate(body.expirationDate),
         metaTitle: body.metaTitle ?? null,
@@ -222,9 +221,8 @@ app.openapi(updateDealRoute, async (c) => {
         ...(body.termsUrl !== undefined ? { termsUrl: body.termsUrl ?? null } : {}),
         ...(body.minimumSpend !== undefined ? { minimumSpend: body.minimumSpend ?? null } : {}),
         ...(body.isFeatured !== undefined ? { isFeatured: body.isFeatured } : {}),
-        ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
-        ...(body.isExclusive !== undefined ? { isExclusive: body.isExclusive } : {}),
         ...(body.isNewCustomerOnly !== undefined ? { isNewCustomerOnly: body.isNewCustomerOnly } : {}),
+        ...(body.status !== undefined ? { status: body.status } : {}),
         ...(body.conditions !== undefined ? { conditions: normalizeConditions(body.conditions ?? null) } : {}),
         ...(body.expirationDate !== undefined ? { expirationDate: normalizeExpirationDate(body.expirationDate) } : {}),
         ...(body.metaTitle !== undefined ? { metaTitle: body.metaTitle ?? null } : {}),
@@ -272,7 +270,7 @@ app.openapi(deleteDealRoute, async (c) => {
 
     const [deleted] = await db
         .update(deals)
-        .set({ isActive: false })
+        .set({ status: "archived" })
         .where(eq(deals.id, id))
         .returning();
 
@@ -283,197 +281,5 @@ app.openapi(deleteDealRoute, async (c) => {
     return c.json(deleted, 200);
 });
 
-const DealGeoConfigSchema = z.object({
-    id: z.string(),
-    dealId: z.string(),
-    countryCode: z.string(),
-    affiliateUrl: z.string().nullable().optional(),
-    claimUrl: z.string().nullable().optional(),
-    studentPrice: z.number().nullable().optional(),
-    originalPrice: z.number().nullable().optional(),
-    currency: z.string().nullable().optional(),
-    discountLabel: z.string().nullable().optional(),
-    isAvailable: z.boolean().nullable().optional(),
-    createdAt: z.string().optional(),
-});
-
-const UpsertDealGeoConfigSchema = z.object({
-    affiliateUrl: z.string().url().max(2000).optional().nullable(),
-    claimUrl: z.string().url().max(2000).optional().nullable(),
-    studentPrice: z.number().min(0).optional().nullable(),
-    originalPrice: z.number().min(0).optional().nullable(),
-    currency: z.string().length(3).optional().nullable(),
-    discountLabel: z.string().max(100).optional().nullable(),
-    isAvailable: z.boolean().optional(),
-});
-
-const CountryCodeParamSchema = z
-    .string()
-    .toUpperCase()
-    .regex(/^(GLOBAL|[A-Z]{2})$/);
-
-const listDealGeoConfigRoute = createRoute({
-    method: "get",
-    path: "/deals/{id}/geo-config",
-    tags: ["Admin"],
-    summary: "List deal geo config (Admin)",
-    description: "List all country-specific deal overrides for a deal.",
-    request: {
-        params: z.object({
-            id: z.string(),
-        }),
-    },
-    responses: {
-        200: {
-            description: "Deal geo configuration rows",
-            content: {
-                "application/json": {
-                    schema: z.object({
-                        geoConfig: z.array(DealGeoConfigSchema),
-                    }),
-                },
-            },
-        },
-    },
-});
-
-app.openapi(listDealGeoConfigRoute, async (c) => {
-    const { id } = c.req.valid("param");
-    const rows = await db
-        .select()
-        .from(dealGeoConfig)
-        .where(eq(dealGeoConfig.dealId, id))
-        .orderBy(dealGeoConfig.countryCode);
-
-    return c.json({ geoConfig: rows }, 200);
-});
-
-const upsertDealGeoConfigRoute = createRoute({
-    method: "put",
-    path: "/deals/{id}/geo-config/{countryCode}",
-    tags: ["Admin"],
-    summary: "Upsert deal geo config (Admin)",
-    description: "Create or update a country-specific deal override row.",
-    request: {
-        params: z.object({
-            id: z.string(),
-            countryCode: CountryCodeParamSchema,
-        }),
-        body: {
-            content: {
-                "application/json": {
-                    schema: UpsertDealGeoConfigSchema,
-                },
-            },
-        },
-    },
-    responses: {
-        200: {
-            description: "Geo configuration upserted",
-            content: {
-                "application/json": {
-                    schema: DealGeoConfigSchema,
-                },
-            },
-        },
-        400: {
-            description: "Invalid request",
-            content: { "application/json": { schema: z.object({ error: z.string() }) } },
-        },
-    },
-});
-
-app.openapi(upsertDealGeoConfigRoute, async (c) => {
-    const { id, countryCode } = c.req.valid("param");
-    const body = c.req.valid("json");
-
-    const dealExists = await db.select({ id: deals.id }).from(deals).where(eq(deals.id, id)).limit(1);
-    if (!dealExists[0]) {
-        throw new BadRequestError("Deal not found");
-    }
-
-    const existing = await db
-        .select()
-        .from(dealGeoConfig)
-        .where(and(eq(dealGeoConfig.dealId, id), eq(dealGeoConfig.countryCode, countryCode)))
-        .limit(1);
-
-    const payload = {
-        ...(body.affiliateUrl !== undefined ? { affiliateUrl: body.affiliateUrl ?? null } : {}),
-        ...(body.claimUrl !== undefined ? { claimUrl: body.claimUrl ?? null } : {}),
-        ...(body.studentPrice !== undefined ? { studentPrice: body.studentPrice ?? null } : {}),
-        ...(body.originalPrice !== undefined ? { originalPrice: body.originalPrice ?? null } : {}),
-        ...(body.currency !== undefined ? { currency: body.currency ?? null } : {}),
-        ...(body.discountLabel !== undefined ? { discountLabel: body.discountLabel ?? null } : {}),
-        ...(body.isAvailable !== undefined ? { isAvailable: body.isAvailable } : {}),
-    };
-
-    if (!existing[0]) {
-        const [inserted] = await db
-            .insert(dealGeoConfig)
-            .values({
-                dealId: id,
-                countryCode,
-                affiliateUrl: body.affiliateUrl ?? null,
-                claimUrl: body.claimUrl ?? null,
-                studentPrice: body.studentPrice ?? null,
-                originalPrice: body.originalPrice ?? null,
-                currency: body.currency ?? null,
-                discountLabel: body.discountLabel ?? null,
-                isAvailable: body.isAvailable ?? true,
-            })
-            .returning();
-        if (!inserted) throw new BadRequestError("Failed to insert deal geo config");
-        return c.json(inserted, 200);
-    }
-
-    if (Object.keys(payload).length === 0) {
-        return c.json(existing[0], 200);
-    }
-
-    const [updated] = await db
-        .update(dealGeoConfig)
-        .set(payload)
-        .where(eq(dealGeoConfig.id, existing[0].id))
-        .returning();
-
-    if (!updated) throw new BadRequestError("Failed to update deal geo config");
-
-    return c.json(updated, 200);
-});
-
-const deleteDealGeoConfigRoute = createRoute({
-    method: "delete",
-    path: "/deals/{id}/geo-config/{countryCode}",
-    tags: ["Admin"],
-    summary: "Delete deal geo config (Admin)",
-    description: "Delete a country-specific deal override row.",
-    request: {
-        params: z.object({
-            id: z.string(),
-            countryCode: CountryCodeParamSchema,
-        }),
-    },
-    responses: {
-        200: {
-            description: "Geo configuration deleted",
-            content: {
-                "application/json": {
-                    schema: z.object({ success: z.boolean() }),
-                },
-            },
-        },
-    },
-});
-
-app.openapi(deleteDealGeoConfigRoute, async (c) => {
-    const { id, countryCode } = c.req.valid("param");
-
-    await db
-        .delete(dealGeoConfig)
-        .where(and(eq(dealGeoConfig.dealId, id), eq(dealGeoConfig.countryCode, countryCode)));
-
-    return c.json({ success: true }, 200);
-});
 
 export default app;

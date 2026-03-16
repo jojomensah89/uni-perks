@@ -24,8 +24,7 @@ export interface CreateDealInput {
     minimumSpend?: number | null;
     isNewCustomerOnly?: boolean;
     isFeatured?: boolean;
-    isExclusive?: boolean;
-    isActive?: boolean;
+    status?: "draft" | "published" | "archived";
     conditions?: string | null;
     expirationDate?: Date | null;
     metaTitle?: string | null;
@@ -111,8 +110,7 @@ export async function createDeal(input: CreateDealInput) {
             minimumSpend: input.minimumSpend ?? null,
             isNewCustomerOnly: input.isNewCustomerOnly ?? false,
             isFeatured: input.isFeatured ?? false,
-            isExclusive: input.isExclusive ?? false,
-            isActive: input.isActive ?? true,
+            status: input.status ?? "draft",
             conditions: input.conditions ?? null,
             expirationDate: input.expirationDate ?? null,
             metaTitle: input.metaTitle ?? null,
@@ -170,8 +168,7 @@ export async function updateDeal(input: UpdateDealInput) {
     if (updateData.minimumSpend !== undefined) updatePayload.minimumSpend = updateData.minimumSpend;
     if (updateData.isNewCustomerOnly !== undefined) updatePayload.isNewCustomerOnly = updateData.isNewCustomerOnly;
     if (updateData.isFeatured !== undefined) updatePayload.isFeatured = updateData.isFeatured;
-    if (updateData.isExclusive !== undefined) updatePayload.isExclusive = updateData.isExclusive;
-    if (updateData.isActive !== undefined) updatePayload.isActive = updateData.isActive;
+    if (updateData.status !== undefined) updatePayload.status = updateData.status;
     if (updateData.conditions !== undefined) updatePayload.conditions = updateData.conditions;
     if (updateData.expirationDate !== undefined) updatePayload.expirationDate = updateData.expirationDate;
     if (updateData.metaTitle !== undefined) updatePayload.metaTitle = updateData.metaTitle;
@@ -198,13 +195,13 @@ export async function updateDeal(input: UpdateDealInput) {
 }
 
 /**
- * Soft delete a deal (set isActive to false)
+ * Soft delete a deal (set status to archived)
  */
 export async function deleteDeal(dealId: string) {
     await db
         .update(deals)
         .set({
-            isActive: false,
+            status: "archived",
         })
         .where(eq(deals.id, dealId));
 
@@ -243,7 +240,6 @@ export async function setDealExpiration(dealId: string, expirationDate: Date | n
         .update(deals)
         .set({
             expirationDate,
-            isActive: expirationDate ? expirationDate > new Date() : true,
         })
         .where(eq(deals.id, dealId));
 

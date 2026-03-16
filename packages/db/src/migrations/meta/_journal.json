@@ -78,6 +78,13 @@
       "when": 1772800300000,
       "tag": "0010_silent_akita",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1773693276208,
+      "tag": "0011_cloudy_warlock",
+      "breakpoints": true
     }
   ]
 }

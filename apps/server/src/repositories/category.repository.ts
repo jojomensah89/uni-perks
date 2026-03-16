@@ -35,8 +35,8 @@ export async function findCategoryBySlug(slug: string) {
         .from(deals)
         .innerJoin(brands, eq(deals.brandId, brands.id))
         .innerJoin(categories, eq(deals.categoryId, categories.id))
-        .where(and(eq(deals.categoryId, result[0].id), eq(deals.isActive, true)))
-        .orderBy(desc(deals.popularity));
+        .where(and(eq(deals.categoryId, result[0].id), eq(deals.status, "published")))
+        .orderBy(desc(deals.clickCount), desc(deals.viewCount));
 
     return {
         category: result[0],

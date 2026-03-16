@@ -36,7 +36,7 @@ export async function findCollectionBySlug(slug: string) {
         .innerJoin(categories, eq(deals.categoryId, categories.id))
         .where(and(
             eq(collectionDeals.collectionId, result[0].id),
-            eq(deals.isActive, true)
+            eq(deals.status, "published")
         ))
         .orderBy(collectionDeals.displayOrder);
 

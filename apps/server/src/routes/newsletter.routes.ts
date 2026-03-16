@@ -208,7 +208,7 @@ async function resolveNewsletterDeals(dealIds: string[]): Promise<z.infer<typeof
         })
         .from(deals)
         .innerJoin(brands, eq(deals.brandId, brands.id))
-        .where(and(inArray(deals.id, uniqueDealIds), eq(deals.isActive, true)));
+        .where(and(inArray(deals.id, uniqueDealIds), eq(deals.status, "published")));
 
     const byId = new Map(rows.map((row) => [row.id, row]));
     return uniqueDealIds
@@ -560,7 +560,7 @@ app.openapi(listSubscribersRoute, async (c) => {
         })
         .from(deals)
         .innerJoin(brands, eq(deals.brandId, brands.id))
-        .where(eq(deals.isActive, true))
+        .where(eq(deals.status, "published"))
         .orderBy(desc(deals.createdAt));
 
     const total = subscriberRows.length;

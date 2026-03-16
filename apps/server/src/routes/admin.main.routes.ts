@@ -56,7 +56,7 @@ app.openapi(getStatsRoute, async (c) => {
   const [dealStats] = await db
     .select({
       total: sql<number>`count(*)`,
-      active: sql<number>`sum(case when ${deals.isActive} = 1 then 1 else 0 end)`,
+      active: sql<number>`sum(case when ${deals.status} = 'published' then 1 else 0 end)`,
       totalViews: sql<number>`sum(${deals.viewCount})`,
       totalClicks: sql<number>`sum(${deals.clickCount})`,
     })

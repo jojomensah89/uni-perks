@@ -1,7 +1,8 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import { trackDealClick } from "../services/deal.service";
+import { trackDealClick, trackDealClickEvent } from "../services/deal.service";
 import { BadRequestError } from "../lib/errors";
 import { checkRateLimit, getClientIp } from "../lib/rate-limit";
+import { captureEvent } from "../lib/posthog";
 
 const app = new OpenAPIHono();
 
@@ -21,6 +22,21 @@ const trackClickRoute = createRoute({
                 example: "deal-123",
             }),
         }),
+        body: {
+            content: {
+                "application/json": {
+                    schema: z.object({
+                        brandId: z.string().optional(),
+                        categoryId: z.string().optional(),
+                        collectionId: z.string().optional(),
+                        source: z.string().optional(),
+                        referrer: z.string().optional(),
+                        device: z.string().optional(),
+                        country: z.string().optional(),
+                    }).optional(),
+                },
+            },
+        },
     },
     responses: {
         200: {
@@ -64,12 +80,38 @@ app.openapi(trackClickRoute, async (c) => {
         return c.json({ error: "Too many click attempts. Please try again shortly." }, 429);
     }
     const { dealId } = c.req.valid("param");
+    const body = c.req.valid("json") || {};
 
     if (!dealId) {
         throw new BadRequestError("Deal ID is required");
     }
 
+    const userAgent = c.req.header("user-agent") ?? null;
+    const referrer = body.referrer ?? c.req.header("referer") ?? null;
+    const country = body.country ?? c.req.header("cf-ipcountry") ?? null;
+    const device = body.device ?? null;
+    const source = body.source ?? "unknown";
+
     await trackDealClick(dealId);
+    await trackDealClickEvent({
+        dealId,
+        brandId: body.brandId,
+        source,
+        referrer,
+        userAgent,
+        device,
+        country,
+    });
+    captureEvent("deal_clicked", {
+        deal_id: dealId,
+        brand_id: body.brandId,
+        category_id: body.categoryId,
+        collection_id: body.collectionId,
+        source,
+        referrer,
+        country,
+        device,
+    });
     return c.json({ success: true }, 200);
 });
 

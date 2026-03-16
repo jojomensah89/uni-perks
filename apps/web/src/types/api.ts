@@ -52,7 +52,7 @@ export type ApiDealResponse = {
         termsUrl?: string;
         minimumSpend?: number | null;
         isNewCustomerOnly?: boolean;
-        isActive: boolean;
+        status: "draft" | "published" | "archived";
         isFeatured: boolean;
         isExclusive?: boolean;
         expirationDate?: string | number | null;

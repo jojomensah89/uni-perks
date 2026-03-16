@@ -6,7 +6,7 @@ const SlugSchema = z
     .max(200)
     .regex(/^[a-z0-9-]+$/);
 
-const DiscountTypeSchema = z.enum(["percentage", "fixed", "free", "trial", "bogo", "other"]);
+const DiscountTypeSchema = z.enum(["percent", "fixed", "other"]);
 const VerificationMethodSchema = z.enum([
     "edu_email",
     "sheerid",
@@ -31,7 +31,7 @@ export const CreateDealSchema = z.object({
     slug: SlugSchema,
     title: z.string().min(2).max(500),
     shortDescription: z.string().max(500),
-    longDescription: z.string().max(5000),
+    longDescription: z.string().max(5000).optional().nullable(),
     brandId: z.string().uuid(),
     categoryId: z.string().uuid(),
     discountType: DiscountTypeSchema,
@@ -49,9 +49,8 @@ export const CreateDealSchema = z.object({
     termsUrl: z.string().url().max(2000).optional().nullable().or(z.literal("").transform(() => null)),
     minimumSpend: z.number().min(0).optional().nullable(),
     isFeatured: z.boolean().default(false),
-    isActive: z.boolean().default(true),
-    isExclusive: z.boolean().default(false),
     isNewCustomerOnly: z.boolean().default(false),
+    status: z.enum(["draft", "published", "archived"]).default("draft"),
     conditions: ConditionsSchema,
     expirationDate: ExpirationDateSchema,
     metaTitle: z.string().max(70).optional().nullable(),

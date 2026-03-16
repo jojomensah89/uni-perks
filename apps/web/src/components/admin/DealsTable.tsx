@@ -144,7 +144,7 @@ function getDealsColumns(brands: ApiBrandResponse[], categories: ApiCategoryResp
                 const deal = row.original.deal;
                 const brand = row.original.brand;
                 const imageUrl = deal.coverImageUrl || brand?.logoUrl;
-                
+
                 if (imageUrl) {
                     return (
                         <div className="h-10 w-16 relative rounded-md overflow-hidden bg-muted border border-border">

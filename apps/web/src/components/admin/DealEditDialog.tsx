@@ -434,7 +434,7 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                                             <div className="text-xs text-muted-foreground mb-2 p-3 bg-muted rounded-md border border-dashed border-border">
                                                 <p className="font-medium mb-1">Example: USA (US)</p>
                                                 <pre className="text-[10px] overflow-x-auto">
-{`{
+                                                    {`{
   "countryCode": "US",
   "currency": "USD",
   "studentPrice": 4.99,
