@@ -64,7 +64,7 @@ function DealsTableActions({ row, brands, categories }: { row: ApiDealResponse; 
         setDeleting(true);
         try {
             await fetchAPI(`/api/admin/deals/${row.deal.id}`, { method: "DELETE" });
-            toast.success("Deal deactivated successfully");
+            toast.success("Deal archived successfully");
             queryClient.invalidateQueries({ queryKey: ["admin_deals"] });
             router.refresh();
             setDeleting(false);
@@ -114,9 +114,9 @@ function DealsTableActions({ row, brands, categories }: { row: ApiDealResponse; 
             <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Deactivate Deal?</AlertDialogTitle>
+                        <AlertDialogTitle>Archive Deal?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will deactivate <strong>{row.deal.title}</strong> and hide it from students. You can re-activate it later by editing the deal.
+                            This will archive <strong>{row.deal.title}</strong> and hide it from students. You can re-publish it later by editing the deal.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -126,7 +126,7 @@ function DealsTableActions({ row, brands, categories }: { row: ApiDealResponse; 
                             disabled={deleting}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            {deleting ? "Deactivating..." : "Deactivate"}
+                            {deleting ? "Archiving..." : "Archive"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -190,9 +190,18 @@ function getDealsColumns(brands: ApiBrandResponse[], categories: ApiCategoryResp
                 const deal = row.original.deal;
                 return (
                     <Badge variant="outline" className="font-mono">
-                        {deal.discountLabel || `${deal.discountValue}${deal.discountType === "percentage" ? "%" : ""}`}
+                        {deal.discountLabel || `${deal.discountValue}${deal.discountType === "percent" ? "%" : ""}`}
                     </Badge>
                 );
+            },
+        },
+        {
+            id: "status",
+            header: "Status",
+            cell: ({ row }) => {
+                const status = row.original.deal.status;
+                const variant = status === "published" ? "default" : status === "draft" ? "secondary" : "outline";
+                return <Badge variant={variant}>{status}</Badge>;
             },
         },
         {

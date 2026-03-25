@@ -37,7 +37,7 @@ export async function findManyDeals(options: FindManyDealsOptions) {
 
     const conditions = [];
 
-    conditions.push(eq(deals.status, status));
+        conditions.push(eq(deals.status, status));
 
     if (featured !== undefined) {
         conditions.push(eq(deals.isFeatured, featured));
@@ -69,13 +69,10 @@ export async function findManyDeals(options: FindManyDealsOptions) {
                 })
                 .filter((value): value is number => value !== null);
 
-            if (rowIds.length > 0) {
-                // Map rowids back to internal IDs using a subquery or inArray
-                // Since D1 rowid corresponds to deals table rowid (due to external content)
-                conditions.push(sql`${deals.id} IN (SELECT id FROM deals WHERE rowid IN (${sql.join(rowIds, sql`, `)}))`);
-            } else {
-                // No FTS matches, force empty results
+            if (rowIds.length === 0) {
                 conditions.push(sql`1 = 0`);
+            } else {
+                conditions.push(sql`${deals.id} IN (SELECT id FROM deals WHERE rowid IN (${sql.join(rowIds, sql`, `)}))`);
             }
         } catch (error) {
             console.error("FTS search failed, falling back to LIKE:", error);

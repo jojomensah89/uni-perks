@@ -38,7 +38,6 @@ import { Plus, Eye } from "lucide-react";
 import { fetchAPI } from "@/lib/api";
 import { ImageUpload } from "./ImageUpload";
 import DealCard from "@/components/DealCard";
-import { parseGeoOverridesFromText } from "@/lib/deal-geo-config";
 import type { ApiBrandResponse } from "@/types/api";
 import type { ApiCategoryResponse } from "@/types/api";
 
@@ -50,12 +49,7 @@ interface DealFormProps {
 
 const VERIFICATION_METHODS = [
     { value: "edu_email", label: ".edu Email" },
-    { value: "sheerid", label: "SheerID" },
-    { value: "unidays", label: "UNiDAYS" },
-    { value: "student_beans", label: "Student Beans" },
     { value: "student_id", label: "Student ID Upload" },
-    { value: "github_student", label: "GitHub Student Pack" },
-    { value: "isic", label: "ISIC Card" },
     { value: "none", label: "No Verification" },
 ];
 
@@ -96,7 +90,7 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
             longDescription: "",
             brandId: "",
             categoryId: "",
-            discountType: "percentage",
+            discountType: "percent",
             discountLabel: "",
             discountValue: "",
             originalPrice: "",
@@ -113,17 +107,14 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
             minimumSpend: "",
             isNewCustomerOnly: false,
             isFeatured: false,
-            isExclusive: false,
-            isActive: true,
+            status: "draft",
             expirationDate: "",
             metaTitle: "",
             metaDescription: "",
-            geoOverridesJson: "[]",
         },
         onSubmit: async ({ value }) => {
             try {
-                const geoOverrides = parseGeoOverridesFromText(value.geoOverridesJson);
-                const { geoOverridesJson, ...rawValues } = value;
+                const { status, ...rawValues } = value;
                 let coverImageUrl = value.coverImageUrl;
 
                 // Upload pending image if any
@@ -143,6 +134,7 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
 
                 const submitData = {
                     ...rawValues,
+                    status: status || "draft",
                     coverImageUrl,
                     discountValue: value.discountValue ? parseFloat(value.discountValue) : null,
                     originalPrice: value.originalPrice ? parseFloat(value.originalPrice) : null,
@@ -150,18 +142,7 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                     minimumSpend: value.minimumSpend ? parseFloat(value.minimumSpend) : null,
                     expirationDate: value.expirationDate ? new Date(value.expirationDate).getTime() : null,
                 };
-                const createdDeal = await createDealMutation.mutateAsync(submitData) as { id?: string };
-
-                if (createdDeal?.id && geoOverrides.length > 0) {
-                    await Promise.all(
-                        geoOverrides.map((geoOverride) =>
-                            fetchAPI(`/api/admin/deals/${createdDeal.id}/geo-config/${geoOverride.countryCode}`, {
-                                method: "PUT",
-                                body: JSON.stringify(geoOverride),
-                            })
-                        )
-                    );
-                }
+                await createDealMutation.mutateAsync(submitData);
 
                 toast.success("Deal created successfully!");
                 setOpen(false);
@@ -197,7 +178,6 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
             claimUrl: formValues.claimUrl || "#",
             coverImageUrl: localImagePreview ? "__local_preview__" : (formValues.coverImageUrl || null),
             isFeatured: formValues.isFeatured,
-            isActive: formValues.isActive,
             expirationDate: formValues.expirationDate || null,
             howToRedeem: formValues.howToRedeem || null,
             conditions: formValues.conditions || null,
@@ -264,11 +244,10 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                         className={`py-4 max-h-[75vh] overflow-y-auto px-1 ${showPreview ? "flex-1" : "w-full"}`}
                     >
                         <Tabs defaultValue="basic" className="w-full">
-                            <TabsList className="grid w-full grid-cols-5 mb-4">
+                            <TabsList className="grid w-full grid-cols-4 mb-4">
                                 <TabsTrigger value="basic">Basic</TabsTrigger>
                                 <TabsTrigger value="pricing">Pricing</TabsTrigger>
                                 <TabsTrigger value="details">Details</TabsTrigger>
-                                <TabsTrigger value="geo">Geo</TabsTrigger>
                                 <TabsTrigger value="seo">SEO</TabsTrigger>
                             </TabsList>
 
@@ -515,57 +494,6 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                 </form.Field>
                             </TabsContent>
 
-                            <TabsContent value="geo" className="grid grid-cols-1 gap-4">
-                                <form.Field name="geoOverridesJson">
-                                    {(field) => (
-                                        <div className="grid gap-2">
-                                            <Label htmlFor={field.name}>Country Overrides (JSON)</Label>
-                                            <div className="text-xs text-muted-foreground mb-2 p-3 bg-muted rounded-md border border-dashed border-border">
-                                                <p className="font-medium mb-1">Example: USA (US)</p>
-                                                <pre className="text-[10px] overflow-x-auto">
-                                                    {`{
-  "countryCode": "US",
-  "currency": "USD",
-  "studentPrice": 4.99,
-  "originalPrice": 9.99,
-  "claimUrl": "https://..."
-}`}
-                                                </pre>
-                                            </div>
-                                            <Textarea
-                                                id={field.name}
-                                                value={field.state.value}
-                                                onChange={(e) => field.handleChange(e.target.value)}
-                                                rows={12}
-                                                className="font-mono text-xs"
-                                                placeholder={`[
-  {
-    "countryCode": "US",
-    "affiliateUrl": "https://...",
-    "claimUrl": "https://...",
-    "studentPrice": 4.99,
-    "originalPrice": 9.99,
-    "currency": "USD",
-    "discountLabel": "50% OFF",
-    "isAvailable": true
-  }
-]`}
-                                            />
-                                            <div className="space-y-1 mt-2">
-                                                <p className="text-xs text-muted-foreground font-medium">Common ISO Codes:</p>
-                                                <div className="flex flex-wrap gap-2">
-                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">US (USA)</span>
-                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">GB (UK)</span>
-                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">CA (Canada)</span>
-                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">AU (Australia)</span>
-                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">GLOBAL</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </form.Field>
-                            </TabsContent>
-
                             <TabsContent value="pricing" className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {/* Discount Type */}
                                 <form.Field name="discountType">
@@ -577,18 +505,15 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                                 onValueChange={(v) => field.handleChange(v ?? "")}
                                             >
                                                 <SelectTrigger className="w-full h-9">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="percentage">Percentage (%)</SelectItem>
-                                                    <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
-                                                    <SelectItem value="free">Free</SelectItem>
-                                                    <SelectItem value="trial">Free Trial</SelectItem>
-                                                    <SelectItem value="bogo">BOGO</SelectItem>
-                                                    <SelectItem value="other">Other</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="percent">Percentage (%)</SelectItem>
+                                                <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
+                                                <SelectItem value="other">Other</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                     )}
                                 </form.Field>
 
@@ -791,18 +716,20 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                 </form.Field>
 
                                 <div className="grid grid-cols-2 gap-4 md:col-span-2">
-                                    <form.Field name="isActive">
+                                    <form.Field name="status">
                                         {(field) => (
-                                            <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                                <div className="space-y-0.5">
-                                                    <Label htmlFor="active-switch">Active</Label>
-                                                    <p className="text-[0.7rem] text-muted-foreground">Visible to users</p>
-                                                </div>
-                                                <Switch
-                                                    id="active-switch"
-                                                    checked={field.state.value}
-                                                    onCheckedChange={(checked) => field.handleChange(checked)}
-                                                />
+                                            <div className="grid gap-2">
+                                                <Label>Status</Label>
+                                                <Select value={field.state.value} onValueChange={(v) => field.handleChange(v ?? "draft")}>
+                                                    <SelectTrigger className="w-full h-9">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="draft">Draft</SelectItem>
+                                                        <SelectItem value="published">Published</SelectItem>
+                                                        <SelectItem value="archived">Archived</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                         )}
                                     </form.Field>
@@ -816,22 +743,6 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                                 </div>
                                                 <Switch
                                                     id="featured-switch"
-                                                    checked={field.state.value}
-                                                    onCheckedChange={(checked) => field.handleChange(checked)}
-                                                />
-                                            </div>
-                                        )}
-                                    </form.Field>
-
-                                    <form.Field name="isExclusive">
-                                        {(field) => (
-                                            <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                                <div className="space-y-0.5">
-                                                    <Label htmlFor="exclusive-switch">Exclusive</Label>
-                                                    <p className="text-[0.7rem] text-muted-foreground">UniPerks exclusive deal</p>
-                                                </div>
-                                                <Switch
-                                                    id="exclusive-switch"
                                                     checked={field.state.value}
                                                     onCheckedChange={(checked) => field.handleChange(checked)}
                                                 />

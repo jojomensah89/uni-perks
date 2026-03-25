@@ -50,7 +50,55 @@ CREATE INDEX `deals_brand_idx` ON `deals` (`brand_id`);--> statement-breakpoint
 CREATE INDEX `deals_category_idx` ON `deals` (`category_id`);--> statement-breakpoint
 CREATE INDEX `deals_featured_idx` ON `deals` (`is_featured`);--> statement-breakpoint
 CREATE INDEX `deals_status_idx` ON `deals` (`status`);--> statement-breakpoint
-ALTER TABLE `subscribers` ADD `source` text DEFAULT 'website';--> statement-breakpoint
-ALTER TABLE `subscribers` ADD `verification_token` text;--> statement-breakpoint
 ALTER TABLE `collections` ADD `cover_image_url` text;--> statement-breakpoint
 ALTER TABLE `collections` ADD `icon` text;
+
+-- Rebuild deals FTS for the new schema (status, removed popularity/geo)
+DROP TRIGGER IF EXISTS deals_fts_insert;
+DROP TRIGGER IF EXISTS deals_fts_update;
+DROP TRIGGER IF EXISTS deals_fts_delete;
+DROP TABLE IF EXISTS deals_fts;
+
+CREATE VIRTUAL TABLE IF NOT EXISTS deals_fts USING fts5(
+    deal_id UNINDEXED,
+    title,
+    short_description,
+    brand_name,
+    category_name,
+    content='deals',
+    content_rowid='rowid'
+);
+
+INSERT INTO deals_fts(deal_id, title, short_description, brand_name, category_name)
+SELECT d.id, d.title, d.short_description, b.name, c.name
+FROM deals d
+JOIN brands b ON d.brand_id = b.id
+JOIN categories c ON d.category_id = c.id;
+
+CREATE TRIGGER IF NOT EXISTS deals_fts_insert AFTER INSERT ON deals
+BEGIN
+    INSERT INTO deals_fts(rowid, deal_id, title, short_description, brand_name, category_name)
+    SELECT new.rowid, new.id, new.title, new.short_description, b.name, c.name
+    FROM brands b, categories c
+    WHERE b.id = new.brand_id AND c.id = new.category_id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS deals_fts_update AFTER UPDATE ON deals
+BEGIN
+    INSERT INTO deals_fts(deals_fts, rowid, deal_id, title, short_description, brand_name, category_name)
+    VALUES('delete', old.rowid, old.id, old.title, old.short_description,
+        (SELECT name FROM brands WHERE id = old.brand_id),
+        (SELECT name FROM categories WHERE id = old.category_id));
+    INSERT INTO deals_fts(rowid, deal_id, title, short_description, brand_name, category_name)
+    SELECT new.rowid, new.id, new.title, new.short_description, b.name, c.name
+    FROM brands b, categories c
+    WHERE b.id = new.brand_id AND c.id = new.category_id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS deals_fts_delete AFTER DELETE ON deals
+BEGIN
+    INSERT INTO deals_fts(deals_fts, rowid, deal_id, title, short_description, brand_name, category_name)
+    VALUES('delete', old.rowid, old.id, old.title, old.short_description,
+        (SELECT name FROM brands WHERE id = old.brand_id),
+        (SELECT name FROM categories WHERE id = old.category_id));
+END;

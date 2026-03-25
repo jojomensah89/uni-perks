@@ -34,11 +34,11 @@ export type ApiDealResponse = {
         id: string;
         title: string;
         slug: string;
-        discountType: string;
+        discountType: "percent" | "fixed" | "other";
         discountValue: number | null;
         discountLabel: string;
         shortDescription?: string;
-        longDescription?: string;
+        longDescription?: string | null;
         coverImageUrl?: string | null;
         originalPrice?: number | null;
         studentPrice?: number | null;
@@ -54,7 +54,6 @@ export type ApiDealResponse = {
         isNewCustomerOnly?: boolean;
         status: "draft" | "published" | "archived";
         isFeatured: boolean;
-        isExclusive?: boolean;
         expirationDate?: string | number | null;
         metaTitle?: string;
         metaDescription?: string;
