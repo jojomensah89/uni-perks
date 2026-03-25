@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Clock, ShieldCheck } from "lucide-react";
+import { Clock, ShieldCheck, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -27,6 +27,8 @@ export interface ApiDealResponse {
         expirationDate?: string | null;
         howToRedeem?: string | null;
         conditions?: string | null;
+        clickCount?: number | null;
+        viewCount?: number | null;
     };
     brand: {
         id: string;
@@ -197,6 +199,20 @@ const DealCard = ({ dealData, className = "", variant = "default", _localImageOv
                         <span className="text-muted-foreground/50">·</span>
                         <span>{category.name}</span>
                     </p>
+
+                    {/* Click count / claimed */}
+                    {deal.clickCount !== undefined && deal.clickCount !== null && deal.clickCount > 0 && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                            <Users className="h-3 w-3" />
+                            <span>
+                                {deal.clickCount < 10 
+                                    ? "< 10 claimed" 
+                                    : deal.clickCount >= 1000 
+                                        ? `${(deal.clickCount / 1000).toFixed(1)}k claimed`
+                                        : `${deal.clickCount} claimed`}
+                            </span>
+                        </p>
+                    )}
                 </CardContent>
             </article>
         </Link>

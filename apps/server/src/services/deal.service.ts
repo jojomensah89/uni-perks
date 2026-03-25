@@ -17,6 +17,7 @@ export interface GetDealsOptions {
     offset?: number;
     brandId?: string;
     excludeDealId?: string;
+    sortBy?: "popular" | "new" | "expiring";
 }
 
 export interface DealDetailOptions {
@@ -37,6 +38,7 @@ export async function getDeals(options: GetDealsOptions) {
         offset: options.offset,
         brandId: options.brandId,
         excludeDealId: options.excludeDealId,
+        sortBy: options.sortBy,
     });
 
     return results;

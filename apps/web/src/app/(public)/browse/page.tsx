@@ -25,6 +25,9 @@ function BrowseContent() {
 
     // Filter state
     const [search, setSearch] = useState(searchParams.get("q") || "");
+    const [sortBy, setSortBy] = useState<"popular" | "new" | "expiring">(
+        (searchParams.get("sort") as "popular" | "new" | "expiring") || "popular"
+    );
     const [debouncedSearch, setDebouncedSearch] = useState(search);
 
     // Update debounced search term after a delay
@@ -51,6 +54,12 @@ function BrowseContent() {
             params.delete("cat");
         }
 
+        if (sortBy !== "popular") {
+            params.set("sort", sortBy);
+        } else {
+            params.delete("sort");
+        }
+
         const newPath = `/browse?${params.toString()}`;
         if (window.location.search !== `?${params.toString()}`) {
             router.push(newPath as any, { scroll: false });
@@ -61,8 +70,12 @@ function BrowseContent() {
     useEffect(() => {
         const q = searchParams.get("q") || "";
         const cat = searchParams.get("cat");
+        const sort = searchParams.get("sort") as "popular" | "new" | "expiring" | null;
         if (q !== search) setSearch(q);
         if (cat !== activeCategory) setActiveCategory(cat);
+        if (sort !== sortBy && (sort === "popular" || sort === "new" || sort === "expiring" || sort === null)) {
+            setSortBy(sort || "popular");
+        }
     }, [searchParams]);
 
     // Fetch deals from API (all deals when no category is selected, for counting)
@@ -79,12 +92,13 @@ function BrowseContent() {
 
     // Fetch filtered deals from API
     const dealsQuery = useQuery({
-        queryKey: ["deals", activeCategory, debouncedSearch],
+        queryKey: ["deals", activeCategory, debouncedSearch, sortBy],
         queryFn: () => {
             const params = new URLSearchParams();
             params.set("limit", "100");
             if (activeCategory) params.set("category", activeCategory);
             if (debouncedSearch.trim()) params.set("q", debouncedSearch.trim());
+            if (sortBy !== "popular") params.set("sort", sortBy);
             return fetchAPI<{ deals: ApiDealResponse[]; meta: { total: number } }>(
                 `/api/deals?${params.toString()}`
             );
@@ -138,24 +152,41 @@ function BrowseContent() {
                     {isLoading ? "Loading..." : `${totalDeals} verified student perks and discounts`}
                 </p>
 
-                {/* Search */}
-                <div className="relative max-w-md mb-6">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                        type="text"
-                        placeholder="Search brand, category, or discount..."
-                        value={search}
-                        onChange={(e) => handleSearch(e.target.value)}
-                        className="w-full bg-muted rounded-full pl-11 pr-4 py-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring transition-shadow"
-                    />
-                    {search && (
-                        <button
-                            onClick={() => handleSearch("")}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                {/* Search + Sort Row */}
+                <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                    <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                            type="text"
+                            placeholder="Search brand, category, or discount..."
+                            value={search}
+                            onChange={(e) => handleSearch(e.target.value)}
+                            className="w-full bg-muted rounded-full pl-11 pr-4 py-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring transition-shadow"
+                        />
+                        {search && (
+                            <button
+                                onClick={() => handleSearch("")}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
+                    
+                    {/* Sort Dropdown */}
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="sort-select" className="text-sm text-muted-foreground">Sort by:</label>
+                        <select
+                            id="sort-select"
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value as "popular" | "new" | "expiring")}
+                            className="bg-muted border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                         >
-                            Clear
-                        </button>
-                    )}
+                            <option value="popular">Popular</option>
+                            <option value="new">Newest</option>
+                            <option value="expiring">Expiring Soon</option>
+                        </select>
+                    </div>
                 </div>
 
                 {/* Category filters */}

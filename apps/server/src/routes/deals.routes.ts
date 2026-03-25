@@ -61,6 +61,7 @@ const listDealsRoute = createRoute({
       q: z.string().max(200).optional(),
       brandId: z.string().optional(),
       excludeDealId: z.string().optional(),
+      sort: z.enum(["popular", "new", "expiring"]).optional().default("popular"),
       limit: z
         .string()
         .regex(/^\d+$/)
@@ -96,6 +97,7 @@ app.openapi(listDealsRoute, async (c) => {
   const searchQuery = query.q ? sanitizeSearchQuery(query.q) : undefined;
   const brandId = query.brandId;
   const excludeDealId = query.excludeDealId;
+  const sortBy = query.sort as "popular" | "new" | "expiring";
   const limit = Math.min(100, Math.max(1, parseInt(query.limit || "50")));
   const offset = Math.max(0, parseInt(query.offset || "0"));
 
@@ -107,6 +109,7 @@ app.openapi(listDealsRoute, async (c) => {
       searchQuery,
       brandId,
       excludeDealId,
+      sortBy,
       limit,
       offset,
     });
@@ -116,7 +119,6 @@ app.openapi(listDealsRoute, async (c) => {
         deals: results,
         meta: {
           total: results.length,
-          country: requestedCountry,
           limit,
           offset,
         },

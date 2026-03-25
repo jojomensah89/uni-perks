@@ -19,7 +19,7 @@
     "better-auth": "catalog:",
     "dotenv": "catalog:",
     "hono": "^4.8.2",
-    "posthog-node": "^3.5.0",
+    "posthog-node": "^5.28.4",
     "react": "^19.2.4",
     "resend": "^6.9.3",
     "svix": "^1.86.0",

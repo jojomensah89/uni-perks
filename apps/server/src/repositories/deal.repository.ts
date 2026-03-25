@@ -11,6 +11,7 @@ export interface FindManyDealsOptions {
     offset?: number;
     brandId?: string;
     excludeDealId?: string;
+    sortBy?: "popular" | "new" | "expiring";
 }
 
 export async function findManyDeals(options: FindManyDealsOptions) {
@@ -22,6 +23,7 @@ export async function findManyDeals(options: FindManyDealsOptions) {
         searchQuery,
         limit = 50,
         offset = 0,
+        sortBy = "popular",
     } = options;
 
     let query = db
@@ -116,8 +118,23 @@ export async function findManyDeals(options: FindManyDealsOptions) {
         }
     }
 
-    const results = await query
-        .orderBy(desc(deals.clickCount), desc(deals.viewCount))
+    // Apply sorting based on sortBy option
+    let orderedQuery;
+    switch (sortBy) {
+        case "new":
+            orderedQuery = query.orderBy(desc(deals.createdAt));
+            break;
+        case "expiring":
+            // Sort by expiration date (nulls last), then by click count
+            orderedQuery = query.orderBy(sql`${deals.expirationDate} ASC NULLS LAST`, desc(deals.clickCount));
+            break;
+        case "popular":
+        default:
+            orderedQuery = query.orderBy(desc(deals.clickCount), desc(deals.viewCount));
+            break;
+    }
+
+    const results = await orderedQuery
         .limit(limit)
         .offset(offset);
 
