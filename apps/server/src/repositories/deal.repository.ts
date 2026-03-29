@@ -5,13 +5,13 @@ export interface FindManyDealsOptions {
     categorySlug?: string;
     collectionId?: string;
     featured?: boolean;
-    status?: "draft" | "published" | "archived";
+    status?: "pending" | "approved" | "rejected" | "published" | "archived";
     searchQuery?: string;
     limit?: number;
     offset?: number;
     brandId?: string;
     excludeDealId?: string;
-    sortBy?: "popular" | "new" | "expiring";
+    sortBy?: "popular" | "new" | "expiring" | "hotness";
 }
 
 export async function findManyDeals(options: FindManyDealsOptions) {
@@ -125,8 +125,10 @@ export async function findManyDeals(options: FindManyDealsOptions) {
             orderedQuery = query.orderBy(desc(deals.createdAt));
             break;
         case "expiring":
-            // Sort by expiration date (nulls last), then by click count
-            orderedQuery = query.orderBy(sql`${deals.expirationDate} ASC NULLS LAST`, desc(deals.clickCount));
+            orderedQuery = query.orderBy(sql`${deals.expiresAt} ASC NULLS LAST`, desc(deals.clickCount));
+            break;
+        case "hotness":
+            orderedQuery = query.orderBy(desc(deals.hotnessScore), desc(deals.createdAt));
             break;
         case "popular":
         default:
@@ -141,7 +143,7 @@ export async function findManyDeals(options: FindManyDealsOptions) {
     return results;
 }
 
-export async function findDealBySlug(slug: string, countryCode?: string) {
+export async function findDealBySlug(slug: string) {
     const result = await db
         .select({
             deal: deals,
@@ -183,7 +185,7 @@ export interface DealRedirectResolution {
     destinationUrl: string | null;
 }
 
-export async function resolveDealRedirectBySlug(slug: string, countryCode: string): Promise<DealRedirectResolution> {
+export async function resolveDealRedirectBySlug(slug: string, _countryCode: string): Promise<DealRedirectResolution> {
     const result = await db
         .select({ deal: deals })
         .from(deals)
@@ -195,7 +197,7 @@ export async function resolveDealRedirectBySlug(slug: string, countryCode: strin
     }
 
     const deal = result[0].deal;
-    const destinationUrl = deal.affiliateUrl ?? deal.claimUrl;
+    const destinationUrl = deal.affiliateLink ?? deal.claimUrl;
 
     return {
         deal,

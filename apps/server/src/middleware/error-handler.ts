@@ -18,8 +18,17 @@ export async function errorHandler(error: Error, c: Context) {
   const maybeAppError = error as Partial<{
     statusCode: number;
     isOperational: boolean;
-    message: string;
+    message: string | { name: string; message: string };
   }>;
+
+  // Ensure error message is always a string
+  const getErrorMessage = (msg: string | { name: string; message: string } | undefined): string => {
+    if (!msg) return "Request failed";
+    if (typeof msg === "string") return msg;
+    // Handle object errors (e.g., from validation libraries)
+    if (typeof msg === "object" && msg.message) return String(msg.message);
+    return "Request failed";
+  };
 
   if (
     typeof maybeAppError.statusCode === "number" &&
@@ -30,10 +39,8 @@ export async function errorHandler(error: Error, c: Context) {
     )
       ? (maybeAppError.statusCode as JsonStatusCode)
       : 500;
-    return c.json(
-      { error: maybeAppError.message ?? "Request failed" },
-      statusCode,
-    );
+    const message = getErrorMessage(maybeAppError.message);
+    return c.json({ error: message }, statusCode);
   }
 
   const isDevelopment = process.env.NODE_ENV === "development";
@@ -41,7 +48,7 @@ export async function errorHandler(error: Error, c: Context) {
     ? error.message
     : "Something went wrong. Please try again.";
 
-  return c.json({ error: message }, 500);
+  return c.json({ error: String(message) }, 500);
 }
 
 /**

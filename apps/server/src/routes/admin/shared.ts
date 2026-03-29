@@ -8,7 +8,7 @@ export function normalizeConditions(input?: string[] | string | null): string | 
     return lines.length > 0 ? JSON.stringify(lines) : null;
 }
 
-export function normalizeExpirationDate(input?: string | number | null): Date | null {
+export function normalizeExpiresAt(input?: string | number | null): Date | null {
     if (input === undefined || input === null) return null;
     if (typeof input === "number") return new Date(input);
     const parsed = Date.parse(input);

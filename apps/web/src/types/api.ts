@@ -29,6 +29,8 @@ export type ApiCategoryResponse = {
     createdAt: string;
 };
 
+export type DealStatus = "pending" | "approved" | "rejected" | "published" | "archived";
+
 export type ApiDealResponse = {
     deal: {
         id: string;
@@ -41,24 +43,24 @@ export type ApiDealResponse = {
         longDescription?: string;
         coverImageUrl?: string | null;
         originalPrice?: number | null;
-        studentPrice?: number | null;
         currency?: string;
         claimUrl?: string;
-        affiliateUrl?: string;
-        verificationMethod?: string;
-        eligibilityNote?: string;
+        affiliateLink?: string;
         howToRedeem?: string;
         conditions?: string;
         termsUrl?: string;
         minimumSpend?: number | null;
-        isNewCustomerOnly?: boolean;
-        isActive: boolean;
         isFeatured: boolean;
-        isExclusive?: boolean;
-        expirationDate?: string | number | null;
+        status: DealStatus;
+        expiresAt?: string | number | null;
+        hotnessScore?: number | null;
+        approvedAt?: string | number | null;
         metaTitle?: string;
         metaDescription?: string;
+        clickCount?: number;
+        viewCount?: number;
         createdAt?: string;
+        updatedAt?: string;
     };
     brand: ApiBrandResponse;
     category: ApiCategoryResponse;

@@ -37,7 +37,7 @@ const getTickerRoute = createRoute({
 });
 
 app.openapi(getTickerRoute, async (c) => {
-    return withEdgeCache(c, 300, async () => {
+    const { data } = await withEdgeCache(c, 300, async () => {
         const messages = await withKV(
             (c.env as { KV?: KVNamespace }).KV,
             "settings:ticker",
@@ -61,8 +61,9 @@ app.openapi(getTickerRoute, async (c) => {
             }
         );
 
-        return c.json({ messages }, 200);
+        return { messages };
     });
+    return c.json(data);
 });
 
 export default app;

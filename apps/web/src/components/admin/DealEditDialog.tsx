@@ -43,12 +43,6 @@ import type { ApiDealResponse } from "@/types/api";
 import type { ApiBrandResponse } from "@/types/api";
 import type { ApiCategoryResponse } from "@/types/api";
 
-const VERIFICATION_METHODS = [
-    { value: "edu_email", label: ".edu Email" },
-    { value: "student_id", label: "Student ID Upload" },
-    { value: "none", label: "No Verification" },
-];
-
 const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
 
 interface DealEditDialogProps {
@@ -81,22 +75,20 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
             discountLabel: d.discountLabel || "",
             discountValue: d.discountValue != null ? String(d.discountValue) : "",
             originalPrice: d.originalPrice != null ? String(d.originalPrice) : "",
-            studentPrice: d.studentPrice != null ? String(d.studentPrice) : "",
             currency: (d as any).currency || "USD",
             claimUrl: (d as any).claimUrl || "",
-            affiliateUrl: (d as any).affiliateUrl || "",
+            affiliateLink: (d as any).affiliateLink || "",
             coverImageUrl: d.coverImageUrl || "",
-            verificationMethod: d.verificationMethod || "edu_email",
-            eligibilityNote: (d as any).eligibilityNote || "",
             howToRedeem: d.howToRedeem || "",
             conditions: d.conditions || "",
             termsUrl: (d as any).termsUrl || "",
             minimumSpend: (d as any).minimumSpend != null ? String((d as any).minimumSpend) : "",
-            isNewCustomerOnly: (d as any).isNewCustomerOnly || false,
             isFeatured: d.isFeatured || false,
-            status: (d as any).status || "draft",
+            status: (d as any).status || "pending",
             metaTitle: (d as any).metaTitle || "",
             metaDescription: (d as any).metaDescription || "",
+            expiresAt: (d as any).expiresAt || "",
+            hotnessScore: (d as any).hotnessScore != null ? String((d as any).hotnessScore) : "",
         },
         onSubmit: async ({ value }) => {
             try {
@@ -119,12 +111,13 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
 
                 const submitData = {
                     ...rawValues,
-                    status: status || "draft",
+                    status: status || "pending",
                     coverImageUrl,
                     discountValue: value.discountValue ? parseFloat(value.discountValue) : null,
                     originalPrice: value.originalPrice ? parseFloat(value.originalPrice) : null,
-                    studentPrice: value.studentPrice ? parseFloat(value.studentPrice) : null,
                     minimumSpend: value.minimumSpend ? parseFloat(value.minimumSpend) : null,
+                    hotnessScore: value.hotnessScore ? parseFloat(value.hotnessScore) : null,
+                    expiresAt: value.expiresAt || null,
                 };
 
                 await fetchAPI(`/api/admin/deals/${d.id}`, {
@@ -160,13 +153,11 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
             discountLabel: formValues.discountLabel || "Special Offer",
             discountValue: formValues.discountValue ? parseFloat(formValues.discountValue) : null,
             originalPrice: formValues.originalPrice ? parseFloat(formValues.originalPrice) : null,
-            studentPrice: formValues.studentPrice ? parseFloat(formValues.studentPrice) : null,
             currency: formValues.currency || "USD",
-            verificationMethod: formValues.verificationMethod,
             claimUrl: formValues.claimUrl || "#",
             coverImageUrl: localImagePreview ? "__local_preview__" : (formValues.coverImageUrl || null),
             isFeatured: formValues.isFeatured,
-            expirationDate: d.expirationDate || null,
+            expiresAt: d.expiresAt || null,
             howToRedeem: formValues.howToRedeem || null,
             conditions: formValues.conditions || null,
         },
@@ -362,20 +353,6 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                                         />
                                     )}
                                 </form.Field>
-
-                                <form.Field name="verificationMethod">
-                                    {(field) => (
-                                        <div className="grid gap-2">
-                                            <Label>Verification Method</Label>
-                                            <Select value={field.state.value} onValueChange={(v) => field.handleChange(v ?? "")}>
-                                                <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
-                                                <SelectContent>
-                                                    {VERIFICATION_METHODS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    )}
-                                </form.Field>
                             </TabsContent>
 
                             <TabsContent value="pricing" className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -408,15 +385,6 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                                     {(field) => (
                                         <div className="grid gap-2">
                                             <Label>Original Price</Label>
-                                            <Input type="number" step="0.01" value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} />
-                                        </div>
-                                    )}
-                                </form.Field>
-
-                                <form.Field name="studentPrice">
-                                    {(field) => (
-                                        <div className="grid gap-2">
-                                            <Label>Student Price</Label>
                                             <Input type="number" step="0.01" value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} />
                                         </div>
                                     )}
@@ -491,17 +459,6 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                                             <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                                 <div className="space-y-0.5">
                                                     <Label>Featured</Label>
-                                                </div>
-                                                <Switch checked={field.state.value} onCheckedChange={(v) => field.handleChange(v)} />
-                                            </div>
-                                        )}
-                                    </form.Field>
-
-                                    <form.Field name="isNewCustomerOnly">
-                                        {(field) => (
-                                            <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                                <div className="space-y-0.5">
-                                                    <Label>New Customers Only</Label>
                                                 </div>
                                                 <Switch checked={field.state.value} onCheckedChange={(v) => field.handleChange(v)} />
                                             </div>

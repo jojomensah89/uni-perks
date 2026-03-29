@@ -5,6 +5,7 @@ import {
   brands,
   categories,
   collections,
+  dealSuggestions,
   siteSettings,
   user,
   eq,
@@ -17,6 +18,7 @@ import adminDealsRouter from "./admin/deals.routes";
 import adminBrandsRouter from "./admin/brands.routes";
 import adminCollectionsRouter from "./admin/collections.routes";
 import adminCategoriesRouter from "./admin/categories.routes";
+import adminSuggestionsRouter from "./admin/suggestions.routes";
 
 const app = new OpenAPIHono();
 
@@ -25,6 +27,7 @@ app.route("/", adminDealsRouter);
 app.route("/", adminBrandsRouter);
 app.route("/", adminCollectionsRouter);
 app.route("/", adminCategoriesRouter);
+app.route("/", adminSuggestionsRouter);
 
 const getStatsRoute = createRoute({
   method: "get",
@@ -43,6 +46,7 @@ const getStatsRoute = createRoute({
             totalBrands: z.number(),
             totalCategories: z.number(),
             totalCollections: z.number(),
+            pendingSuggestions: z.number(),
             totalViews: z.number(),
             totalClicks: z.number(),
           }),
@@ -74,6 +78,12 @@ app.openapi(getStatsRoute, async (c) => {
     .select({ count: sql<number>`count(*)` })
     .from(collections);
 
+  const [suggestionStats] = await db
+    .select({
+      pending: sql<number>`sum(case when ${dealSuggestions.status} = 'pending' then 1 else 0 end)`,
+    })
+    .from(dealSuggestions);
+
   return c.json(
     {
       totalDeals: dealStats?.total || 0,
@@ -81,6 +91,7 @@ app.openapi(getStatsRoute, async (c) => {
       totalBrands: brandCount?.count || 0,
       totalCategories: categoryCount?.count || 0,
       totalCollections: collectionCount?.count || 0,
+      pendingSuggestions: Number(suggestionStats?.pending || 0),
       totalViews: dealStats?.totalViews || 0,
       totalClicks: dealStats?.totalClicks || 0,
     },

@@ -17,7 +17,7 @@ export interface GetDealsOptions {
     offset?: number;
     brandId?: string;
     excludeDealId?: string;
-    sortBy?: "popular" | "new" | "expiring";
+    sortBy?: "popular" | "new" | "expiring" | "hotness";
 }
 
 export interface DealDetailOptions {

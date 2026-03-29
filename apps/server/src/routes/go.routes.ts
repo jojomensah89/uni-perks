@@ -9,6 +9,35 @@ import { logError } from "../lib/logger";
 import { RATE_LIMITS } from "../lib/constants";
 import { captureEvent } from "../lib/posthog";
 
+const ALLOWED_REDIRECT_PROTOCOLS = ["https:"];
+const BLOCKED_DOMAINS = [
+  "localhost",
+  "127.0.0.1",
+  "0.0.0.0",
+  "file:",
+];
+
+function validateAffiliateUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    
+    if (!ALLOWED_REDIRECT_PROTOCOLS.includes(parsed.protocol)) {
+      return false;
+    }
+    
+    const hostname = parsed.hostname.toLowerCase();
+    for (const blocked of BLOCKED_DOMAINS) {
+      if (hostname === blocked || hostname.endsWith(`.${blocked}`)) {
+        return false;
+      }
+    }
+    
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const app = new OpenAPIHono();
 
 const ClickSourceSchema = z.enum([
@@ -99,6 +128,14 @@ app.openapi(goRoute, async (c) => {
     : unavailablePath;
 
   if (!destinationUrl) {
+    return c.redirect(unavailableUrl, 302);
+  }
+
+  if (!validateAffiliateUrl(destinationUrl)) {
+    logError("go-route", "blocked invalid affiliate URL", {
+      slug,
+      url: destinationUrl,
+    });
     return c.redirect(unavailableUrl, 302);
   }
 

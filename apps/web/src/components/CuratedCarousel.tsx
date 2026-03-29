@@ -20,6 +20,8 @@ export type ApiCollectionResponse = {
     audience: string | null;
     coverImageUrl?: string | null;
     isFeatured: boolean;
+    displayOrder?: number | null;
+    icon?: string | null;
 };
 
 // We can reuse the same decorations or define new ones for Collections

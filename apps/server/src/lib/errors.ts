@@ -78,3 +78,12 @@ export class ValidationError extends AppError {
         super(message, 422);
     }
 }
+
+/**
+ * Invalid Affiliate URL Error - prevents open redirect attacks
+ */
+export class InvalidAffiliateUrlError extends AppError {
+    constructor(message: string = "Invalid affiliate URL") {
+        super(message, 400);
+    }
+}

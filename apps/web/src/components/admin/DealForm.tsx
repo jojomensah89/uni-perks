@@ -47,10 +47,11 @@ interface DealFormProps {
     onSuccess?: () => void;
 }
 
-const VERIFICATION_METHODS = [
-    { value: "edu_email", label: ".edu Email" },
-    { value: "student_id", label: "Student ID Upload" },
-    { value: "none", label: "No Verification" },
+const DEAL_STATUSES = [
+    { value: "pending", label: "Pending" },
+    { value: "approved", label: "Approved" },
+    { value: "published", label: "Published" },
+    { value: "archived", label: "Archived" },
 ];
 
 const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
@@ -94,30 +95,26 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
             discountLabel: "",
             discountValue: "",
             originalPrice: "",
-            studentPrice: "",
             currency: "USD",
             claimUrl: "",
-            affiliateUrl: "",
+            affiliateLink: "",
             coverImageUrl: "",
-            verificationMethod: "edu_email",
-            eligibilityNote: "",
             howToRedeem: "",
             conditions: "",
             termsUrl: "",
             minimumSpend: "",
-            isNewCustomerOnly: false,
             isFeatured: false,
-            status: "draft",
-            expirationDate: "",
+            status: "pending",
+            hotnessScore: 50,
+            expiresAt: "",
             metaTitle: "",
             metaDescription: "",
         },
         onSubmit: async ({ value }) => {
             try {
-                const { status, ...rawValues } = value;
+                const { status, hotnessScore, ...rawValues } = value;
                 let coverImageUrl = value.coverImageUrl;
 
-                // Upload pending image if any
                 if (pendingImageRef.file) {
                     const formData = new FormData();
                     formData.append("file", pendingImageRef.file);
@@ -134,13 +131,13 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
 
                 const submitData = {
                     ...rawValues,
-                    status: status || "draft",
+                    status: status || "pending",
                     coverImageUrl,
                     discountValue: value.discountValue ? parseFloat(value.discountValue) : null,
                     originalPrice: value.originalPrice ? parseFloat(value.originalPrice) : null,
-                    studentPrice: value.studentPrice ? parseFloat(value.studentPrice) : null,
                     minimumSpend: value.minimumSpend ? parseFloat(value.minimumSpend) : null,
-                    expirationDate: value.expirationDate ? new Date(value.expirationDate).getTime() : null,
+                    expiresAt: value.expiresAt ? new Date(value.expiresAt).getTime() : null,
+                    hotnessScore: value.hotnessScore ? parseInt(String(value.hotnessScore)) : 50,
                 };
                 await createDealMutation.mutateAsync(submitData);
 
@@ -172,13 +169,12 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
             discountLabel: formValues.discountLabel || "Special Offer",
             discountValue: formValues.discountValue ? parseFloat(formValues.discountValue) : null,
             originalPrice: formValues.originalPrice ? parseFloat(formValues.originalPrice) : null,
-            studentPrice: formValues.studentPrice ? parseFloat(formValues.studentPrice) : null,
             currency: formValues.currency || "USD",
-            verificationMethod: formValues.verificationMethod,
             claimUrl: formValues.claimUrl || "#",
             coverImageUrl: localImagePreview ? "__local_preview__" : (formValues.coverImageUrl || null),
             isFeatured: formValues.isFeatured,
-            expirationDate: formValues.expirationDate || null,
+            expiresAt: formValues.expiresAt || null,
+            hotnessScore: formValues.hotnessScore ? parseInt(String(formValues.hotnessScore)) : 50,
             howToRedeem: formValues.howToRedeem || null,
             conditions: formValues.conditions || null,
         },
@@ -470,28 +466,6 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                         />
                                     )}
                                 </form.Field>
-
-                                {/* Verification Method */}
-                                <form.Field name="verificationMethod">
-                                    {(field) => (
-                                        <div className="grid gap-2">
-                                            <Label>Verification Method *</Label>
-                                            <Select
-                                                value={field.state.value}
-                                                onValueChange={(v) => field.handleChange(v ?? "")}
-                                            >
-                                                <SelectTrigger className="w-full h-9">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {VERIFICATION_METHODS.map((m) => (
-                                                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    )}
-                                </form.Field>
                             </TabsContent>
 
                             <TabsContent value="pricing" className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -551,23 +525,6 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                     )}
                                 </form.Field>
 
-                                {/* Student Price */}
-                                <form.Field name="studentPrice">
-                                    {(field) => (
-                                        <div className="grid gap-2">
-                                            <Label htmlFor={field.name}>Student Price</Label>
-                                            <Input
-                                                id={field.name}
-                                                type="number"
-                                                step="0.01"
-                                                value={field.state.value}
-                                                onChange={(e) => field.handleChange(e.target.value)}
-                                                placeholder="e.g. 4.99"
-                                            />
-                                        </div>
-                                    )}
-                                </form.Field>
-
                                 {/* Currency */}
                                 <form.Field name="currency">
                                     {(field) => (
@@ -609,8 +566,8 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                     )}
                                 </form.Field>
 
-                                {/* Affiliate URL */}
-                                <form.Field name="affiliateUrl">
+                                {/* Affiliate Link */}
+                                <form.Field name="affiliateLink">
                                     {(field) => (
                                         <div className="grid gap-2 md:col-span-2">
                                             <Label htmlFor={field.name}>Affiliate URL</Label>
@@ -687,24 +644,10 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                     )}
                                 </form.Field>
 
-                                <form.Field name="eligibilityNote">
+                                <form.Field name="expiresAt">
                                     {(field) => (
                                         <div className="grid gap-2">
-                                            <Label htmlFor={field.name}>Eligibility Note</Label>
-                                            <Input
-                                                id={field.name}
-                                                value={field.state.value}
-                                                onChange={(e) => field.handleChange(e.target.value)}
-                                                placeholder="e.g. US students only"
-                                            />
-                                        </div>
-                                    )}
-                                </form.Field>
-
-                                <form.Field name="expirationDate">
-                                    {(field) => (
-                                        <div className="grid gap-2">
-                                            <Label htmlFor={field.name}>Expiration Date</Label>
+                                            <Label htmlFor={field.name}>Expires At</Label>
                                             <Input
                                                 id={field.name}
                                                 type="date"
@@ -715,19 +658,36 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                     )}
                                 </form.Field>
 
+                                <form.Field name="hotnessScore">
+                                    {(field) => (
+                                        <div className="grid gap-2">
+                                            <Label htmlFor={field.name}>Hotness Score (1-100)</Label>
+                                            <Input
+                                                id={field.name}
+                                                type="number"
+                                                min="1"
+                                                max="100"
+                                                value={field.state.value}
+                                                onChange={(e) => field.handleChange(parseInt(e.target.value) || 50)}
+                                                placeholder="50"
+                                            />
+                                        </div>
+                                    )}
+                                </form.Field>
+
                                 <div className="grid grid-cols-2 gap-4 md:col-span-2">
                                     <form.Field name="status">
                                         {(field) => (
                                             <div className="grid gap-2">
                                                 <Label>Status</Label>
-                                                <Select value={field.state.value} onValueChange={(v) => field.handleChange(v ?? "draft")}>
+                                                <Select value={field.state.value} onValueChange={(v) => field.handleChange(v ?? "pending")}>
                                                     <SelectTrigger className="w-full h-9">
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="draft">Draft</SelectItem>
-                                                        <SelectItem value="published">Published</SelectItem>
-                                                        <SelectItem value="archived">Archived</SelectItem>
+                                                        {DEAL_STATUSES.map((s) => (
+                                                            <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                                        ))}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
@@ -743,21 +703,6 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                                 </div>
                                                 <Switch
                                                     id="featured-switch"
-                                                    checked={field.state.value}
-                                                    onCheckedChange={(checked) => field.handleChange(checked)}
-                                                />
-                                            </div>
-                                        )}
-                                    </form.Field>
-
-                                    <form.Field name="isNewCustomerOnly">
-                                        {(field) => (
-                                            <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                                <div className="space-y-0.5">
-                                                    <Label htmlFor="newcustomer-switch">New Customers Only</Label>
-                                                </div>
-                                                <Switch
-                                                    id="newcustomer-switch"
                                                     checked={field.state.value}
                                                     onCheckedChange={(checked) => field.handleChange(checked)}
                                                 />

@@ -102,7 +102,7 @@ app.openapi(trackClickRoute, async (c) => {
         device,
         country,
     });
-    captureEvent("deal_clicked", {
+    await captureEvent("deal_clicked", {
         deal_id: dealId,
         brand_id: body.brandId,
         category_id: body.categoryId,

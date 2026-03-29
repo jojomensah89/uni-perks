@@ -12,21 +12,18 @@ export interface CreateDealInput {
     discountLabel: string;
     discountValue?: number | null;
     originalPrice?: number | null;
-    studentPrice?: number | null;
     currency?: string;
-    verificationMethod: string;
     claimUrl: string;
-    affiliateUrl?: string | null;
+    affiliateLink?: string | null;
     coverImageUrl?: string | null;
     howToRedeem?: string | null;
-    eligibilityNote?: string | null;
     termsUrl?: string | null;
     minimumSpend?: number | null;
-    isNewCustomerOnly?: boolean;
     isFeatured?: boolean;
-    status?: "draft" | "published" | "archived";
+    status?: "pending" | "approved" | "rejected" | "published" | "archived";
+    hotnessScore?: number;
     conditions?: string | null;
-    expirationDate?: Date | null;
+    expiresAt?: Date | null;
     metaTitle?: string | null;
     metaDescription?: string | null;
 }
@@ -98,21 +95,18 @@ export async function createDeal(input: CreateDealInput) {
             discountLabel: input.discountLabel,
             discountValue: input.discountValue ?? null,
             originalPrice: input.originalPrice ?? null,
-            studentPrice: input.studentPrice ?? null,
             currency: input.currency ?? "USD",
-            verificationMethod: input.verificationMethod,
             claimUrl: input.claimUrl,
-            affiliateUrl: input.affiliateUrl ?? null,
+            affiliateLink: input.affiliateLink ?? null,
             coverImageUrl: input.coverImageUrl ?? null,
             howToRedeem: input.howToRedeem ?? null,
-            eligibilityNote: input.eligibilityNote ?? null,
             termsUrl: input.termsUrl ?? null,
             minimumSpend: input.minimumSpend ?? null,
-            isNewCustomerOnly: input.isNewCustomerOnly ?? false,
             isFeatured: input.isFeatured ?? false,
-            status: input.status ?? "draft",
+            status: input.status ?? "pending",
+            hotnessScore: input.hotnessScore ?? 50,
             conditions: input.conditions ?? null,
-            expirationDate: input.expirationDate ?? null,
+            expiresAt: input.expiresAt ?? null,
             metaTitle: input.metaTitle ?? null,
             metaDescription: input.metaDescription ?? null,
         })
@@ -156,21 +150,18 @@ export async function updateDeal(input: UpdateDealInput) {
     if (updateData.discountLabel !== undefined) updatePayload.discountLabel = updateData.discountLabel;
     if (updateData.discountValue !== undefined) updatePayload.discountValue = updateData.discountValue;
     if (updateData.originalPrice !== undefined) updatePayload.originalPrice = updateData.originalPrice;
-    if (updateData.studentPrice !== undefined) updatePayload.studentPrice = updateData.studentPrice;
     if (updateData.currency !== undefined) updatePayload.currency = updateData.currency;
-    if (updateData.verificationMethod !== undefined) updatePayload.verificationMethod = updateData.verificationMethod;
     if (updateData.claimUrl !== undefined) updatePayload.claimUrl = updateData.claimUrl;
-    if (updateData.affiliateUrl !== undefined) updatePayload.affiliateUrl = updateData.affiliateUrl;
+    if (updateData.affiliateLink !== undefined) updatePayload.affiliateLink = updateData.affiliateLink;
     if (updateData.coverImageUrl !== undefined) updatePayload.coverImageUrl = updateData.coverImageUrl;
     if (updateData.howToRedeem !== undefined) updatePayload.howToRedeem = updateData.howToRedeem;
-    if (updateData.eligibilityNote !== undefined) updatePayload.eligibilityNote = updateData.eligibilityNote;
     if (updateData.termsUrl !== undefined) updatePayload.termsUrl = updateData.termsUrl;
     if (updateData.minimumSpend !== undefined) updatePayload.minimumSpend = updateData.minimumSpend;
-    if (updateData.isNewCustomerOnly !== undefined) updatePayload.isNewCustomerOnly = updateData.isNewCustomerOnly;
     if (updateData.isFeatured !== undefined) updatePayload.isFeatured = updateData.isFeatured;
     if (updateData.status !== undefined) updatePayload.status = updateData.status;
+    if (updateData.hotnessScore !== undefined) updatePayload.hotnessScore = updateData.hotnessScore;
     if (updateData.conditions !== undefined) updatePayload.conditions = updateData.conditions;
-    if (updateData.expirationDate !== undefined) updatePayload.expirationDate = updateData.expirationDate;
+    if (updateData.expiresAt !== undefined) updatePayload.expiresAt = updateData.expiresAt;
     if (updateData.metaTitle !== undefined) updatePayload.metaTitle = updateData.metaTitle;
     if (updateData.metaDescription !== undefined) updatePayload.metaDescription = updateData.metaDescription;
 
@@ -235,11 +226,11 @@ export async function toggleFeatured(dealId: string) {
 /**
  * Set deal expiration
  */
-export async function setDealExpiration(dealId: string, expirationDate: Date | null) {
+export async function setDealExpiration(dealId: string, expiresAt: Date | null) {
     await db
         .update(deals)
         .set({
-            expirationDate,
+            expiresAt,
         })
         .where(eq(deals.id, dealId));
 

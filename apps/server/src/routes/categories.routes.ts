@@ -39,15 +39,16 @@ const listCategoriesRoute = createRoute({
 });
 
 app.openapi(listCategoriesRoute, async (c) => {
-    return withEdgeCache(c, 3600, async () => {
+    const { data } = await withEdgeCache(c, 3600, async () => {
         const categories = await withKV(
             (c.env as { KV?: KVNamespace }).KV,
             "categories:all",
             3600,
             () => getAllCategories()
         );
-        return c.json({ categories }, 200);
+        return { categories };
     });
+    return c.json(data);
 });
 
 const getCategoryRoute = createRoute({

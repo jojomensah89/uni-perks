@@ -20,6 +20,7 @@ import imagesRouter from "./routes/images.routes";
 import settingsRouter from "./routes/settings.routes";
 import goRouter from "./routes/go.routes";
 import newsletterRouter from "./routes/newsletter.routes";
+import newsletterSendRouter from "./routes/newsletter/send.routes";
 import { checkRateLimit, getClientIp, setRateLimitHeaders } from "./lib/rate-limit";
 import { verifyTurnstile } from "./lib/turnstile";
 import { logError, logInfo } from "./lib/logger";
@@ -85,8 +86,6 @@ app.use(
     credentials: true,
   }),
 );
-
-
 
 // Auth routes
 app.on(["POST", "GET"], "/api/auth/*", async (c) => {
@@ -194,7 +193,6 @@ app.on(["POST", "GET"], "/api/auth/*", async (c) => {
 });
 
 // API routes
-// All routes are now OpenAPIHono instances and will appear in the auto-generated spec
 app.route("/api/deals", dealsRouter);
 app.route("/api/brands", brandsRouter);
 app.route("/api/collections", collectionsRouter);
@@ -206,6 +204,7 @@ app.route("/api/upload", uploadRouter);
 app.route("/api/images", imagesRouter);
 app.route("/api/settings", settingsRouter);
 app.route("/api/newsletter", newsletterRouter);
+app.route("/api/newsletter/send", newsletterSendRouter);
 app.route("/go", goRouter);
 
 // Health check
@@ -230,8 +229,8 @@ export default {
       .update(deals)
       .set({ status: "archived" })
       .where(
-        sql`${deals.expirationDate} IS NOT NULL
-          AND ${deals.expirationDate} < ${now}
+        sql`${deals.expiresAt} IS NOT NULL
+          AND ${deals.expiresAt} < ${now}
           AND ${deals.status} = 'published'`,
       )
       .returning({ id: deals.id });
@@ -241,7 +240,6 @@ export default {
       executedAt: new Date(now).toISOString(),
     });
 
-    // Invalidate KV cache for featured deals if any expired
     if (expired.length > 0) {
       const kv = (env as WorkerEnv).KV;
       if (kv) {

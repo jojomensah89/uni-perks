@@ -1,12 +1,12 @@
 import type { Context } from "hono";
 import { logInfo } from "./logger";
 
-export async function withEdgeCache(
+export async function withEdgeCache<T>(
     c: Context,
     ttlSeconds: number,
-    handler: () => Promise<Response>,
+    handler: () => Promise<T>,
     cacheKey?: Request
-): Promise<Response> {
+): Promise<{ data: T }> {
     const cache = caches.default;
     const key = cacheKey ?? new Request(c.req.url);
 
@@ -15,14 +15,16 @@ export async function withEdgeCache(
         logInfo("edge-cache", "cache hit", { url: c.req.url });
         const response = new Response(cached.body, cached);
         response.headers.set("x-cache", "hit");
-        return response;
+        return { data: await response.json() as T };
     }
 
     logInfo("edge-cache", "cache miss", { url: c.req.url });
-    const response = await handler();
+    const data = await handler();
+    const response = c.json(data);
+
     if (response.status === 200) {
         const clonedResponse = response.clone();
-        const toCache = new Response(clonedResponse.body, response);
+        const toCache = new Response(clonedResponse.body, clonedResponse);
         toCache.headers.set("Cache-Control", `public, max-age=${ttlSeconds}, s-maxage=${ttlSeconds}`);
         if (c.executionCtx) {
             c.executionCtx.waitUntil(cache.put(key, toCache));
@@ -31,7 +33,6 @@ export async function withEdgeCache(
         }
     }
 
-    const finalResponse = new Response(response.body, response);
-    finalResponse.headers.set("x-cache", "miss");
-    return finalResponse;
+    response.headers.set("x-cache", "miss");
+    return { data };
 }

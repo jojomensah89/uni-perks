@@ -197,20 +197,18 @@ CREATE TABLE `deals` (
 	`discount_value` real,
 	`discount_label` text NOT NULL,
 	`original_price` real,
-	`student_price` real,
 	`currency` text DEFAULT 'USD',
 	`minimum_spend` real,
-	`is_new_customer_only` integer DEFAULT false,
 	`conditions` text,
 	`terms_url` text,
-	`verification_method` text NOT NULL,
-	`eligibility_note` text,
 	`claim_url` text NOT NULL,
-	`affiliate_url` text,
+	`affiliate_link` text,
 	`cover_image_url` text,
 	`is_featured` integer DEFAULT false,
-	`status` text DEFAULT 'draft' NOT NULL,
-	`expiration_date` integer,
+	`status` text DEFAULT 'pending' NOT NULL,
+	`expires_at` integer,
+	`hotness_score` integer DEFAULT 50,
+	`approved_at` integer,
 	`last_verified` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
 	`meta_title` text,
 	`meta_description` text,
@@ -228,6 +226,7 @@ CREATE INDEX `deals_brand_idx` ON `deals` (`brand_id`);--> statement-breakpoint
 CREATE INDEX `deals_category_idx` ON `deals` (`category_id`);--> statement-breakpoint
 CREATE INDEX `deals_featured_idx` ON `deals` (`is_featured`);--> statement-breakpoint
 CREATE INDEX `deals_status_idx` ON `deals` (`status`);--> statement-breakpoint
+CREATE INDEX `deals_hotness_idx` ON `deals` (`hotness_score`);--> statement-breakpoint
 CREATE TABLE `deal_suggestions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`brand_name` text NOT NULL,

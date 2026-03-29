@@ -41,7 +41,7 @@ const TickerBar = () => {
 
     const { data: dealsData } = useQuery({
         queryKey: ["ticker-deals"],
-        queryFn: () => fetchAPI<{ deals: ApiDeal[] }>("/api/deals?limit=12&sort=featured"),
+        queryFn: () => fetchAPI<{ deals: ApiDeal[] }>("/api/deals?featured=true&limit=12&sort=popular"),
         staleTime: 1000 * 60 * 5,
     });
 

@@ -21,9 +21,8 @@ export async function captureEvent(event: string, properties: Record<string, unk
             distinctId: distinctId || (properties.deal_id as string) || "anonymous",
             properties,
         });
-        await client.flushAsync();
+        await client.flush();
     } catch (error) {
-        // Swallow errors to avoid impacting request flow
         console.error("PostHog capture failed", error);
     }
 }

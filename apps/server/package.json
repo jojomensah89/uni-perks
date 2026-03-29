@@ -13,6 +13,7 @@
     "@react-email/render": "^2.0.4",
     "@scalar/hono-api-reference": "^0.9.41",
     "@types/react": "^19.2.14",
+    "@uni-perks/agent": "workspace:*",
     "@uni-perks/auth": "workspace:*",
     "@uni-perks/db": "workspace:*",
     "@uni-perks/env": "workspace:*",

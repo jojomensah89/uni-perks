@@ -1,10 +1,16 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import { db, deals, brands, categories, eq, desc } from "@uni-perks/db";
+import { db, deals, brands, categories, eq, desc, and } from "@uni-perks/db";
 import { BadRequestError } from "../../lib/errors";
-import { CreateDealSchema, UpdateDealSchema } from "../../schemas/admin.schemas";
-import { normalizeConditions, normalizeExpirationDate } from "./shared";
+import { CreateDealSchema, UpdateDealSchema, ApproveDealSchema } from "../../schemas/admin.schemas";
+import { normalizeConditions, normalizeExpiresAt } from "./shared";
+import { invalidateKV } from "../../lib/kv-cache";
+import { logInfo, logError } from "../../lib/logger";
 
 const app = new OpenAPIHono();
+
+type WorkerEnv = {
+    KV?: KVNamespace;
+};
 
 const listDealsRoute = createRoute({
     method: "get",
@@ -16,6 +22,7 @@ const listDealsRoute = createRoute({
         query: z.object({
             page: z.string().regex(/^\d+$/).optional().default("1"),
             limit: z.string().regex(/^\d+$/).refine((val) => parseInt(val) <= 100, "Maximum limit is 100").optional().default("50"),
+            status: z.enum(["pending", "approved", "rejected", "published", "archived"]).optional(),
         }),
     },
     responses: {
@@ -142,21 +149,18 @@ app.openapi(createDealRoute, async (c) => {
         discountLabel: body.discountLabel,
         discountValue: body.discountValue ?? null,
         originalPrice: body.originalPrice ?? null,
-        studentPrice: body.studentPrice ?? null,
         currency: body.currency ?? "USD",
-        verificationMethod: body.verificationMethod,
         claimUrl: body.claimUrl,
-        affiliateUrl: body.affiliateUrl ?? null,
+        affiliateLink: body.affiliateLink ?? null,
         coverImageUrl: body.coverImageUrl ?? null,
         howToRedeem: body.howToRedeem ?? null,
-        eligibilityNote: body.eligibilityNote ?? null,
         termsUrl: body.termsUrl ?? null,
         minimumSpend: body.minimumSpend ?? null,
         isFeatured: body.isFeatured ?? false,
-        isNewCustomerOnly: body.isNewCustomerOnly ?? false,
-        status: body.status ?? "draft",
+        status: body.status ?? "pending",
+        hotnessScore: body.hotnessScore ?? 50,
         conditions: normalizeConditions(body.conditions),
-        expirationDate: normalizeExpirationDate(body.expirationDate),
+        expiresAt: normalizeExpiresAt(body.expiresAt),
         metaTitle: body.metaTitle ?? null,
         metaDescription: body.metaDescription ?? null,
     };
@@ -199,35 +203,33 @@ const updateDealRoute = createRoute({
 app.openapi(updateDealRoute, async (c) => {
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
+    const kv = (c.env as WorkerEnv).KV;
 
-    const payload = {
-        ...(body.title !== undefined ? { title: body.title } : {}),
-        ...(body.shortDescription !== undefined ? { shortDescription: body.shortDescription ?? "" } : {}),
-        ...(body.longDescription !== undefined ? { longDescription: body.longDescription ?? "" } : {}),
-        ...(body.brandId !== undefined ? { brandId: body.brandId } : {}),
-        ...(body.categoryId !== undefined ? { categoryId: body.categoryId } : {}),
-        ...(body.discountType !== undefined ? { discountType: body.discountType } : {}),
-        ...(body.discountLabel !== undefined ? { discountLabel: body.discountLabel } : {}),
-        ...(body.discountValue !== undefined ? { discountValue: body.discountValue ?? null } : {}),
-        ...(body.originalPrice !== undefined ? { originalPrice: body.originalPrice ?? null } : {}),
-        ...(body.studentPrice !== undefined ? { studentPrice: body.studentPrice ?? null } : {}),
-        ...(body.currency !== undefined ? { currency: body.currency } : {}),
-        ...(body.verificationMethod !== undefined ? { verificationMethod: body.verificationMethod } : {}),
-        ...(body.claimUrl !== undefined ? { claimUrl: body.claimUrl } : {}),
-        ...(body.affiliateUrl !== undefined ? { affiliateUrl: body.affiliateUrl ?? null } : {}),
-        ...(body.coverImageUrl !== undefined ? { coverImageUrl: body.coverImageUrl ?? null } : {}),
-        ...(body.howToRedeem !== undefined ? { howToRedeem: body.howToRedeem ?? null } : {}),
-        ...(body.eligibilityNote !== undefined ? { eligibilityNote: body.eligibilityNote ?? null } : {}),
-        ...(body.termsUrl !== undefined ? { termsUrl: body.termsUrl ?? null } : {}),
-        ...(body.minimumSpend !== undefined ? { minimumSpend: body.minimumSpend ?? null } : {}),
-        ...(body.isFeatured !== undefined ? { isFeatured: body.isFeatured } : {}),
-        ...(body.isNewCustomerOnly !== undefined ? { isNewCustomerOnly: body.isNewCustomerOnly } : {}),
-        ...(body.status !== undefined ? { status: body.status } : {}),
-        ...(body.conditions !== undefined ? { conditions: normalizeConditions(body.conditions ?? null) } : {}),
-        ...(body.expirationDate !== undefined ? { expirationDate: normalizeExpirationDate(body.expirationDate) } : {}),
-        ...(body.metaTitle !== undefined ? { metaTitle: body.metaTitle ?? null } : {}),
-        ...(body.metaDescription !== undefined ? { metaDescription: body.metaDescription ?? null } : {}),
-    };
+    const payload: Record<string, unknown> = {};
+
+    if (body.title !== undefined) payload.title = body.title;
+    if (body.shortDescription !== undefined) payload.shortDescription = body.shortDescription ?? "";
+    if (body.longDescription !== undefined) payload.longDescription = body.longDescription ?? "";
+    if (body.brandId !== undefined) payload.brandId = body.brandId;
+    if (body.categoryId !== undefined) payload.categoryId = body.categoryId;
+    if (body.discountType !== undefined) payload.discountType = body.discountType;
+    if (body.discountLabel !== undefined) payload.discountLabel = body.discountLabel;
+    if (body.discountValue !== undefined) payload.discountValue = body.discountValue ?? null;
+    if (body.originalPrice !== undefined) payload.originalPrice = body.originalPrice ?? null;
+    if (body.currency !== undefined) payload.currency = body.currency;
+    if (body.claimUrl !== undefined) payload.claimUrl = body.claimUrl;
+    if (body.affiliateLink !== undefined) payload.affiliateLink = body.affiliateLink ?? null;
+    if (body.coverImageUrl !== undefined) payload.coverImageUrl = body.coverImageUrl ?? null;
+    if (body.howToRedeem !== undefined) payload.howToRedeem = body.howToRedeem ?? null;
+    if (body.termsUrl !== undefined) payload.termsUrl = body.termsUrl ?? null;
+    if (body.minimumSpend !== undefined) payload.minimumSpend = body.minimumSpend ?? null;
+    if (body.isFeatured !== undefined) payload.isFeatured = body.isFeatured;
+    if (body.status !== undefined) payload.status = body.status;
+    if (body.hotnessScore !== undefined) payload.hotnessScore = body.hotnessScore;
+    if (body.conditions !== undefined) payload.conditions = normalizeConditions(body.conditions ?? null);
+    if (body.expiresAt !== undefined) payload.expiresAt = normalizeExpiresAt(body.expiresAt);
+    if (body.metaTitle !== undefined) payload.metaTitle = body.metaTitle ?? null;
+    if (body.metaDescription !== undefined) payload.metaDescription = body.metaDescription ?? null;
 
     const [updated] = await db
         .update(deals)
@@ -239,6 +241,164 @@ app.openapi(updateDealRoute, async (c) => {
         throw new BadRequestError("Deal not found");
     }
 
+    if (body.status || body.isFeatured) {
+        await invalidateKV(kv, "deals:featured").catch((err) => {
+            logError("deals-route", "failed to invalidate cache", { message: String(err) });
+        });
+    }
+
+    return c.json(updated, 200);
+});
+
+const approveDealRoute = createRoute({
+    method: "post",
+    path: "/deals/{id}/approve",
+    tags: ["Admin"],
+    summary: "Approve Deal (Admin)",
+    description: "Approve a pending deal (Admin only).",
+    request: {
+        params: z.object({
+            id: z.string(),
+        }),
+        body: {
+            content: {
+                "application/json": {
+                    schema: ApproveDealSchema,
+                },
+            },
+        },
+    },
+    responses: {
+        200: {
+            description: "Deal approved",
+            content: { "application/json": { schema: z.any() } }
+        },
+        400: {
+            description: "Not found or already approved",
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
+        }
+    },
+});
+
+app.openapi(approveDealRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const kv = (c.env as WorkerEnv).KV;
+
+    const [updated] = await db
+        .update(deals)
+        .set({ 
+            status: "approved",
+            approvedAt: new Date(),
+        })
+        .where(and(
+            eq(deals.id, id),
+            eq(deals.status, "pending")
+        ))
+        .returning();
+
+    if (!updated) {
+        throw new BadRequestError("Deal not found or not pending");
+    }
+
+    await invalidateKV(kv, "deals:featured").catch((err) => {
+        logError("deals-route", "failed to invalidate cache after approval", { message: String(err) });
+    });
+
+    logInfo("deals-route", "deal approved", { dealId: id });
+
+    return c.json(updated, 200);
+});
+
+const rejectDealRoute = createRoute({
+    method: "post",
+    path: "/deals/{id}/reject",
+    tags: ["Admin"],
+    summary: "Reject Deal (Admin)",
+    description: "Reject a pending deal (Admin only).",
+    request: {
+        params: z.object({
+            id: z.string(),
+        }),
+    },
+    responses: {
+        200: {
+            description: "Deal rejected",
+            content: { "application/json": { schema: z.any() } }
+        },
+        400: {
+            description: "Not found or not pending",
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
+        }
+    },
+});
+
+app.openapi(rejectDealRoute, async (c) => {
+    const { id } = c.req.valid("param");
+
+    const [updated] = await db
+        .update(deals)
+        .set({ status: "rejected" })
+        .where(and(
+            eq(deals.id, id),
+            eq(deals.status, "pending")
+        ))
+        .returning();
+
+    if (!updated) {
+        throw new BadRequestError("Deal not found or not pending");
+    }
+
+    logInfo("deals-route", "deal rejected", { dealId: id });
+
+    return c.json(updated, 200);
+});
+
+const publishDealRoute = createRoute({
+    method: "post",
+    path: "/deals/{id}/publish",
+    tags: ["Admin"],
+    summary: "Publish Deal (Admin)",
+    description: "Publish an approved deal (Admin only).",
+    request: {
+        params: z.object({
+            id: z.string(),
+        }),
+    },
+    responses: {
+        200: {
+            description: "Deal published",
+            content: { "application/json": { schema: z.any() } }
+        },
+        400: {
+            description: "Not found or not approved",
+            content: { "application/json": { schema: z.object({ error: z.string() }) } }
+        }
+    },
+});
+
+app.openapi(publishDealRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const kv = (c.env as WorkerEnv).KV;
+
+    const [updated] = await db
+        .update(deals)
+        .set({ status: "published" })
+        .where(and(
+            eq(deals.id, id),
+            eq(deals.status, "approved")
+        ))
+        .returning();
+
+    if (!updated) {
+        throw new BadRequestError("Deal not found or not approved");
+    }
+
+    await invalidateKV(kv, "deals:featured").catch((err) => {
+        logError("deals-route", "failed to invalidate cache after publish", { message: String(err) });
+    });
+
+    logInfo("deals-route", "deal published", { dealId: id });
+
     return c.json(updated, 200);
 });
 
@@ -247,7 +407,7 @@ const deleteDealRoute = createRoute({
     path: "/deals/{id}",
     tags: ["Admin"],
     summary: "Delete Deal (Admin)",
-    description: "Soft delete a deal (Admin only).",
+    description: "Archive a deal (Admin only).",
     request: {
         params: z.object({
             id: z.string(),
@@ -255,7 +415,7 @@ const deleteDealRoute = createRoute({
     },
     responses: {
         200: {
-            description: "Deal deleted",
+            description: "Deal archived",
             content: { "application/json": { schema: z.any() } }
         },
         400: {
@@ -267,6 +427,7 @@ const deleteDealRoute = createRoute({
 
 app.openapi(deleteDealRoute, async (c) => {
     const { id } = c.req.valid("param");
+    const kv = (c.env as WorkerEnv).KV;
 
     const [deleted] = await db
         .update(deals)
@@ -277,6 +438,10 @@ app.openapi(deleteDealRoute, async (c) => {
     if (!deleted) {
         throw new BadRequestError("Deal not found");
     }
+
+    await invalidateKV(kv, "deals:featured").catch((err) => {
+        logError("deals-route", "failed to invalidate cache after archive", { message: String(err) });
+    });
 
     return c.json(deleted, 200);
 });

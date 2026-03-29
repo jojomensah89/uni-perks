@@ -23,6 +23,7 @@ export type ApiCollectionResponse = {
     audience: string | null;
     coverImageUrl?: string | null;
     isFeatured: boolean;
+    displayOrder?: number | null;
     _count?: {
         deals: number;
     };
