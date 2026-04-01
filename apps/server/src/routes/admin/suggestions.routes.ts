@@ -1,5 +1,5 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import { db, dealSuggestions, deals, and, eq, desc, sql } from "@uni-perks/db";
+import { db, dealSuggestions, deals, and, eq, desc } from "@uni-perks/db";
 import { BadRequestError } from "../../lib/errors";
 import { UpdateSuggestionSchema, ApproveSuggestionSchema } from "../../schemas/admin.schemas";
 import { logInfo } from "../../lib/logger";

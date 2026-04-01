@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 // Schema definition for deals
-import { sqliteTable, text, integer, real, index, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, index } from "drizzle-orm/sqlite-core";
 import { brands } from "./brands";
 import { categories } from "./brands";
 

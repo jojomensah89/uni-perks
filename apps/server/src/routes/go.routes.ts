@@ -4,6 +4,7 @@ import {
   trackDealClick,
   trackDealClickEvent,
 } from "../services/deal.service";
+import { captureEvent } from "../lib/posthog";
 import { checkRateLimit, getClientIp } from "../lib/rate-limit";
 import { logError } from "../lib/logger";
 import { RATE_LIMITS } from "../lib/constants";
@@ -13,26 +14,24 @@ const BLOCKED_DOMAINS = [
   "0.0.0.0",
   "[::1]",
 ];
-  "127.0.0.1",
-  "0.0.0.0",
-  "file:",
-];
+
+const ALLOWED_REDIRECT_PROTOCOLS = ["https:", "tel:", "mailto:"];
 
 function validateAffiliateUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    
+
     if (!ALLOWED_REDIRECT_PROTOCOLS.includes(parsed.protocol)) {
       return false;
     }
-    
+
     const hostname = parsed.hostname.toLowerCase();
     for (const blocked of BLOCKED_DOMAINS) {
       if (hostname === blocked || hostname.endsWith(`.${blocked}`)) {
         return false;
       }
     }
-    
+
     return true;
   } catch {
     return false;

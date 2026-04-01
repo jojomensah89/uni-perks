@@ -55,7 +55,6 @@ app.use(
   }),
 );
 
-const isDevelopment = process.env.NODE_ENV === "development";
 // API Reference UI
 // OpenAPI Spec
 // if (isDevelopment) {
