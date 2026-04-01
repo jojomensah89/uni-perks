@@ -20,7 +20,6 @@ export interface NewsletterDeal {
 
 export interface SubscriberEmail {
     email: string;
-    unsubscribeToken: string;
 }
 
 export interface NewsletterConfig {
@@ -118,7 +117,6 @@ export async function getVerifiedSubscribers(): Promise<SubscriberEmail[]> {
 
     return rows.map(row => ({
         email: row.email,
-        unsubscribeToken: "",
     }));
 }
 
