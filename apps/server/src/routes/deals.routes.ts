@@ -63,7 +63,7 @@ app.openapi(listDealsRoute, async (c) => {
   const searchQuery = query.q ? sanitizeSearchQuery(query.q) : undefined;
   const brandId = query.brandId;
   const excludeDealId = query.excludeDealId;
-  const sortBy = query.sort as "popular" | "new" | "expiring" | "hotness";
+  const sortBy = query.sort satisfies "popular" | "new" | "expiring";
   const limit = Math.min(100, Math.max(1, parseInt(query.limit || "50")));
   const offset = Math.max(0, parseInt(query.offset || "0"));
 
