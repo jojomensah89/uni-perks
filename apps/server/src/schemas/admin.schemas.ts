@@ -6,63 +6,59 @@ const SlugSchema = z
     .max(200)
     .regex(/^[a-z0-9-]+$/);
 
-const DiscountTypeSchema = z.enum(["percentage", "fixed", "free", "trial", "bogo", "other"]);
-const VerificationMethodSchema = z.enum([
-    "edu_email",
-    "sheerid",
-    "unidays",
-    "student_beans",
-    "student_id",
-    "github_student",
-    "isic",
-    "none",
-]);
+const DiscountTypeSchema = z.enum(["percent", "fixed", "other"]);
 
 const ConditionsSchema = z
     .union([z.array(z.string().max(500)).max(20), z.string().max(5000)])
     .optional()
     .nullable();
 
-const ExpirationDateSchema = z
+const ExpiresAtSchema = z
     .union([z.string().datetime(), z.number().int(), z.null()])
     .optional();
+
+const AffiliateLinkSchema = z
+    .string()
+    .url()
+    .max(2000)
+    .optional()
+    .nullable()
+    .or(z.literal("").transform(() => null));
 
 export const CreateDealSchema = z.object({
     slug: SlugSchema,
     title: z.string().min(2).max(500),
     shortDescription: z.string().max(500),
-    longDescription: z.string().max(5000),
+    longDescription: z.string().max(5000).optional().nullable(),
     brandId: z.string().uuid(),
     categoryId: z.string().uuid(),
     discountType: DiscountTypeSchema,
     discountLabel: z.string().max(100),
     discountValue: z.number().min(0).max(100).optional().nullable(),
     originalPrice: z.number().min(0).optional().nullable(),
-    studentPrice: z.number().min(0).optional().nullable(),
     currency: z.string().length(3).default("USD"),
-    verificationMethod: VerificationMethodSchema,
     claimUrl: z.string().url().max(2000),
-    affiliateUrl: z.string().url().max(2000).optional().nullable().or(z.literal("").transform(() => null)),
+    affiliateLink: AffiliateLinkSchema,
     coverImageUrl: z.string().max(500).optional().nullable(),
     howToRedeem: z.string().max(5000).optional().nullable(),
-    eligibilityNote: z.string().max(1000).optional().nullable(),
     termsUrl: z.string().url().max(2000).optional().nullable().or(z.literal("").transform(() => null)),
     minimumSpend: z.number().min(0).optional().nullable(),
     isFeatured: z.boolean().default(false),
-    isActive: z.boolean().default(true),
-    isExclusive: z.boolean().default(false),
-    isNewCustomerOnly: z.boolean().default(false),
+    status: z.enum(["pending", "approved", "rejected", "published", "archived"]).default("pending"),
+    hotnessScore: z.number().int().min(1).max(100).optional().default(50),
     conditions: ConditionsSchema,
-    expirationDate: ExpirationDateSchema,
+    expiresAt: ExpiresAtSchema,
     metaTitle: z.string().max(70).optional().nullable(),
     metaDescription: z.string().max(160).optional().nullable(),
 });
 
-// For updates, optional text/URL fields must accept empty strings (transformed to null)
-// so that a PATCH with only isFeatured doesn't fail when shortDescription/affiliateUrl etc are empty.
 export const UpdateDealSchema = CreateDealSchema
     .partial()
     .omit({ slug: true });
+
+export const ApproveDealSchema = z.object({
+    approvedAt: z.number().int().optional(),
+});
 
 export const CreateBrandSchema = z.object({
     name: z.string().min(1).max(200),
@@ -110,4 +106,26 @@ export const CreateCollectionSchema = z.object({
 
 export const UpdateCollectionSchema = CreateCollectionSchema.partial().omit({
     slug: true,
+});
+
+export const UpdateSuggestionSchema = z.object({
+    brandName: z.string().min(1).max(100).optional(),
+    dealTitle: z.string().min(1).max(200).optional(),
+    description: z.string().min(1).max(2000).optional(),
+    discountLabel: z.string().min(1).max(100).optional(),
+    claimUrl: z.string().url().max(500).optional(),
+    category: z.string().min(1).max(50).optional().nullable(),
+    resolvedBrandId: z.string().uuid().optional().nullable(),
+    resolvedCategoryId: z.string().uuid().optional().nullable(),
+    status: z.enum(["pending", "approved", "rejected"]).optional(),
+    rejectionReason: z.string().max(500).optional().nullable(),
+});
+
+export const ApproveSuggestionSchema = z.object({
+    slug: SlugSchema,
+    brandId: z.string().uuid(),
+    categoryId: z.string().uuid(),
+    discountType: DiscountTypeSchema.default("other"),
+    discountValue: z.number().min(0).max(100).optional().nullable(),
+    isFeatured: z.boolean().default(false),
 });

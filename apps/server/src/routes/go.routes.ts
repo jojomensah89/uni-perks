@@ -1,13 +1,42 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import { getGeoData } from "../services/geo.service";
 import {
   resolveDealRedirect,
   trackDealClick,
   trackDealClickEvent,
 } from "../services/deal.service";
+import { captureEvent } from "../lib/posthog";
 import { checkRateLimit, getClientIp } from "../lib/rate-limit";
 import { logError } from "../lib/logger";
 import { RATE_LIMITS } from "../lib/constants";
+const BLOCKED_DOMAINS = [
+  "localhost",
+  "127.0.0.1",
+  "0.0.0.0",
+  "[::1]",
+];
+
+const ALLOWED_REDIRECT_PROTOCOLS = ["https:", "tel:", "mailto:"];
+
+function validateAffiliateUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+
+    if (!ALLOWED_REDIRECT_PROTOCOLS.includes(parsed.protocol)) {
+      return false;
+    }
+
+    const hostname = parsed.hostname.toLowerCase();
+    for (const blocked of BLOCKED_DOMAINS) {
+      if (hostname === blocked || hostname.endsWith(`.${blocked}`)) {
+        return false;
+      }
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const app = new OpenAPIHono();
 
@@ -84,11 +113,10 @@ app.openapi(goRoute, async (c) => {
   }
   const { slug } = c.req.valid("param");
   const query = c.req.valid("query");
-  const geoData = getGeoData(c.req.raw);
-  const country = (query.country || geoData.country || "US").toUpperCase();
+  const country = (query.country || c.req.header("cf-ipcountry") || "US").toUpperCase();
   const source = query.src || "detail";
 
-  const { deal, destinationUrl, isAvailable } = await resolveDealRedirect(
+  const { deal, destinationUrl } = await resolveDealRedirect(
     slug,
     country,
   );
@@ -99,7 +127,15 @@ app.openapi(goRoute, async (c) => {
     ? new URL(unavailablePath, appOrigin).toString()
     : unavailablePath;
 
-  if (!isAvailable || !destinationUrl) {
+  if (!destinationUrl) {
+    return c.redirect(unavailableUrl, 302);
+  }
+
+  if (!validateAffiliateUrl(destinationUrl)) {
+    logError("go-route", "blocked invalid affiliate URL", {
+      slug,
+      url: destinationUrl,
+    });
     return c.redirect(unavailableUrl, 302);
   }
 
@@ -113,9 +149,16 @@ app.openapi(goRoute, async (c) => {
       userAgent: c.req.header("user-agent") ?? null,
       device: inferDevice(c.req.header("user-agent") ?? null),
       country,
-      regionCode: geoData.region || null,
-      city: geoData.city || null,
     }),
+    captureEvent("deal_clicked", {
+      deal_id: deal.id,
+      deal_slug: deal.slug,
+      brand_id: deal.brandId,
+      source,
+      country,
+      referrer: c.req.header("referer") ?? null,
+      device: inferDevice(c.req.header("user-agent") ?? null),
+    }, (c.env as { POSTHOG_API_KEY?: string }).POSTHOG_API_KEY),
   ]).catch((error) => {
     logError("go-route", "failed to persist click analytics", {
       message: error instanceof Error ? error.message : String(error),

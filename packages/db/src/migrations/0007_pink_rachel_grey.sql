@@ -1,1 +1,0 @@
-ALTER TABLE `deals` ADD `cover_image_url` text;

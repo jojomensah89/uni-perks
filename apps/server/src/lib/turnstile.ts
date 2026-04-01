@@ -6,11 +6,12 @@ interface TurnstileVerificationResponse {
 }
 
 export async function verifyTurnstile(c: Context, token: string | null | undefined): Promise<boolean> {
-    const secret = (c.env as { TURNSTILE_SECRET?: string; TURNSTILE_SECRET_KEY?: string }).TURNSTILE_SECRET
-        ?? (c.env as { TURNSTILE_SECRET?: string; TURNSTILE_SECRET_KEY?: string }).TURNSTILE_SECRET_KEY;
+    const env = c.env as { TURNSTILE_SECRET?: string; TURNSTILE_SECRET_KEY?: string; TURNSTILE_ENABLED?: string };
+    const secret = env.TURNSTILE_SECRET ?? env.TURNSTILE_SECRET_KEY;
+    const enabled = env.TURNSTILE_ENABLED;
 
-    // Allow local/dev environments to run without Turnstile configured.
-    if (!secret) return true;
+    // Skip verification if disabled via env var or no secret configured
+    if (enabled === "false" || !secret) return true;
     if (!token) return false;
 
     const ip = c.req.header("cf-connecting-ip") ?? "";

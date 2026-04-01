@@ -4,47 +4,12 @@ import {
   getDealDetail,
   trackDealView,
 } from "../services/deal.service";
-import { getGeoData } from "../services/geo.service";
 import { BadRequestError } from "../lib/errors";
 import { withEdgeCache } from "../lib/edge-cache";
 import { sanitizeSearchQuery } from "../lib/sanitize";
+import { captureEvent } from "../lib/posthog";
 
 const app = new OpenAPIHono();
-
-// Reusable Schemas
-const DealSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  slug: z.string(),
-  shortDescription: z.string(),
-  longDescription: z.string(),
-  discountType: z.string(),
-  discountValue: z.number().nullable().optional(),
-  discountLabel: z.string(),
-  originalPrice: z.number().nullable().optional(),
-  studentPrice: z.number().nullable().optional(),
-  currency: z.string().nullable().optional(),
-  verificationMethod: z.string(),
-  claimUrl: z.string(),
-  affiliateUrl: z.string().nullable().optional(),
-  isAvailable: z.boolean().optional(),
-  resolvedCountry: z.string().optional(),
-  isFeatured: z.boolean().nullable().optional(),
-  isActive: z.boolean().nullable().optional(),
-  brandId: z.string(),
-  categoryId: z.string(),
-  // Add other fields as needed
-});
-
-const DealsListResponseSchema = z.object({
-  deals: z.array(z.unknown()),
-  meta: z.object({
-    total: z.number(),
-    country: z.string(),
-    limit: z.number(),
-    offset: z.number(),
-  }),
-});
 
 // Routes
 const listDealsRoute = createRoute({
@@ -56,14 +21,13 @@ const listDealsRoute = createRoute({
     "Get a paginated list of deals, optionally filtered by category, featured status, collection, or search query.",
   request: {
     query: z.object({
-      country: z.string().optional(),
       category: z.string().optional(),
       collectionId: z.string().optional(),
       featured: z.string().optional().openapi({ example: "true" }),
-      region: z.string().optional(),
       q: z.string().max(200).optional(),
       brandId: z.string().optional(),
       excludeDealId: z.string().optional(),
+      sort: z.enum(["popular", "new", "expiring"]).optional().default("popular"),
       limit: z
         .string()
         .regex(/^\d+$/)
@@ -78,7 +42,7 @@ const listDealsRoute = createRoute({
       description: "Successful response",
       content: {
         "application/json": {
-          schema: DealsListResponseSchema,
+          schema: z.any(),
         },
       },
     },
@@ -86,10 +50,8 @@ const listDealsRoute = createRoute({
 });
 
 app.openapi(listDealsRoute, async (c) => {
-  const geoData = getGeoData(c.req.raw);
   const query = c.req.valid("query");
 
-  const requestedCountry = query.country || geoData.country;
   const categorySlug = query.category;
   const collectionId = query.collectionId;
   const featured =
@@ -98,39 +60,34 @@ app.openapi(listDealsRoute, async (c) => {
       : query.featured === "false"
         ? false
         : undefined;
-  const regionCode = query.region;
   const searchQuery = query.q ? sanitizeSearchQuery(query.q) : undefined;
   const brandId = query.brandId;
   const excludeDealId = query.excludeDealId;
+  const sortBy = query.sort satisfies "popular" | "new" | "expiring";
   const limit = Math.min(100, Math.max(1, parseInt(query.limit || "50")));
   const offset = Math.max(0, parseInt(query.offset || "0"));
 
-  const buildResponse = async () => {
+  const fetchDeals = async () => {
     const results = await getDeals({
-      country: requestedCountry,
       categorySlug,
       collectionId,
       featured,
-      regionCode,
       searchQuery,
       brandId,
       excludeDealId,
+      sortBy,
       limit,
       offset,
     });
 
-    return c.json(
-      {
-        deals: results,
-        meta: {
-          total: results.length,
-          country: requestedCountry,
-          limit,
-          offset,
-        },
+    return {
+      deals: results,
+      meta: {
+        total: results.length,
+        limit,
+        offset,
       },
-      200,
-    );
+    };
   };
 
   const shouldCache =
@@ -141,10 +98,12 @@ app.openapi(listDealsRoute, async (c) => {
 
   if (shouldCache) {
     const ttl = featured ? 600 : 300;
-    return withEdgeCache(c, ttl, buildResponse);
+    const { data } = await withEdgeCache(c, ttl, fetchDeals);
+    return c.json(data);
   }
 
-  return buildResponse();
+  const result = await fetchDeals();
+  return c.json(result, 200);
 });
 
 const getDealRoute = createRoute({
@@ -166,17 +125,8 @@ const getDealRoute = createRoute({
       description: "Deal details",
       content: {
         "application/json": {
-          schema: z.object({
-            deal: DealSchema,
-            related: z.array(DealSchema).optional(),
-          }),
+          schema: z.any(),
         },
-      },
-    },
-    400: {
-      description: "Bad Request",
-      content: {
-        "application/json": { schema: z.object({ error: z.string() }) },
       },
     },
   },
@@ -190,27 +140,46 @@ app.openapi(getDealRoute, async (c) => {
     throw new BadRequestError("Deal slug is required");
   }
 
-  const geoData = getGeoData(c.req.raw);
-  const country = query.country || geoData.country;
-  const cacheKey = new Request(`${c.req.url}?_country=${country}`);
+  const country = query.country;
+  const referrer = c.req.header("referer") ?? null;
+  const path = c.req.path;
+  const executionCtx = c.executionCtx;
+  const cacheKey = new Request(`${c.req.url}`);
 
-  return withEdgeCache(
-    c,
-    300,
-    async () => {
-      const result = await getDealDetail({ slug, country });
+  const fetchDeal = async () => {
+    const result = await getDealDetail({ slug });
 
-      // Track view asynchronously (fire and forget)
-      if (c.executionCtx) {
-        c.executionCtx.waitUntil(trackDealView(result.deal.id));
-      } else {
-        void trackDealView(result.deal.id);
-      }
+    if (executionCtx) {
+      executionCtx.waitUntil(trackDealView(result.deal.id));
+      executionCtx.waitUntil(
+        captureEvent("deal_viewed", {
+          deal_id: result.deal.id,
+          deal_slug: result.deal.slug,
+          brand_id: result.brand.id,
+          category_id: result.category.id,
+          country,
+          referrer,
+          path,
+        }, (c.env as { POSTHOG_API_KEY?: string }).POSTHOG_API_KEY),
+      );
+    } else {
+      void trackDealView(result.deal.id);
+      void captureEvent("deal_viewed", {
+        deal_id: result.deal.id,
+        deal_slug: result.deal.slug,
+        brand_id: result.brand.id,
+        category_id: result.category.id,
+        country,
+        referrer,
+        path,
+      }, (c.env as { POSTHOG_API_KEY?: string }).POSTHOG_API_KEY);
+    }
 
-      return c.json(result, 200);
-    },
-    cacheKey,
-  );
+    return result;
+  };
+
+  const { data } = await withEdgeCache(c, 300, fetchDeal, cacheKey);
+  return c.json(data);
 });
 
 export default app;

@@ -3,6 +3,13 @@ import { toast } from 'sonner';
 export const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000';
 
 /**
+ * Result type for safe API calls
+ */
+export type ApiResult<T> =
+    | { success: true; data: T }
+    | { success: false; error: string };
+
+/**
  * Fetch wrapper for API calls.
  * @param path - API path (e.g. '/api/deals')
  * @param options - Standard fetch options
@@ -21,9 +28,7 @@ export async function fetchAPI<T>(
             'Content-Type': 'application/json',
             ...options?.headers,
         },
-        // Include cookies for authentication
         credentials: 'include',
-        // Ensure we don't cache aggressively during dev, or use 'force-cache' for static
         cache: options?.cache || 'no-store',
     });
 
@@ -40,4 +45,21 @@ export async function fetchAPI<T>(
     }
 
     return res.json();
+}
+
+/**
+ * Safe API wrapper that doesn't throw - returns result object instead.
+ * Use this for Server Components where throwing would crash the page.
+ */
+export async function fetchAPISafe<T>(
+    path: string,
+    options?: RequestInit,
+): Promise<ApiResult<T>> {
+    try {
+        const data = await fetchAPI<T>(path, options, true);
+        return { success: true, data };
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return { success: false, error: message };
+    }
 }

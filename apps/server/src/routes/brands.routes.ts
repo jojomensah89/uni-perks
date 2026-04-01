@@ -41,10 +41,11 @@ const listBrandsRoute = createRoute({
 });
 
 app.openapi(listBrandsRoute, async (c) => {
-    return withEdgeCache(c, 3600, async () => {
+    const { data } = await withEdgeCache(c, 3600, async () => {
         const brands = await getAllBrands();
-        return c.json({ brands }, 200);
+        return { brands };
     });
+    return c.json(data);
 });
 
 const getBrandRoute = createRoute({

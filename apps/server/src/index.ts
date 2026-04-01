@@ -8,7 +8,6 @@ import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
 
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
-import geoRouter from "./routes/geo.routes";
 import dealsRouter from "./routes/deals.routes";
 import brandsRouter from "./routes/brands.routes";
 import collectionsRouter from "./routes/collections.routes";
@@ -19,9 +18,9 @@ import adminRouter from "./routes/admin.main.routes";
 import uploadRouter from "./routes/upload.routes";
 import imagesRouter from "./routes/images.routes";
 import settingsRouter from "./routes/settings.routes";
-import tagsRouter from "./routes/tags.routes";
 import goRouter from "./routes/go.routes";
 import newsletterRouter from "./routes/newsletter.routes";
+import newsletterSendRouter from "./routes/newsletter/send.routes";
 import { checkRateLimit, getClientIp, setRateLimitHeaders } from "./lib/rate-limit";
 import { verifyTurnstile } from "./lib/turnstile";
 import { logError, logInfo } from "./lib/logger";
@@ -32,6 +31,7 @@ type WorkerEnv = {
   CORS_ORIGIN?: string;
   BETTER_AUTH_SECRET?: string;
   BETTER_AUTH_URL?: string;
+  POSTHOG_API_KEY?: string;
 };
 
 const app = new OpenAPIHono();
@@ -56,7 +56,6 @@ app.use(
   }),
 );
 
-const isDevelopment = process.env.NODE_ENV === "development";
 // API Reference UI
 // OpenAPI Spec
 // if (isDevelopment) {
@@ -87,8 +86,6 @@ app.use(
     credentials: true,
   }),
 );
-
-
 
 // Auth routes
 app.on(["POST", "GET"], "/api/auth/*", async (c) => {
@@ -196,8 +193,6 @@ app.on(["POST", "GET"], "/api/auth/*", async (c) => {
 });
 
 // API routes
-// All routes are now OpenAPIHono instances and will appear in the auto-generated spec
-app.route("/api/geo", geoRouter);
 app.route("/api/deals", dealsRouter);
 app.route("/api/brands", brandsRouter);
 app.route("/api/collections", collectionsRouter);
@@ -208,8 +203,8 @@ app.route("/api/admin", adminRouter);
 app.route("/api/upload", uploadRouter);
 app.route("/api/images", imagesRouter);
 app.route("/api/settings", settingsRouter);
-app.route("/api/tags", tagsRouter);
 app.route("/api/newsletter", newsletterRouter);
+app.route("/api/newsletter/send", newsletterSendRouter);
 app.route("/go", goRouter);
 
 // Health check
@@ -232,11 +227,11 @@ export default {
 
     const expired = await db
       .update(deals)
-      .set({ isActive: false })
+      .set({ status: "archived" })
       .where(
-        sql`${deals.expirationDate} IS NOT NULL
-          AND ${deals.expirationDate} < ${now}
-          AND ${deals.isActive} = 1`,
+        sql`${deals.expiresAt} IS NOT NULL
+          AND ${deals.expiresAt} < ${now}
+          AND ${deals.status} = 'published'`,
       )
       .returning({ id: deals.id });
 
@@ -245,7 +240,6 @@ export default {
       executedAt: new Date(now).toISOString(),
     });
 
-    // Invalidate KV cache for featured deals if any expired
     if (expired.length > 0) {
       const kv = (env as WorkerEnv).KV;
       if (kv) {

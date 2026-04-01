@@ -1,9 +1,9 @@
 "use client";
 
 import { useForm, useStore } from "@tanstack/react-form";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Eye } from "lucide-react";
 
@@ -39,21 +39,9 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUpload } from "./ImageUpload";
 import { fetchAPI } from "@/lib/api";
-import { parseGeoOverridesFromText, serializeGeoOverrides, type DealGeoOverrideInput } from "@/lib/deal-geo-config";
 import type { ApiDealResponse } from "@/types/api";
 import type { ApiBrandResponse } from "@/types/api";
 import type { ApiCategoryResponse } from "@/types/api";
-
-const VERIFICATION_METHODS = [
-    { value: "edu_email", label: ".edu Email" },
-    { value: "sheerid", label: "SheerID" },
-    { value: "unidays", label: "UNiDAYS" },
-    { value: "student_beans", label: "Student Beans" },
-    { value: "student_id", label: "Student ID Upload" },
-    { value: "github_student", label: "GitHub Student Pack" },
-    { value: "isic", label: "ISIC Card" },
-    { value: "none", label: "No Verification" },
-];
 
 const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
 
@@ -63,11 +51,6 @@ interface DealEditDialogProps {
     onOpenChange: (open: boolean) => void;
     brands?: ApiBrandResponse[];
     categories?: ApiCategoryResponse[];
-}
-
-interface DealGeoConfigResponse extends DealGeoOverrideInput {
-    id: string;
-    dealId: string;
 }
 
 const EMPTY_BRANDS: ApiBrandResponse[] = [];
@@ -88,34 +71,28 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
             longDescription: (d as any).longDescription || "",
             brandId: deal.brand?.id || "",
             categoryId: deal.category?.id || "",
-            discountType: (d as any).discountType || "percentage",
+            discountType: (d as any).discountType || "percent",
             discountLabel: d.discountLabel || "",
             discountValue: d.discountValue != null ? String(d.discountValue) : "",
             originalPrice: d.originalPrice != null ? String(d.originalPrice) : "",
-            studentPrice: d.studentPrice != null ? String(d.studentPrice) : "",
             currency: (d as any).currency || "USD",
             claimUrl: (d as any).claimUrl || "",
-            affiliateUrl: (d as any).affiliateUrl || "",
+            affiliateLink: (d as any).affiliateLink || "",
             coverImageUrl: d.coverImageUrl || "",
-            verificationMethod: d.verificationMethod || "edu_email",
-            eligibilityNote: (d as any).eligibilityNote || "",
             howToRedeem: d.howToRedeem || "",
             conditions: d.conditions || "",
             termsUrl: (d as any).termsUrl || "",
             minimumSpend: (d as any).minimumSpend != null ? String((d as any).minimumSpend) : "",
-            isNewCustomerOnly: (d as any).isNewCustomerOnly || false,
             isFeatured: d.isFeatured || false,
-            isExclusive: (d as any).isExclusive || false,
-            isActive: d.isActive !== false,
+            status: (d as any).status || "pending",
             metaTitle: (d as any).metaTitle || "",
             metaDescription: (d as any).metaDescription || "",
-            geoOverridesJson: "[]",
+            expiresAt: (d as any).expiresAt || "",
+            hotnessScore: (d as any).hotnessScore != null ? String((d as any).hotnessScore) : "",
         },
         onSubmit: async ({ value }) => {
             try {
-                const geoOverrides = parseGeoOverridesFromText(value.geoOverridesJson);
-                const existingGeoOverrides = geoConfigQuery.data?.geoConfig || [];
-                const { geoOverridesJson, ...rawValues } = value;
+                const { status, ...rawValues } = value;
                 let coverImageUrl = value.coverImageUrl;
 
                 if (pendingFile) {
@@ -134,11 +111,13 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
 
                 const submitData = {
                     ...rawValues,
+                    status: status || "pending",
                     coverImageUrl,
                     discountValue: value.discountValue ? parseFloat(value.discountValue) : null,
                     originalPrice: value.originalPrice ? parseFloat(value.originalPrice) : null,
-                    studentPrice: value.studentPrice ? parseFloat(value.studentPrice) : null,
                     minimumSpend: value.minimumSpend ? parseFloat(value.minimumSpend) : null,
+                    hotnessScore: value.hotnessScore ? parseFloat(value.hotnessScore) : null,
+                    expiresAt: value.expiresAt || null,
                 };
 
                 await fetchAPI(`/api/admin/deals/${d.id}`, {
@@ -146,28 +125,7 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                     body: JSON.stringify(submitData),
                 });
 
-                if (geoOverrides.length > 0) {
-                    await Promise.all(
-                        geoOverrides.map((geoOverride) =>
-                            fetchAPI(`/api/admin/deals/${d.id}/geo-config/${geoOverride.countryCode}`, {
-                                method: "PUT",
-                                body: JSON.stringify(geoOverride),
-                            })
-                        )
-                    );
-                }
-
-                const nextCodes = new Set(geoOverrides.map((row) => row.countryCode));
-                const staleOverrides = existingGeoOverrides.filter((row) => !nextCodes.has(row.countryCode));
-                if (staleOverrides.length > 0) {
-                    await Promise.all(
-                        staleOverrides.map((staleRow) =>
-                            fetchAPI(`/api/admin/deals/${d.id}/geo-config/${staleRow.countryCode}`, {
-                                method: "DELETE",
-                            })
-                        )
-                    );
-                }
+                
 
                 toast.success("Deal updated successfully!");
                 queryClient.invalidateQueries({ queryKey: ["admin_deals"] });
@@ -184,17 +142,6 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
 
     const [showPreview, setShowPreview] = useState(false);
     const [localImagePreview, setLocalImagePreview] = useState<string | null>(null);
-    const geoConfigQuery = useQuery({
-        queryKey: ["admin_deal_geo_config", d.id],
-        enabled: open,
-        queryFn: () => fetchAPI<{ geoConfig: DealGeoConfigResponse[] }>(`/api/admin/deals/${d.id}/geo-config`),
-    });
-
-    useEffect(() => {
-        const rows = geoConfigQuery.data?.geoConfig;
-        if (!rows) return;
-        form.setFieldValue("geoOverridesJson", serializeGeoOverrides(rows));
-    }, [form, geoConfigQuery.data?.geoConfig]);
 
     const previewData = {
         deal: {
@@ -206,14 +153,11 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
             discountLabel: formValues.discountLabel || "Special Offer",
             discountValue: formValues.discountValue ? parseFloat(formValues.discountValue) : null,
             originalPrice: formValues.originalPrice ? parseFloat(formValues.originalPrice) : null,
-            studentPrice: formValues.studentPrice ? parseFloat(formValues.studentPrice) : null,
             currency: formValues.currency || "USD",
-            verificationMethod: formValues.verificationMethod,
             claimUrl: formValues.claimUrl || "#",
             coverImageUrl: localImagePreview ? "__local_preview__" : (formValues.coverImageUrl || null),
             isFeatured: formValues.isFeatured,
-            isActive: formValues.isActive,
-            expirationDate: d.expirationDate || null,
+            expiresAt: d.expiresAt || null,
             howToRedeem: formValues.howToRedeem || null,
             conditions: formValues.conditions || null,
         },
@@ -268,11 +212,10 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                         className={`py-4 max-h-[75vh] overflow-y-auto px-1 ${showPreview ? "flex-1" : "w-full"}`}
                     >
                         <Tabs defaultValue="basic" className="w-full">
-                            <TabsList className="grid w-full grid-cols-4 mb-4">
+                            <TabsList className="grid w-full grid-cols-3 mb-4">
                                 <TabsTrigger value="basic">Basic</TabsTrigger>
                                 <TabsTrigger value="pricing">Pricing</TabsTrigger>
                                 <TabsTrigger value="details">Details</TabsTrigger>
-                                <TabsTrigger value="geo">Geo</TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="basic" className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -410,71 +353,6 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                                         />
                                     )}
                                 </form.Field>
-
-                                <form.Field name="verificationMethod">
-                                    {(field) => (
-                                        <div className="grid gap-2">
-                                            <Label>Verification Method</Label>
-                                            <Select value={field.state.value} onValueChange={(v) => field.handleChange(v ?? "")}>
-                                                <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
-                                                <SelectContent>
-                                                    {VERIFICATION_METHODS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    )}
-                                </form.Field>
-                            </TabsContent>
-
-                            <TabsContent value="geo" className="grid grid-cols-1 gap-4">
-                                <form.Field name="geoOverridesJson">
-                                    {(field) => (
-                                        <div className="grid gap-2">
-                                            <Label htmlFor={field.name}>Country Overrides (JSON)</Label>
-                                            <div className="text-xs text-muted-foreground mb-2 p-3 bg-muted rounded-md border border-dashed border-border">
-                                                <p className="font-medium mb-1">Example: USA (US)</p>
-                                                <pre className="text-[10px] overflow-x-auto">
-{`{
-  "countryCode": "US",
-  "currency": "USD",
-  "studentPrice": 4.99,
-  "originalPrice": 9.99,
-  "claimUrl": "https://..."
-}`}
-                                                </pre>
-                                            </div>
-                                            <Textarea
-                                                id={field.name}
-                                                value={field.state.value}
-                                                onChange={(e) => field.handleChange(e.target.value)}
-                                                rows={12}
-                                                className="font-mono text-xs"
-                                                placeholder={`[
-  {
-    "countryCode": "US",
-    "affiliateUrl": "https://...",
-    "claimUrl": "https://...",
-    "studentPrice": 4.99,
-    "originalPrice": 9.99,
-    "currency": "USD",
-    "discountLabel": "50% OFF",
-    "isAvailable": true
-  }
-]`}
-                                            />
-                                            <div className="space-y-1 mt-2">
-                                                <p className="text-xs text-muted-foreground font-medium">Common ISO Codes:</p>
-                                                <div className="flex flex-wrap gap-2">
-                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">US (USA)</span>
-                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">GB (UK)</span>
-                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">CA (Canada)</span>
-                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">AU (Australia)</span>
-                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">GLOBAL</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </form.Field>
                             </TabsContent>
 
                             <TabsContent value="pricing" className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -485,11 +363,8 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                                             <Select value={field.state.value} onValueChange={(v) => field.handleChange(v ?? "")}>
                                                 <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="percentage">Percentage (%)</SelectItem>
+                                                    <SelectItem value="percent">Percentage (%)</SelectItem>
                                                     <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
-                                                    <SelectItem value="free">Free</SelectItem>
-                                                    <SelectItem value="trial">Free Trial</SelectItem>
-                                                    <SelectItem value="bogo">BOGO</SelectItem>
                                                     <SelectItem value="other">Other</SelectItem>
                                                 </SelectContent>
                                             </Select>
@@ -510,15 +385,6 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                                     {(field) => (
                                         <div className="grid gap-2">
                                             <Label>Original Price</Label>
-                                            <Input type="number" step="0.01" value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} />
-                                        </div>
-                                    )}
-                                </form.Field>
-
-                                <form.Field name="studentPrice">
-                                    {(field) => (
-                                        <div className="grid gap-2">
-                                            <Label>Student Price</Label>
                                             <Input type="number" step="0.01" value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} />
                                         </div>
                                     )}
@@ -572,14 +438,18 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                                 </form.Field>
 
                                 <div className="grid grid-cols-2 gap-4 md:col-span-2">
-                                    <form.Field name="isActive">
+                                    <form.Field name="status">
                                         {(field) => (
-                                            <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                                <div className="space-y-0.5">
-                                                    <Label>Active</Label>
-                                                    <p className="text-[0.7rem] text-muted-foreground">Visible to users</p>
-                                                </div>
-                                                <Switch checked={field.state.value} onCheckedChange={(v) => field.handleChange(v)} />
+                                            <div className="grid gap-2">
+                                                <Label>Status</Label>
+                                                <Select value={field.state.value} onValueChange={(v) => field.handleChange(v ?? "draft")}>
+                                                    <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="draft">Draft</SelectItem>
+                                                        <SelectItem value="published">Published</SelectItem>
+                                                        <SelectItem value="archived">Archived</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                         )}
                                     </form.Field>
@@ -589,29 +459,6 @@ export function DealEditDialog({ deal, open, onOpenChange, brands = EMPTY_BRANDS
                                             <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                                 <div className="space-y-0.5">
                                                     <Label>Featured</Label>
-                                                </div>
-                                                <Switch checked={field.state.value} onCheckedChange={(v) => field.handleChange(v)} />
-                                            </div>
-                                        )}
-                                    </form.Field>
-
-                                    <form.Field name="isExclusive">
-                                        {(field) => (
-                                            <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                                <div className="space-y-0.5">
-                                                    <Label>Exclusive</Label>
-                                                    <p className="text-[0.7rem] text-muted-foreground">UniPerks exclusive deal</p>
-                                                </div>
-                                                <Switch checked={field.state.value} onCheckedChange={(v) => field.handleChange(v)} />
-                                            </div>
-                                        )}
-                                    </form.Field>
-
-                                    <form.Field name="isNewCustomerOnly">
-                                        {(field) => (
-                                            <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                                <div className="space-y-0.5">
-                                                    <Label>New Customers Only</Label>
                                                 </div>
                                                 <Switch checked={field.state.value} onCheckedChange={(v) => field.handleChange(v)} />
                                             </div>

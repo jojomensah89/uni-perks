@@ -6,7 +6,7 @@ import { DataTable } from "@/components/ui/data-table";
 import type { ApiDealResponse } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Edit, Trash, LayoutGrid, Table2 } from "lucide-react";
+import { MoreHorizontal, Edit, Trash, LayoutGrid, Table2, Check, X, Send } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -35,6 +35,14 @@ import { DealEditDialog } from "./DealEditDialog";
 
 const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
 
+const STATUS_COLORS: Record<string, string> = {
+    pending: "bg-yellow-500 text-white",
+    approved: "bg-blue-500 text-white",
+    rejected: "bg-red-500 text-white",
+    published: "bg-green-500 text-white",
+    archived: "bg-gray-500 text-white",
+};
+
 function DealLogo({ logoUrl, name }: { logoUrl?: string | null; name: string }) {
     if (logoUrl) {
         return (
@@ -57,14 +65,21 @@ function DealsTableActions({ row, brands, categories }: { row: ApiDealResponse; 
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [approving, setApproving] = useState(false);
+    const [rejecting, setRejecting] = useState(false);
+    const [publishing, setPublishing] = useState(false);
     const queryClient = useQueryClient();
     const router = useRouter();
+
+    const status = row.deal.status;
+    const isPending = status === "pending";
+    const isApproved = status === "approved";
 
     const handleDelete = async () => {
         setDeleting(true);
         try {
             await fetchAPI(`/api/admin/deals/${row.deal.id}`, { method: "DELETE" });
-            toast.success("Deal deactivated successfully");
+            toast.success("Deal archived successfully");
             queryClient.invalidateQueries({ queryKey: ["admin_deals"] });
             router.refresh();
             setDeleting(false);
@@ -73,6 +88,48 @@ function DealsTableActions({ row, brands, categories }: { row: ApiDealResponse; 
             toast.error(err.message || "Failed to delete deal");
             setDeleting(false);
             setDeleteOpen(false);
+        }
+    };
+
+    const handleApprove = async () => {
+        setApproving(true);
+        try {
+            await fetchAPI(`/api/admin/deals/${row.deal.id}/approve`, { method: "POST" });
+            toast.success("Deal approved!");
+            queryClient.invalidateQueries({ queryKey: ["admin_deals"] });
+            router.refresh();
+        } catch (err: any) {
+            toast.error(err.message || "Failed to approve deal");
+        } finally {
+            setApproving(false);
+        }
+    };
+
+    const handleReject = async () => {
+        setRejecting(true);
+        try {
+            await fetchAPI(`/api/admin/deals/${row.deal.id}/reject`, { method: "POST" });
+            toast.success("Deal rejected");
+            queryClient.invalidateQueries({ queryKey: ["admin_deals"] });
+            router.refresh();
+        } catch (err: any) {
+            toast.error(err.message || "Failed to reject deal");
+        } finally {
+            setRejecting(false);
+        }
+    };
+
+    const handlePublish = async () => {
+        setPublishing(true);
+        try {
+            await fetchAPI(`/api/admin/deals/${row.deal.id}/publish`, { method: "POST" });
+            toast.success("Deal published!");
+            queryClient.invalidateQueries({ queryKey: ["admin_deals"] });
+            router.refresh();
+        } catch (err: any) {
+            toast.error(err.message || "Failed to publish deal");
+        } finally {
+            setPublishing(false);
         }
     };
 
@@ -86,6 +143,24 @@ function DealsTableActions({ row, brands, categories }: { row: ApiDealResponse; 
                 <DropdownMenuContent align="end">
                     <DropdownMenuGroup>
                         <DropdownMenuLabel>{row.deal.title}</DropdownMenuLabel>
+                        {isPending && (
+                            <>
+                                <DropdownMenuItem onClick={handleApprove} disabled={approving}>
+                                    <Check className="mr-2 h-4 w-4 text-green-500" />
+                                    {approving ? "Approving..." : "Approve"}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleReject} disabled={rejecting}>
+                                    <X className="mr-2 h-4 w-4 text-red-500" />
+                                    {rejecting ? "Rejecting..." : "Reject"}
+                                </DropdownMenuItem>
+                            </>
+                        )}
+                        {isApproved && (
+                            <DropdownMenuItem onClick={handlePublish} disabled={publishing}>
+                                <Send className="mr-2 h-4 w-4 text-blue-500" />
+                                {publishing ? "Publishing..." : "Publish"}
+                            </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => setEditOpen(true)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
@@ -95,13 +170,12 @@ function DealsTableActions({ row, brands, categories }: { row: ApiDealResponse; 
                             onClick={() => setDeleteOpen(true)}
                         >
                             <Trash className="mr-2 h-4 w-4" />
-                            Deactivate
+                            Archive
                         </DropdownMenuItem>
                     </DropdownMenuGroup>
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Edit Dialog */}
             <DealEditDialog
                 open={editOpen}
                 onOpenChange={setEditOpen}
@@ -110,13 +184,12 @@ function DealsTableActions({ row, brands, categories }: { row: ApiDealResponse; 
                 categories={categories}
             />
 
-            {/* Delete Confirmation */}
             <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Deactivate Deal?</AlertDialogTitle>
+                        <AlertDialogTitle>Archive Deal?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will deactivate <strong>{row.deal.title}</strong> and hide it from students. You can re-activate it later by editing the deal.
+                            This will archive <strong>{row.deal.title}</strong> and hide it from users.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -126,7 +199,7 @@ function DealsTableActions({ row, brands, categories }: { row: ApiDealResponse; 
                             disabled={deleting}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            {deleting ? "Deactivating..." : "Deactivate"}
+                            {deleting ? "Archiving..." : "Archive"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -144,7 +217,7 @@ function getDealsColumns(brands: ApiBrandResponse[], categories: ApiCategoryResp
                 const deal = row.original.deal;
                 const brand = row.original.brand;
                 const imageUrl = deal.coverImageUrl || brand?.logoUrl;
-                
+
                 if (imageUrl) {
                     return (
                         <div className="h-10 w-16 relative rounded-md overflow-hidden bg-muted border border-border">
@@ -190,9 +263,18 @@ function getDealsColumns(brands: ApiBrandResponse[], categories: ApiCategoryResp
                 const deal = row.original.deal;
                 return (
                     <Badge variant="outline" className="font-mono">
-                        {deal.discountLabel || `${deal.discountValue}${deal.discountType === "percentage" ? "%" : ""}`}
+                        {deal.discountLabel || `${deal.discountValue}${deal.discountType === "percent" ? "%" : ""}`}
                     </Badge>
                 );
+            },
+        },
+        {
+            id: "status",
+            header: "Status",
+            cell: ({ row }) => {
+                const status = row.original.deal.status || "pending";
+                const colorClass = STATUS_COLORS[status] || "bg-gray-500 text-white";
+                return <Badge className={colorClass}>{status}</Badge>;
             },
         },
         {
@@ -203,11 +285,22 @@ function getDealsColumns(brands: ApiBrandResponse[], categories: ApiCategoryResp
                 : <span className="text-muted-foreground">-</span>,
         },
         {
-            id: "status",
-            header: "Status",
-            cell: ({ row }) => row.original.deal.isActive
-                ? <Badge variant="default" className="bg-green-600">Active</Badge>
-                : <Badge variant="secondary">Inactive</Badge>,
+            id: "hotness",
+            header: "Hotness",
+            cell: ({ row }) => {
+                const score = row.original.deal.hotnessScore ?? 50;
+                return (
+                    <div className="flex items-center gap-2">
+                        <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                            <div
+                                className={`h-full rounded-full ${score >= 75 ? "bg-orange-500" : score >= 50 ? "bg-yellow-500" : "bg-gray-400"}`}
+                                style={{ width: `${score}%` }}
+                            />
+                        </div>
+                        <span className="text-xs text-muted-foreground">{score}</span>
+                    </div>
+                );
+            },
         },
         {
             id: "actions",
@@ -216,29 +309,28 @@ function getDealsColumns(brands: ApiBrandResponse[], categories: ApiCategoryResp
     ];
 }
 
-// ---- Card view ----
 function DealCard({ deal: row, brands, categories }: { deal: ApiDealResponse; brands: ApiBrandResponse[]; categories: ApiCategoryResponse[] }) {
     const deal = row.deal;
     const coverUrl = deal.coverImageUrl
         ? `${API_URL}/api/images/${deal.coverImageUrl}`
         : null;
+    const status = deal.status || "pending";
+    const colorClass = STATUS_COLORS[status] || "bg-gray-500 text-white";
 
     return (
         <div className="group relative flex flex-col rounded-xl border border-foreground/10 bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-            {/* Cover image */}
             <div className="h-32 bg-muted flex items-center justify-center overflow-hidden relative">
                 {coverUrl ? (
                     <img src={coverUrl} alt={deal.title} className="w-full h-full object-cover" />
                 ) : (
                     <span className="text-muted-foreground text-xs">No image</span>
                 )}
-                {/* Action button – always visible on mobile, hover on desktop */}
+                <Badge className={`absolute top-2 left-2 ${colorClass}`}>{status}</Badge>
                 <div className="absolute top-2 right-2">
                     <DealsTableActions row={row} brands={brands} categories={categories} />
                 </div>
             </div>
 
-            {/* Content */}
             <div className="p-3 flex flex-col gap-1.5 flex-1">
                 <div className="flex items-center gap-2 min-w-0">
                     <DealLogo logoUrl={row.brand?.logoUrl} name={row.brand?.name || "?"} />
@@ -250,16 +342,12 @@ function DealCard({ deal: row, brands, categories }: { deal: ApiDealResponse; br
                         {deal.discountLabel || `${deal.discountValue}${deal.discountType === "percentage" ? "%" : ""}`}
                     </Badge>
                     {deal.isFeatured && <Badge className="bg-primary text-xs">Featured</Badge>}
-                    {deal.isActive
-                        ? <Badge className="bg-green-600 text-xs">Active</Badge>
-                        : <Badge variant="secondary" className="text-xs">Inactive</Badge>}
                 </div>
             </div>
         </div>
     );
 }
 
-// ---- View toggle + combined component ----
 const EMPTY_BRANDS: ApiBrandResponse[] = [];
 const EMPTY_CATEGORIES: ApiCategoryResponse[] = [];
 
@@ -269,9 +357,16 @@ export function DealsTable({ data, brands = EMPTY_BRANDS, categories = EMPTY_CAT
     const [view, setView] = useState<ViewMode>("table");
     const columns = getDealsColumns(brands, categories);
 
+    const pendingCount = data.filter(d => d.deal.status === "pending").length;
+
     return (
         <div className="w-full space-y-3">
-            {/* Toggle buttons */}
+            {pendingCount > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-center gap-2">
+                    <span className="text-yellow-800 font-medium">{pendingCount} deal{pendingCount > 1 ? "s" : ""} pending approval</span>
+                </div>
+            )}
+
             <div className="flex justify-end">
                 <div className="flex rounded-lg border overflow-hidden">
                     <Button
@@ -295,7 +390,6 @@ export function DealsTable({ data, brands = EMPTY_BRANDS, categories = EMPTY_CAT
                 </div>
             </div>
 
-            {/* Views */}
             {view === "table" ? (
                 <DataTable columns={columns} data={data} />
             ) : (

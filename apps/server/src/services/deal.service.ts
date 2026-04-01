@@ -9,21 +9,19 @@ import {
 } from "../repositories/deal.repository";
 
 export interface GetDealsOptions {
-    country?: string;
     categorySlug?: string;
     collectionId?: string;
     featured?: boolean;
-    regionCode?: string;
     searchQuery?: string;
     limit?: number;
     offset?: number;
     brandId?: string;
     excludeDealId?: string;
+    sortBy?: "popular" | "new" | "expiring" | "hotness";
 }
 
 export interface DealDetailOptions {
     slug: string;
-    country?: string;
 }
 
 /**
@@ -34,13 +32,13 @@ export async function getDeals(options: GetDealsOptions) {
         categorySlug: options.categorySlug,
         collectionId: options.collectionId,
         featured: options.featured,
-        isActive: true,
-        regionCode: options.regionCode,
+        status: "published",
         searchQuery: options.searchQuery,
         limit: options.limit,
         offset: options.offset,
         brandId: options.brandId,
         excludeDealId: options.excludeDealId,
+        sortBy: options.sortBy,
     });
 
     return results;
@@ -50,8 +48,8 @@ export async function getDeals(options: GetDealsOptions) {
  * Get deal detail with tags and regions
  */
 export async function getDealDetail(options: DealDetailOptions) {
-    const { slug, country } = options;
-    const result = await findDealBySlug(slug, country);
+    const { slug } = options;
+    const result = await findDealBySlug(slug);
     return result;
 }
 

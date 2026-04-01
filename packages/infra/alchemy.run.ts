@@ -47,6 +47,7 @@ export const server = await Worker("server", {
     BETTER_AUTH_SECRET: alchemy.secret.env.BETTER_AUTH_SECRET!,
     BETTER_AUTH_URL: alchemy.env.BETTER_AUTH_URL!,
     TURNSTILE_SECRET: alchemy.secret.env.TURNSTILE_SECRET!,
+    POSTHOG_API_KEY: alchemy.secret.env.POSTHOG_API_KEY!,
   },
   dev: {
     port: 3000,

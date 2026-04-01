@@ -1,65 +1,49 @@
 import { sql } from "drizzle-orm";
 // Schema definition for deals
-import { sqliteTable, text, integer, real, index, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, index } from "drizzle-orm/sqlite-core";
 import { brands } from "./brands";
 import { categories } from "./brands";
 
-// ===== DEALS =====
 export const deals = sqliteTable("deals", {
     id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
     slug: text("slug").notNull().unique(),
 
-    // Foreign keys
     brandId: text("brand_id").notNull().references(() => brands.id),
     categoryId: text("category_id").notNull().references(() => categories.id),
 
-    // Content
     title: text("title").notNull(),
     shortDescription: text("short_description").notNull(),
-    longDescription: text("long_description").notNull(),
-    howToRedeem: text("how_to_redeem"), // Step-by-step instructions shown below the CTA
+    longDescription: text("long_description"),
+    howToRedeem: text("how_to_redeem"),
 
-    // Discount details
-    discountType: text("discount_type").notNull(), // "percentage", "fixed", "free", "trial"
-    discountValue: real("discount_value"), // 50 (for 50%)
-    discountLabel: text("discount_label").notNull(), // "50% OFF", "Free for 6 months"
+    discountType: text("discount_type").notNull(),
+    discountValue: real("discount_value"),
+    discountLabel: text("discount_label").notNull(),
     originalPrice: real("original_price"),
-    studentPrice: real("student_price"),
     currency: text("currency").default("USD"),
-    minimumSpend: real("minimum_spend"),               // e.g. 60 (for $60 minimum order)
-    isNewCustomerOnly: integer("is_new_customer_only", { mode: "boolean" }).default(false),
+    minimumSpend: real("minimum_spend"),
 
-    // Conditions (shown in expandable accordion on deal card)
-    conditions: text("conditions"),   // JSON array of condition strings e.g. ["One-use per customer", "Full 1-year warranty"]
-    termsUrl: text("terms_url"),      // External link to full legal terms (e.g. apple.com/legal/...)
+    conditions: text("conditions"),
+    termsUrl: text("terms_url"),
 
-    // Verification
-    verificationMethod: text("verification_method").notNull(), // "edu_email", "student_beans", "unidays", "sheerid"
-    eligibilityNote: text("eligibility_note"),
-
-    // URLs
     claimUrl: text("claim_url").notNull(),
-    affiliateUrl: text("affiliate_url"),
+    affiliateLink: text("affiliate_link"),
     coverImageUrl: text("cover_image_url"),
 
-    // Status
     isFeatured: integer("is_featured", { mode: "boolean" }).default(false),
-    isExclusive: integer("is_exclusive", { mode: "boolean" }).default(false),
-    isActive: integer("is_active", { mode: "boolean" }).default(true),
-    expirationDate: integer("expiration_date", { mode: "timestamp_ms" }),
+    status: text("status", { enum: ["pending", "approved", "rejected", "published", "archived"] }).default("pending").notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }),
+    hotnessScore: integer("hotness_score").default(50),
+    approvedAt: integer("approved_at", { mode: "timestamp_ms" }),
     lastVerified: integer("last_verified", { mode: "timestamp_ms" })
         .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`),
 
-    // SEO
     metaTitle: text("meta_title"),
     metaDescription: text("meta_description"),
 
-    // Analytics - denormalized counters
     clickCount: integer("click_count").default(0),
     viewCount: integer("view_count").default(0),
-    popularity: integer("popularity").default(0), // Computed score for sorting
 
-    // Timestamps
     createdAt: integer("created_at", { mode: "timestamp_ms" })
         .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
         .notNull(),
@@ -71,28 +55,8 @@ export const deals = sqliteTable("deals", {
     brandIdx: index("deals_brand_idx").on(table.brandId),
     categoryIdx: index("deals_category_idx").on(table.categoryId),
     featuredIdx: index("deals_featured_idx").on(table.isFeatured),
-    activeIdx: index("deals_active_idx").on(table.isActive),
-    popularityIdx: index("deals_popularity_idx").on(table.popularity),
-}));
-export const dealGeoConfig = sqliteTable("deal_geo_config", {
-    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-    dealId: text("deal_id").notNull().references(() => deals.id, { onDelete: "cascade" }),
-    countryCode: text("country_code").notNull(),
-    affiliateUrl: text("affiliate_url"),
-    claimUrl: text("claim_url"),
-    studentPrice: real("student_price"),
-    originalPrice: real("original_price"),
-    currency: text("currency"),
-    discountLabel: text("discount_label"),
-    isAvailable: integer("is_available", { mode: "boolean" }).default(true),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-        .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-        .notNull(),
-}, (table) => ({
-    dealCountryUnique: uniqueIndex("deal_geo_config_deal_country_uidx").on(table.dealId, table.countryCode),
-    dealIdx: index("deal_geo_config_deal_idx").on(table.dealId),
-    countryIdx: index("deal_geo_config_country_idx").on(table.countryCode),
+    statusIdx: index("deals_status_idx").on(table.status),
+    hotnessIdx: index("deals_hotness_idx").on(table.hotnessScore),
 }));
 
 export type Deal = typeof deals.$inferSelect;
-export type DealGeoConfig = typeof dealGeoConfig.$inferSelect;

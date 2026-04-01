@@ -1,9 +1,7 @@
 import { relations } from "drizzle-orm";
-import { brands, categories, brandFaqs, brandProducts } from "./brands";
-import { deals, dealGeoConfig } from "./deals";
-import { tags, dealTags } from "./tags";
+import { brands, categories, brandFaqs } from "./brands";
+import { deals } from "./deals";
 import { collections, collectionDeals } from "./collections";
-import { regions, dealRegions } from "./geo";
 import { clicks, pageViews } from "./analytics";
 
 // ===== BRAND RELATIONS =====
@@ -11,23 +9,11 @@ export const brandsRelations = relations(brands, ({ many }) => ({
     deals: many(deals),
     clicks: many(clicks),
     faqs: many(brandFaqs),
-    products: many(brandProducts),
-}));
-export const dealGeoConfigRelations = relations(dealGeoConfig, ({ one }) => ({
-    deal: one(deals, {
-        fields: [dealGeoConfig.dealId],
-        references: [deals.id],
-    }),
 }));
 
 // ===== BRAND FAQ RELATIONS =====
 export const brandFaqsRelations = relations(brandFaqs, ({ one }) => ({
     brand: one(brands, { fields: [brandFaqs.brandId], references: [brands.id] }),
-}));
-
-// ===== BRAND PRODUCT RELATIONS =====
-export const brandProductsRelations = relations(brandProducts, ({ one }) => ({
-    brand: one(brands, { fields: [brandProducts.brandId], references: [brands.id] }),
 }));
 
 // ===== CATEGORY RELATIONS =====
@@ -45,28 +31,9 @@ export const dealsRelations = relations(deals, ({ one, many }) => ({
         fields: [deals.categoryId],
         references: [categories.id],
     }),
-    dealTags: many(dealTags),
-    dealRegions: many(dealRegions),
-    dealGeoConfig: many(dealGeoConfig),
     collectionDeals: many(collectionDeals),
     clicks: many(clicks),
     pageViews: many(pageViews),
-}));
-
-// ===== TAG RELATIONS =====
-export const tagsRelations = relations(tags, ({ many }) => ({
-    dealTags: many(dealTags),
-}));
-
-export const dealTagsRelations = relations(dealTags, ({ one }) => ({
-    deal: one(deals, {
-        fields: [dealTags.dealId],
-        references: [deals.id],
-    }),
-    tag: one(tags, {
-        fields: [dealTags.tagId],
-        references: [tags.id],
-    }),
 }));
 
 // ===== COLLECTION RELATIONS =====
@@ -82,22 +49,6 @@ export const collectionDealsRelations = relations(collectionDeals, ({ one }) => 
     deal: one(deals, {
         fields: [collectionDeals.dealId],
         references: [deals.id],
-    }),
-}));
-
-// ===== REGION RELATIONS =====
-export const regionsRelations = relations(regions, ({ many }) => ({
-    dealRegions: many(dealRegions),
-}));
-
-export const dealRegionsRelations = relations(dealRegions, ({ one }) => ({
-    deal: one(deals, {
-        fields: [dealRegions.dealId],
-        references: [deals.id],
-    }),
-    region: one(regions, {
-        fields: [dealRegions.regionId],
-        references: [regions.id],
     }),
 }));
 

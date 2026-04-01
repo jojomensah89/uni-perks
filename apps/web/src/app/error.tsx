@@ -3,6 +3,23 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
+function getErrorMessage(error: unknown): string {
+  if (!error) return "An unexpected error occurred";
+  if (typeof error === "string") return error;
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null) {
+    // Handle various error shapes
+    const e = error as Record<string, unknown>;
+    if (typeof e.message === "string") return e.message;
+    if (typeof e.error === "string") return e.error;
+    if (e.error && typeof e.error === "object") {
+      const inner = e.error as Record<string, unknown>;
+      if (typeof inner.message === "string") return inner.message;
+    }
+  }
+  return "An unexpected error occurred";
+}
+
 export default function ErrorBoundary({
     error,
     reset,
@@ -10,9 +27,10 @@ export default function ErrorBoundary({
     error: Error & { digest?: string };
     reset: () => void;
 }) {
+    const errorMessage = getErrorMessage(error);
+
     useEffect(() => {
-        // Log the error to an error reporting service
-        console.error(error);
+        console.error("Page error:", error);
     }, [error]);
 
     return (
@@ -34,7 +52,10 @@ export default function ErrorBoundary({
                 </svg>
             </div>
             <h1 className="text-3xl font-bold tracking-tight mb-2">Something went wrong</h1>
-            <p className="text-muted-foreground mb-8 max-w-md">
+            <p className="text-muted-foreground mb-4 max-w-md">
+                {errorMessage}
+            </p>
+            <p className="text-muted-foreground mb-8 max-w-md text-sm">
                 We apologize for the inconvenience. An unexpected error has occurred while loading this page.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">

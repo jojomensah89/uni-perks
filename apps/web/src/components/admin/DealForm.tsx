@@ -38,7 +38,6 @@ import { Plus, Eye } from "lucide-react";
 import { fetchAPI } from "@/lib/api";
 import { ImageUpload } from "./ImageUpload";
 import DealCard from "@/components/DealCard";
-import { parseGeoOverridesFromText } from "@/lib/deal-geo-config";
 import type { ApiBrandResponse } from "@/types/api";
 import type { ApiCategoryResponse } from "@/types/api";
 
@@ -48,15 +47,11 @@ interface DealFormProps {
     onSuccess?: () => void;
 }
 
-const VERIFICATION_METHODS = [
-    { value: "edu_email", label: ".edu Email" },
-    { value: "sheerid", label: "SheerID" },
-    { value: "unidays", label: "UNiDAYS" },
-    { value: "student_beans", label: "Student Beans" },
-    { value: "student_id", label: "Student ID Upload" },
-    { value: "github_student", label: "GitHub Student Pack" },
-    { value: "isic", label: "ISIC Card" },
-    { value: "none", label: "No Verification" },
+const DEAL_STATUSES = [
+    { value: "pending", label: "Pending" },
+    { value: "approved", label: "Approved" },
+    { value: "published", label: "Published" },
+    { value: "archived", label: "Archived" },
 ];
 
 const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
@@ -96,37 +91,30 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
             longDescription: "",
             brandId: "",
             categoryId: "",
-            discountType: "percentage",
+            discountType: "percent",
             discountLabel: "",
             discountValue: "",
             originalPrice: "",
-            studentPrice: "",
             currency: "USD",
             claimUrl: "",
-            affiliateUrl: "",
+            affiliateLink: "",
             coverImageUrl: "",
-            verificationMethod: "edu_email",
-            eligibilityNote: "",
             howToRedeem: "",
             conditions: "",
             termsUrl: "",
             minimumSpend: "",
-            isNewCustomerOnly: false,
             isFeatured: false,
-            isExclusive: false,
-            isActive: true,
-            expirationDate: "",
+            status: "pending",
+            hotnessScore: 50,
+            expiresAt: "",
             metaTitle: "",
             metaDescription: "",
-            geoOverridesJson: "[]",
         },
         onSubmit: async ({ value }) => {
             try {
-                const geoOverrides = parseGeoOverridesFromText(value.geoOverridesJson);
-                const { geoOverridesJson, ...rawValues } = value;
+                const { status, hotnessScore, ...rawValues } = value;
                 let coverImageUrl = value.coverImageUrl;
 
-                // Upload pending image if any
                 if (pendingImageRef.file) {
                     const formData = new FormData();
                     formData.append("file", pendingImageRef.file);
@@ -143,25 +131,15 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
 
                 const submitData = {
                     ...rawValues,
+                    status: status || "pending",
                     coverImageUrl,
                     discountValue: value.discountValue ? parseFloat(value.discountValue) : null,
                     originalPrice: value.originalPrice ? parseFloat(value.originalPrice) : null,
-                    studentPrice: value.studentPrice ? parseFloat(value.studentPrice) : null,
                     minimumSpend: value.minimumSpend ? parseFloat(value.minimumSpend) : null,
-                    expirationDate: value.expirationDate ? new Date(value.expirationDate).getTime() : null,
+                    expiresAt: value.expiresAt ? new Date(value.expiresAt).getTime() : null,
+                    hotnessScore: value.hotnessScore ? parseInt(String(value.hotnessScore)) : 50,
                 };
-                const createdDeal = await createDealMutation.mutateAsync(submitData) as { id?: string };
-
-                if (createdDeal?.id && geoOverrides.length > 0) {
-                    await Promise.all(
-                        geoOverrides.map((geoOverride) =>
-                            fetchAPI(`/api/admin/deals/${createdDeal.id}/geo-config/${geoOverride.countryCode}`, {
-                                method: "PUT",
-                                body: JSON.stringify(geoOverride),
-                            })
-                        )
-                    );
-                }
+                await createDealMutation.mutateAsync(submitData);
 
                 toast.success("Deal created successfully!");
                 setOpen(false);
@@ -191,14 +169,12 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
             discountLabel: formValues.discountLabel || "Special Offer",
             discountValue: formValues.discountValue ? parseFloat(formValues.discountValue) : null,
             originalPrice: formValues.originalPrice ? parseFloat(formValues.originalPrice) : null,
-            studentPrice: formValues.studentPrice ? parseFloat(formValues.studentPrice) : null,
             currency: formValues.currency || "USD",
-            verificationMethod: formValues.verificationMethod,
             claimUrl: formValues.claimUrl || "#",
             coverImageUrl: localImagePreview ? "__local_preview__" : (formValues.coverImageUrl || null),
             isFeatured: formValues.isFeatured,
-            isActive: formValues.isActive,
-            expirationDate: formValues.expirationDate || null,
+            expiresAt: formValues.expiresAt || null,
+            hotnessScore: formValues.hotnessScore ? parseInt(String(formValues.hotnessScore)) : 50,
             howToRedeem: formValues.howToRedeem || null,
             conditions: formValues.conditions || null,
         },
@@ -264,11 +240,10 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                         className={`py-4 max-h-[75vh] overflow-y-auto px-1 ${showPreview ? "flex-1" : "w-full"}`}
                     >
                         <Tabs defaultValue="basic" className="w-full">
-                            <TabsList className="grid w-full grid-cols-5 mb-4">
+                            <TabsList className="grid w-full grid-cols-4 mb-4">
                                 <TabsTrigger value="basic">Basic</TabsTrigger>
                                 <TabsTrigger value="pricing">Pricing</TabsTrigger>
                                 <TabsTrigger value="details">Details</TabsTrigger>
-                                <TabsTrigger value="geo">Geo</TabsTrigger>
                                 <TabsTrigger value="seo">SEO</TabsTrigger>
                             </TabsList>
 
@@ -338,30 +313,31 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                         const selectedBrandObj = brands.find((b) => b.id === field.state.value);
                                         const comboValue = selectedBrandObj ? { value: selectedBrandObj.id, label: selectedBrandObj.name } : null;
                                         return (
-                                        <div className="grid gap-2">
-                                            <Label htmlFor={field.name}>Brand *</Label>
-                                            <Combobox
-                                                value={comboValue}
-                                                onValueChange={(v: any) => field.handleChange(v?.value ?? "")}
-                                                isItemEqualToValue={(item: any, selected: any) => item.value === selected.value}
-                                            >
-                                                <ComboboxInput showTrigger placeholder="Search Brand..." className="w-full h-9" />
-                                                <ComboboxContent>
-                                                    {brands.length === 0 && <ComboboxEmpty>No brand found.</ComboboxEmpty>}
-                                                    <ComboboxList>
-                                                        {brands.map((b) => (
-                                                            <ComboboxItem key={b.id} value={{ value: b.id, label: b.name }}>
-                                                                {b.name}
-                                                            </ComboboxItem>
-                                                        ))}
-                                                    </ComboboxList>
-                                                </ComboboxContent>
-                                            </Combobox>
-                                            {field.state.meta.errors.length > 0 && (
-                                                <p className="text-sm text-destructive">{field.state.meta.errors.join(", ")}</p>
-                                            )}
-                                        </div>
-                                    )}}
+                                            <div className="grid gap-2">
+                                                <Label htmlFor={field.name}>Brand *</Label>
+                                                <Combobox
+                                                    value={comboValue}
+                                                    onValueChange={(v: any) => field.handleChange(v?.value ?? "")}
+                                                    isItemEqualToValue={(item: any, selected: any) => item.value === selected.value}
+                                                >
+                                                    <ComboboxInput showTrigger placeholder="Search Brand..." className="w-full h-9" />
+                                                    <ComboboxContent>
+                                                        {brands.length === 0 && <ComboboxEmpty>No brand found.</ComboboxEmpty>}
+                                                        <ComboboxList>
+                                                            {brands.map((b) => (
+                                                                <ComboboxItem key={b.id} value={{ value: b.id, label: b.name }}>
+                                                                    {b.name}
+                                                                </ComboboxItem>
+                                                            ))}
+                                                        </ComboboxList>
+                                                    </ComboboxContent>
+                                                </Combobox>
+                                                {field.state.meta.errors.length > 0 && (
+                                                    <p className="text-sm text-destructive">{field.state.meta.errors.join(", ")}</p>
+                                                )}
+                                            </div>
+                                        )
+                                    }}
                                 </form.Field>
 
                                 {/* Category */}
@@ -375,30 +351,31 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                         const selectedCatObj = categories.find((c) => c.id === field.state.value);
                                         const comboValue = selectedCatObj ? { value: selectedCatObj.id, label: selectedCatObj.name } : null;
                                         return (
-                                        <div className="grid gap-2">
-                                            <Label htmlFor={field.name}>Category *</Label>
-                                            <Combobox
-                                                value={comboValue}
-                                                onValueChange={(v: any) => field.handleChange(v?.value ?? "")}
-                                                isItemEqualToValue={(item: any, selected: any) => item.value === selected.value}
-                                            >
-                                                <ComboboxInput showTrigger placeholder="Search Category..." className="w-full h-9" />
-                                                <ComboboxContent>
-                                                    {categories.length === 0 && <ComboboxEmpty>No category found.</ComboboxEmpty>}
-                                                    <ComboboxList>
-                                                        {categories.map((c) => (
-                                                            <ComboboxItem key={c.id} value={{ value: c.id, label: c.name }}>
-                                                                {c.name}
-                                                            </ComboboxItem>
-                                                        ))}
-                                                    </ComboboxList>
-                                                </ComboboxContent>
-                                            </Combobox>
-                                            {field.state.meta.errors.length > 0 && (
-                                                <p className="text-sm text-destructive">{field.state.meta.errors.join(", ")}</p>
-                                            )}
-                                        </div>
-                                    )}}
+                                            <div className="grid gap-2">
+                                                <Label htmlFor={field.name}>Category *</Label>
+                                                <Combobox
+                                                    value={comboValue}
+                                                    onValueChange={(v: any) => field.handleChange(v?.value ?? "")}
+                                                    isItemEqualToValue={(item: any, selected: any) => item.value === selected.value}
+                                                >
+                                                    <ComboboxInput showTrigger placeholder="Search Category..." className="w-full h-9" />
+                                                    <ComboboxContent>
+                                                        {categories.length === 0 && <ComboboxEmpty>No category found.</ComboboxEmpty>}
+                                                        <ComboboxList>
+                                                            {categories.map((c) => (
+                                                                <ComboboxItem key={c.id} value={{ value: c.id, label: c.name }}>
+                                                                    {c.name}
+                                                                </ComboboxItem>
+                                                            ))}
+                                                        </ComboboxList>
+                                                    </ComboboxContent>
+                                                </Combobox>
+                                                {field.state.meta.errors.length > 0 && (
+                                                    <p className="text-sm text-destructive">{field.state.meta.errors.join(", ")}</p>
+                                                )}
+                                            </div>
+                                        )
+                                    }}
                                 </form.Field>
 
                                 {/* Discount Label */}
@@ -489,79 +466,6 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                         />
                                     )}
                                 </form.Field>
-
-                                {/* Verification Method */}
-                                <form.Field name="verificationMethod">
-                                    {(field) => (
-                                        <div className="grid gap-2">
-                                            <Label>Verification Method *</Label>
-                                            <Select
-                                                value={field.state.value}
-                                                onValueChange={(v) => field.handleChange(v ?? "")}
-                                            >
-                                                <SelectTrigger className="w-full h-9">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {VERIFICATION_METHODS.map((m) => (
-                                                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    )}
-                                </form.Field>
-                            </TabsContent>
-
-                            <TabsContent value="geo" className="grid grid-cols-1 gap-4">
-                                <form.Field name="geoOverridesJson">
-                                    {(field) => (
-                                        <div className="grid gap-2">
-                                            <Label htmlFor={field.name}>Country Overrides (JSON)</Label>
-                                            <div className="text-xs text-muted-foreground mb-2 p-3 bg-muted rounded-md border border-dashed border-border">
-                                                <p className="font-medium mb-1">Example: USA (US)</p>
-                                                <pre className="text-[10px] overflow-x-auto">
-{`{
-  "countryCode": "US",
-  "currency": "USD",
-  "studentPrice": 4.99,
-  "originalPrice": 9.99,
-  "claimUrl": "https://..."
-}`}
-                                                </pre>
-                                            </div>
-                                            <Textarea
-                                                id={field.name}
-                                                value={field.state.value}
-                                                onChange={(e) => field.handleChange(e.target.value)}
-                                                rows={12}
-                                                className="font-mono text-xs"
-                                                placeholder={`[
-  {
-    "countryCode": "US",
-    "affiliateUrl": "https://...",
-    "claimUrl": "https://...",
-    "studentPrice": 4.99,
-    "originalPrice": 9.99,
-    "currency": "USD",
-    "discountLabel": "50% OFF",
-    "isAvailable": true
-  }
-]`}
-                                            />
-                                            <div className="space-y-1 mt-2">
-                                                <p className="text-xs text-muted-foreground font-medium">Common ISO Codes:</p>
-                                                <div className="flex flex-wrap gap-2">
-                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">US (USA)</span>
-                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">GB (UK)</span>
-                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">CA (Canada)</span>
-                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">AU (Australia)</span>
-                                                    <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded">GLOBAL</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </form.Field>
                             </TabsContent>
 
                             <TabsContent value="pricing" className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -575,18 +479,15 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                                 onValueChange={(v) => field.handleChange(v ?? "")}
                                             >
                                                 <SelectTrigger className="w-full h-9">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="percentage">Percentage (%)</SelectItem>
-                                                    <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
-                                                    <SelectItem value="free">Free</SelectItem>
-                                                    <SelectItem value="trial">Free Trial</SelectItem>
-                                                    <SelectItem value="bogo">BOGO</SelectItem>
-                                                    <SelectItem value="other">Other</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="percent">Percentage (%)</SelectItem>
+                                                <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
+                                                <SelectItem value="other">Other</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                     )}
                                 </form.Field>
 
@@ -619,23 +520,6 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                                 value={field.state.value}
                                                 onChange={(e) => field.handleChange(e.target.value)}
                                                 placeholder="e.g. 9.99"
-                                            />
-                                        </div>
-                                    )}
-                                </form.Field>
-
-                                {/* Student Price */}
-                                <form.Field name="studentPrice">
-                                    {(field) => (
-                                        <div className="grid gap-2">
-                                            <Label htmlFor={field.name}>Student Price</Label>
-                                            <Input
-                                                id={field.name}
-                                                type="number"
-                                                step="0.01"
-                                                value={field.state.value}
-                                                onChange={(e) => field.handleChange(e.target.value)}
-                                                placeholder="e.g. 4.99"
                                             />
                                         </div>
                                     )}
@@ -682,8 +566,8 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                     )}
                                 </form.Field>
 
-                                {/* Affiliate URL */}
-                                <form.Field name="affiliateUrl">
+                                {/* Affiliate Link */}
+                                <form.Field name="affiliateLink">
                                     {(field) => (
                                         <div className="grid gap-2 md:col-span-2">
                                             <Label htmlFor={field.name}>Affiliate URL</Label>
@@ -760,24 +644,10 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                     )}
                                 </form.Field>
 
-                                <form.Field name="eligibilityNote">
+                                <form.Field name="expiresAt">
                                     {(field) => (
                                         <div className="grid gap-2">
-                                            <Label htmlFor={field.name}>Eligibility Note</Label>
-                                            <Input
-                                                id={field.name}
-                                                value={field.state.value}
-                                                onChange={(e) => field.handleChange(e.target.value)}
-                                                placeholder="e.g. US students only"
-                                            />
-                                        </div>
-                                    )}
-                                </form.Field>
-
-                                <form.Field name="expirationDate">
-                                    {(field) => (
-                                        <div className="grid gap-2">
-                                            <Label htmlFor={field.name}>Expiration Date</Label>
+                                            <Label htmlFor={field.name}>Expires At</Label>
                                             <Input
                                                 id={field.name}
                                                 type="date"
@@ -788,19 +658,38 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                     )}
                                 </form.Field>
 
+                                <form.Field name="hotnessScore">
+                                    {(field) => (
+                                        <div className="grid gap-2">
+                                            <Label htmlFor={field.name}>Hotness Score (1-100)</Label>
+                                            <Input
+                                                id={field.name}
+                                                type="number"
+                                                min="1"
+                                                max="100"
+                                                value={field.state.value}
+                                                onChange={(e) => field.handleChange(parseInt(e.target.value) || 50)}
+                                                placeholder="50"
+                                            />
+                                        </div>
+                                    )}
+                                </form.Field>
+
                                 <div className="grid grid-cols-2 gap-4 md:col-span-2">
-                                    <form.Field name="isActive">
+                                    <form.Field name="status">
                                         {(field) => (
-                                            <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                                <div className="space-y-0.5">
-                                                    <Label htmlFor="active-switch">Active</Label>
-                                                    <p className="text-[0.7rem] text-muted-foreground">Visible to users</p>
-                                                </div>
-                                                <Switch
-                                                    id="active-switch"
-                                                    checked={field.state.value}
-                                                    onCheckedChange={(checked) => field.handleChange(checked)}
-                                                />
+                                            <div className="grid gap-2">
+                                                <Label>Status</Label>
+                                                <Select value={field.state.value} onValueChange={(v) => field.handleChange(v ?? "pending")}>
+                                                    <SelectTrigger className="w-full h-9">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {DEAL_STATUSES.map((s) => (
+                                                            <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                         )}
                                     </form.Field>
@@ -814,37 +703,6 @@ export function DealForm({ brands, categories, onSuccess }: DealFormProps) {
                                                 </div>
                                                 <Switch
                                                     id="featured-switch"
-                                                    checked={field.state.value}
-                                                    onCheckedChange={(checked) => field.handleChange(checked)}
-                                                />
-                                            </div>
-                                        )}
-                                    </form.Field>
-
-                                    <form.Field name="isExclusive">
-                                        {(field) => (
-                                            <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                                <div className="space-y-0.5">
-                                                    <Label htmlFor="exclusive-switch">Exclusive</Label>
-                                                    <p className="text-[0.7rem] text-muted-foreground">UniPerks exclusive deal</p>
-                                                </div>
-                                                <Switch
-                                                    id="exclusive-switch"
-                                                    checked={field.state.value}
-                                                    onCheckedChange={(checked) => field.handleChange(checked)}
-                                                />
-                                            </div>
-                                        )}
-                                    </form.Field>
-
-                                    <form.Field name="isNewCustomerOnly">
-                                        {(field) => (
-                                            <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                                <div className="space-y-0.5">
-                                                    <Label htmlFor="newcustomer-switch">New Customers Only</Label>
-                                                </div>
-                                                <Switch
-                                                    id="newcustomer-switch"
                                                     checked={field.state.value}
                                                     onCheckedChange={(checked) => field.handleChange(checked)}
                                                 />

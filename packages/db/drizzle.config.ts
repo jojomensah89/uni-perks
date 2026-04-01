@@ -3,40 +3,68 @@ import fs from "fs";
 import path from "path";
 
 function getLocalD1DB() {
-  try {
-    const basePath = path.resolve(".wrangler");
-    const dbFile = fs.readdirSync(basePath, { recursive: true }).find((file: any) => file.endsWith('.sqlite'));
-    if (dbFile) {
-      const url = path.resolve(basePath, dbFile as string);
-      return `file:${url}`;
-    }
-  } catch (e) { }
-  try {
-    const basePath = path.resolve("../../.wrangler");
-    const dbFile = fs.readdirSync(basePath, { recursive: true }).find((file: any) => file.endsWith('.sqlite'));
-    if (dbFile) {
-      const url = path.resolve(basePath, dbFile as string);
-      return `file:${url}`;
-    }
-  } catch (e) { }
+  // Priority 1: Look for Alchemy's D1 database (D1DatabaseObject folder, not cache)
+  const alchemyD1Paths = [
+    path.resolve("../../.alchemy/miniflare/v3/d1"),
+    path.resolve("../infra/.alchemy/miniflare/v3/d1"),
+  ];
 
-  // Alchemy specific fallsbacks
-  try {
-    const basePath = path.resolve("../../.alchemy");
-    const dbFile = fs.readdirSync(basePath, { recursive: true }).find((file: any) => file.endsWith('.sqlite'));
-    if (dbFile) {
-      const url = path.resolve(basePath, dbFile as string);
-      return `file:${url}`;
-    }
-  } catch (e) { }
-  try {
-    const basePath = path.resolve("../infra/.alchemy");
-    const dbFile = fs.readdirSync(basePath, { recursive: true }).find((file: any) => file.endsWith('.sqlite'));
-    if (dbFile) {
-      const url = path.resolve(basePath, dbFile as string);
-      return `file:${url}`;
-    }
-  } catch (e) { }
+  for (const basePath of alchemyD1Paths) {
+    try {
+      const files = fs.readdirSync(basePath, { recursive: true });
+      const d1DbFile = files.find((file: any) =>
+        file.toString().includes("D1DatabaseObject") &&
+        file.toString().endsWith('.sqlite')
+      );
+      if (d1DbFile) {
+        const url = path.resolve(basePath, d1DbFile as string);
+        return `file:${url}`;
+      }
+    } catch (e) { }
+  }
+
+  // Priority 2: Wrangler D1 database
+  const wranglerPaths = [
+    path.resolve(".wrangler"),
+    path.resolve("../../.wrangler"),
+  ];
+
+  for (const basePath of wranglerPaths) {
+    try {
+      const files = fs.readdirSync(basePath, { recursive: true });
+      const dbFile = files.find((file: any) =>
+        file.toString().endsWith('.sqlite') &&
+        !file.toString().includes("CacheObject")
+      );
+      if (dbFile) {
+        const url = path.resolve(basePath, dbFile as string);
+        return `file:${url}`;
+      }
+    } catch (e) { }
+  }
+
+  // Priority 3: Legacy Alchemy fallback (root .alchemy)
+  const legacyPaths = [
+    path.resolve("../../.alchemy"),
+    path.resolve("../infra/.alchemy"),
+  ];
+
+  for (const basePath of legacyPaths) {
+    try {
+      const files = fs.readdirSync(basePath, { recursive: true });
+      const dbFile = files.find((file: any) =>
+        file.toString().endsWith('.sqlite') &&
+        !file.toString().includes("CacheObject") &&
+        !file.toString().includes("KVNamespace") &&
+        !file.toString().includes("R2Bucket")
+      );
+      if (dbFile) {
+        const url = path.resolve(basePath, dbFile as string);
+        return `file:${url}`;
+      }
+    } catch (e) { }
+  }
+
   return "";
 }
 
