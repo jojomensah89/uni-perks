@@ -111,7 +111,7 @@ app.openapi(trackClickRoute, async (c) => {
         referrer,
         country,
         device,
-    });
+    }, (c.env as { POSTHOG_API_KEY?: string }).POSTHOG_API_KEY);
     return c.json({ success: true }, 200);
 });
 

@@ -31,6 +31,7 @@ type WorkerEnv = {
   CORS_ORIGIN?: string;
   BETTER_AUTH_SECRET?: string;
   BETTER_AUTH_URL?: string;
+  POSTHOG_API_KEY?: string;
 };
 
 const app = new OpenAPIHono();

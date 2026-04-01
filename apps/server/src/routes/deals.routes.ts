@@ -160,7 +160,7 @@ app.openapi(getDealRoute, async (c) => {
           country,
           referrer,
           path,
-        }),
+        }, (c.env as { POSTHOG_API_KEY?: string }).POSTHOG_API_KEY),
       );
     } else {
       void trackDealView(result.deal.id);
@@ -172,7 +172,7 @@ app.openapi(getDealRoute, async (c) => {
         country,
         referrer,
         path,
-      });
+      }, (c.env as { POSTHOG_API_KEY?: string }).POSTHOG_API_KEY);
     }
 
     return result;
