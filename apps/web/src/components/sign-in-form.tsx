@@ -28,7 +28,7 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
         {
           email: value.email,
           password: value.password,
-          // turnstileToken,
+          turnstileToken,
         },
         {
           onSuccess: () => {
