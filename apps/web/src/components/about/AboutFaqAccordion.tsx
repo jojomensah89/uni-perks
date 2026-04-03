@@ -4,7 +4,7 @@ import {
   Accordion,
   AccordionContent,
   AccordionItem,
-    <Accordion defaultValue={["faq-0"]} openMultiple={false}>
+  AccordionTrigger,
 } from "@/components/ui/accordion";
 
 type FaqItem = {
