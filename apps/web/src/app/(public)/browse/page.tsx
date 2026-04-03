@@ -7,6 +7,13 @@ import { useQuery } from "@tanstack/react-query";
 import DealCard, { type ApiDealResponse } from "@/components/DealCard";
 import { fetchAPI } from "@/lib/api";
 import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 type ApiCategoryResponse = {
     id: string;
@@ -15,6 +22,11 @@ type ApiCategoryResponse = {
 };
 
 type CategoryWithCount = ApiCategoryResponse & { dealCount: number };
+const SORT_LABELS: Record<"popular" | "new" | "expiring", string> = {
+    popular: "Popular",
+    new: "Newest",
+    expiring: "Expiring Soon",
+};
 
 function BrowseContent() {
     const searchParams = useSearchParams();
@@ -64,7 +76,7 @@ function BrowseContent() {
         if (window.location.search !== `?${params.toString()}`) {
             router.push(newPath as any, { scroll: false });
         }
-    }, [debouncedSearch, activeCategory, router]);
+    }, [debouncedSearch, activeCategory, sortBy, router]);
 
     // Sync state with URL params (e.g. browser back button)
     useEffect(() => {
@@ -149,7 +161,7 @@ function BrowseContent() {
             <div className="px-4 md:px-6 pt-8 pb-4">
                 <h1 className="text-2xl font-black tracking-tight mb-2">Browse All Deals</h1>
                 <p className="text-sm text-muted-foreground mb-6">
-                    {isLoading ? "Loading..." : `${totalDeals} verified student perks and discounts`}
+                    {isLoading ? "Loading..." : `${totalDeals} verified student deals and discounts`}
                 </p>
 
                 {/* Search + Sort Row */}
@@ -175,17 +187,20 @@ function BrowseContent() {
                     
                     {/* Sort Dropdown */}
                     <div className="flex items-center gap-2">
-                        <label htmlFor="sort-select" className="text-sm text-muted-foreground">Sort by:</label>
-                        <select
-                            id="sort-select"
+                        <span className="text-sm text-muted-foreground">Sort by:</span>
+                        <Select
                             value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as "popular" | "new" | "expiring")}
-                            className="bg-muted border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                            onValueChange={(value) => setSortBy(value as "popular" | "new" | "expiring")}
                         >
-                            <option value="popular">Popular</option>
-                            <option value="new">Newest</option>
-                            <option value="expiring">Expiring Soon</option>
-                        </select>
+                            <SelectTrigger className="w-[180px] bg-muted">
+                                <SelectValue>{SORT_LABELS[sortBy]}</SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="popular">Popular</SelectItem>
+                                <SelectItem value="new">Newest</SelectItem>
+                                <SelectItem value="expiring">Expiring Soon</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
 
@@ -256,7 +271,7 @@ function BrowseContent() {
 
 export default function BrowsePage() {
     return (
-        <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading deals…</div>}>
+        <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading deals...</div>}>
             <BrowseContent />
         </Suspense>
     );

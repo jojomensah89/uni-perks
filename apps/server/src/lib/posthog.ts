@@ -1,16 +1,18 @@
 import { PostHog } from "posthog-node";
 
-const host = "https://us.posthog.com";
+const DEFAULT_HOST = "https://eu.posthog.com";
 
 export async function captureEvent(
   event: string,
   properties: Record<string, unknown>,
   apiKey: string | undefined,
-  distinctId?: string
+  distinctId?: string,
+  host?: string,
 ) {
   if (!apiKey) return;
+  const resolvedHost = host || DEFAULT_HOST;
   const client = new PostHog(apiKey, {
-    host,
+    host: resolvedHost,
     flushAt: 1,
     flushInterval: 1000,
   });

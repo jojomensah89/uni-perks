@@ -8,10 +8,11 @@ interface TurnstileVerificationResponse {
 export async function verifyTurnstile(c: Context, token: string | null | undefined): Promise<boolean> {
     const env = c.env as { TURNSTILE_SECRET?: string; TURNSTILE_SECRET_KEY?: string; TURNSTILE_ENABLED?: string };
     const secret = env.TURNSTILE_SECRET ?? env.TURNSTILE_SECRET_KEY;
-    const enabled = env.TURNSTILE_ENABLED;
+    const enabled = (env.TURNSTILE_ENABLED ?? "true").toLowerCase() !== "false";
 
-    // Skip verification if disabled via env var or no secret configured
-    if (enabled === "false" || !secret) return true;
+    // Safe rollback switch: disable verification immediately by setting TURNSTILE_ENABLED=false.
+    // If no secret is configured, verification is skipped.
+    if (!enabled || !secret) return true;
     if (!token) return false;
 
     const ip = c.req.header("cf-connecting-ip") ?? "";
@@ -30,13 +31,12 @@ export async function verifyTurnstile(c: Context, token: string | null | undefin
             body: body.toString(),
         });
 
-        if (!response.ok) {
-            return false;
-        }
+        if (!response.ok) return false;
 
         const payload = await response.json() as TurnstileVerificationResponse;
         return payload.success === true;
     } catch {
+        // Fail closed: if verification service errors, auth should be rejected.
         return false;
     }
 }

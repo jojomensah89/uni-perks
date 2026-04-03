@@ -158,7 +158,7 @@ app.openapi(goRoute, async (c) => {
       country,
       referrer: c.req.header("referer") ?? null,
       device: inferDevice(c.req.header("user-agent") ?? null),
-    }, (c.env as { POSTHOG_API_KEY?: string }).POSTHOG_API_KEY),
+    }, (c.env as { POSTHOG_API_KEY?: string }).POSTHOG_API_KEY, undefined, (c.env as { POSTHOG_HOST?: string }).POSTHOG_HOST),
   ]).catch((error) => {
     logError("go-route", "failed to persist click analytics", {
       message: error instanceof Error ? error.message : String(error),

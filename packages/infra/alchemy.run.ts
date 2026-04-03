@@ -24,6 +24,8 @@ export const web = await Nextjs("web", {
   cwd: "../../apps/web",
   bindings: {
     NEXT_PUBLIC_SERVER_URL: alchemy.env.NEXT_PUBLIC_SERVER_URL!,
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY:
+      alchemy.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "",
     CORS_ORIGIN: alchemy.env.CORS_ORIGIN!,
     BETTER_AUTH_SECRET: alchemy.secret.env.BETTER_AUTH_SECRET!,
     BETTER_AUTH_URL: alchemy.env.BETTER_AUTH_URL!,
@@ -47,7 +49,9 @@ export const server = await Worker("server", {
     BETTER_AUTH_SECRET: alchemy.secret.env.BETTER_AUTH_SECRET!,
     BETTER_AUTH_URL: alchemy.env.BETTER_AUTH_URL!,
     TURNSTILE_SECRET: alchemy.secret.env.TURNSTILE_SECRET!,
+    TURNSTILE_ENABLED: alchemy.env.TURNSTILE_ENABLED ?? "true",
     POSTHOG_API_KEY: alchemy.secret.env.POSTHOG_API_KEY!,
+    POSTHOG_HOST: alchemy.env.POSTHOG_HOST ?? "https://eu.posthog.com",
   },
   dev: {
     port: 3000,

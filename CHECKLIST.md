@@ -21,6 +21,9 @@ A comprehensive checklist for setting up, populating, and launching your student
 BETTER_AUTH_SECRET=your-secret-key-min-32-chars
 BETTER_AUTH_URL=http://localhost:3000
 CORS_ORIGIN=http://localhost:3001
+TURNSTILE_ENABLED=false
+# Production only:
+# TURNSTILE_SECRET=your-cloudflare-turnstile-secret
 ```
 
 #### apps/web/.env
@@ -28,6 +31,7 @@ CORS_ORIGIN=http://localhost:3001
 ```env
 NEXT_PUBLIC_SERVER_URL=http://localhost:3000
 NEXT_PUBLIC_BASE_URL=http://localhost:3001
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=your-cloudflare-turnstile-site-key
 ```
 
 ### Local Development
@@ -240,6 +244,9 @@ categories/{category-slug}/cover.jpg
 - [ ] Set `BETTER_AUTH_URL` to production URL
 - [ ] Set `CORS_ORIGIN` to production URL
 - [ ] Set `NEXT_PUBLIC_BASE_URL` to production URL
+- [ ] Set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (web/public key)
+- [ ] Set `TURNSTILE_SECRET` (server/secret key)
+- [ ] Set `TURNSTILE_ENABLED=true` in production
 - [ ] Configure custom domain in Cloudflare
 
 ### Deploy
@@ -254,6 +261,7 @@ categories/{category-slug}/cover.jpg
 - [ ] Seed production database
 - [ ] Verify all links work in production
 - [ ] Set up monitoring/alerts
+- [ ] If Turnstile outage blocks auth, set `TURNSTILE_ENABLED=false` as emergency rollback
 
 ---
 

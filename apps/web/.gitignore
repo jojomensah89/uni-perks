@@ -60,3 +60,4 @@ dev-dist
 .open-next
 
 wrangler.jsonc
+.env.local
