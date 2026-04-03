@@ -51,6 +51,7 @@ export const server = await Worker("server", {
     TURNSTILE_SECRET: alchemy.secret.env.TURNSTILE_SECRET!,
     TURNSTILE_ENABLED: alchemy.env.TURNSTILE_ENABLED ?? "true",
     POSTHOG_API_KEY: alchemy.secret.env.POSTHOG_API_KEY!,
+    POSTHOG_HOST: alchemy.env.POSTHOG_HOST ?? "https://eu.posthog.com",
   },
   dev: {
     port: 3000,

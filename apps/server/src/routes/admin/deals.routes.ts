@@ -1,7 +1,7 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { db, deals, brands, categories, eq, desc, and } from "@uni-perks/db";
 import { BadRequestError } from "../../lib/errors";
-import { CreateDealSchema, UpdateDealSchema, ApproveDealSchema } from "../../schemas/admin.schemas";
+import { CreateDealSchema, UpdateDealSchema } from "../../schemas/admin.schemas";
 import { normalizeConditions, normalizeExpiresAt } from "./shared";
 import { invalidateKV } from "../../lib/kv-cache";
 import { logInfo, logError } from "../../lib/logger";
@@ -260,13 +260,6 @@ const approveDealRoute = createRoute({
         params: z.object({
             id: z.string(),
         }),
-        body: {
-            content: {
-                "application/json": {
-                    schema: ApproveDealSchema,
-                },
-            },
-        },
     },
     responses: {
         200: {
@@ -284,17 +277,26 @@ app.openapi(approveDealRoute, async (c) => {
     const { id } = c.req.valid("param");
     const kv = (c.env as WorkerEnv).KV;
 
-    const [updated] = await db
-        .update(deals)
-        .set({ 
-            status: "approved",
-            approvedAt: new Date(),
-        })
-        .where(and(
-            eq(deals.id, id),
-            eq(deals.status, "pending")
-        ))
-        .returning();
+    let updated;
+    try {
+        [updated] = await db
+            .update(deals)
+            .set({
+                status: "approved",
+                approvedAt: new Date(),
+            })
+            .where(and(
+                eq(deals.id, id),
+                eq(deals.status, "pending")
+            ))
+            .returning();
+    } catch (error) {
+        logError("deals-route", "approve deal failed", {
+            dealId: id,
+            message: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+    }
 
     if (!updated) {
         throw new BadRequestError("Deal not found or not pending");
