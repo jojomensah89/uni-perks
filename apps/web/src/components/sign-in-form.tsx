@@ -16,6 +16,7 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
   const router = useRouter();
   const { isPending } = authClient.useSession();
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   const form = useForm({
@@ -24,14 +25,12 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
       password: "",
     },
     onSubmit: async ({ value }) => {
-      await authClient.signIn.email(
-        {
+      try {
+        await authClient.signIn.email({
           email: value.email,
           password: value.password,
           fetchOptions: {
-            body: {
-              turnstileToken,
-            },
+            body: turnstileToken ? { turnstileToken } : undefined,
             onSuccess: () => {
               toast.success("Sign in successful");
               router.push("/admin");
@@ -40,8 +39,13 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
               toast.error(error.error.message || error.error.statusText);
             },
           },
-        },
-      );
+        });
+      } finally {
+        setTurnstileToken(null);
+        if (turnstileSiteKey) {
+          setTurnstileResetKey((current) => current + 1);
+        }
+      }
     },
     validators: {
       onSubmit: z.object({
@@ -125,7 +129,11 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
           )}
         </form.Subscribe>
 
-        <TurnstileWidget siteKey={turnstileSiteKey} onTokenChange={setTurnstileToken} />
+        <TurnstileWidget
+          key={turnstileResetKey}
+          siteKey={turnstileSiteKey}
+          onTokenChange={setTurnstileToken}
+        />
       </form>
 
       <div className="mt-4 text-center">
