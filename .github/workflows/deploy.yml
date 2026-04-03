@@ -53,4 +53,9 @@ jobs:
         run: bun run check-types
 
       - name: Deploy infrastructure
-        run: bun --cwd packages/infra run deploy --stage "$STAGE"
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            bun run deploy:prod
+          else
+            bun run deploy:testing
+          fi
