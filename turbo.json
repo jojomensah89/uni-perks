@@ -41,6 +41,12 @@
     "deploy": {
       "cache": false
     },
+    "deploy:testing": {
+      "cache": false
+    },
+    "deploy:prod": {
+      "cache": false
+    },
     "destroy": {
       "cache": false
     }
