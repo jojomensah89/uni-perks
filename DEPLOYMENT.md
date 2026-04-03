@@ -86,30 +86,44 @@ Add these secrets to both GitHub Environments unless noted otherwise:
 - `TURNSTILE_ENABLED`
 - `POSTHOG_API_KEY`
 - `POSTHOG_HOST`
-- `WEB_DOMAIN`
-- `SERVER_DOMAIN`
 
 Recommended values:
 
 ### `testing`
 
-- `NEXT_PUBLIC_SERVER_URL=https://qa-api.your-domain.com`
-- `NEXT_PUBLIC_SITE_URL=https://qa.your-domain.com`
-- `CORS_ORIGIN=https://qa.your-domain.com`
-- `BETTER_AUTH_URL=https://qa-api.your-domain.com`
+- `NEXT_PUBLIC_SERVER_URL=https://<your-testing-workers-url>`
+- `NEXT_PUBLIC_SITE_URL=https://<your-testing-workers-url>`
+- `CORS_ORIGIN=https://<your-testing-workers-url>`
+- `BETTER_AUTH_URL=https://<your-testing-workers-url>`
 - `TURNSTILE_ENABLED=true`
-- `WEB_DOMAIN=qa.your-domain.com`
-- `SERVER_DOMAIN=qa-api.your-domain.com`
 
 ### `production`
 
-- `NEXT_PUBLIC_SERVER_URL=https://api.your-domain.com`
-- `NEXT_PUBLIC_SITE_URL=https://your-domain.com`
-- `CORS_ORIGIN=https://your-domain.com`
-- `BETTER_AUTH_URL=https://api.your-domain.com`
+- `NEXT_PUBLIC_SERVER_URL=https://<your-production-workers-url>`
+- `NEXT_PUBLIC_SITE_URL=https://<your-production-workers-url>`
+- `CORS_ORIGIN=https://<your-production-workers-url>`
+- `BETTER_AUTH_URL=https://<your-production-workers-url>`
 - `TURNSTILE_ENABLED=true`
-- `WEB_DOMAIN=your-domain.com`
-- `SERVER_DOMAIN=api.your-domain.com`
+
+## Using Cloudflare-Provided Domains
+
+If you do not have a custom domain yet, leave `WEB_DOMAIN` and `SERVER_DOMAIN` unset.
+
+On the first deploy, Cloudflare/Alchemy will give each stage its own `workers.dev` URL for the web and server workers. Use those URLs for:
+
+- `NEXT_PUBLIC_SERVER_URL`
+- `NEXT_PUBLIC_SITE_URL`
+- `CORS_ORIGIN`
+- `BETTER_AUTH_URL`
+
+Recommended bootstrap flow:
+
+1. Deploy `testing` once.
+2. Copy the generated web and server `workers.dev` URLs from the Alchemy output.
+3. Put those URLs into the `testing` GitHub Environment secrets.
+4. Deploy `production` once.
+5. Copy the generated production `workers.dev` URLs.
+6. Put those URLs into the `production` GitHub Environment secrets.
 
 ## Separate D1, KV, And R2
 
@@ -160,4 +174,4 @@ After those first deployments, Cloudflare will have separate D1, KV, and R2 reso
 ## Notes
 
 - The GitHub CLI is not installed in this environment, so branch protection was not automated here.
-- Custom domains are optional in code but strongly recommended. If `WEB_DOMAIN` and `SERVER_DOMAIN` are empty, Cloudflare will keep the `workers.dev` URLs.
+- Custom domains are optional. `workers.dev` is the right choice until you buy or connect a domain.
