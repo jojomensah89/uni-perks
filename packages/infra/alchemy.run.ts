@@ -4,13 +4,31 @@ import { Worker } from "alchemy/cloudflare";
 import { D1Database } from "alchemy/cloudflare";
 import { R2Bucket } from "alchemy/cloudflare";
 import { KVNamespace } from "alchemy/cloudflare";
+import { CloudflareStateStore } from "alchemy/state";
 import { config } from "dotenv";
 
 config({ path: "./.env" });
 config({ path: "../../apps/web/.env" });
 config({ path: "../../apps/server/.env" });
 
-const app = await alchemy("uni-perks");
+const sharedStateToken = process.env.ALCHEMY_STATE_TOKEN;
+const app = await alchemy("uni-perks", {
+  ...(sharedStateToken
+    ? {
+        stateStore: (scope) =>
+          new CloudflareStateStore(scope, {
+            stateToken: alchemy.secret(sharedStateToken),
+          }),
+      }
+    : {}),
+});
+const stage = app.stage;
+const isProdStage = stage === "prod";
+const webDomain = process.env.WEB_DOMAIN;
+const serverDomain = process.env.SERVER_DOMAIN;
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (webDomain ? `https://${webDomain}` : undefined);
 
 const db = await D1Database("database", {
   migrationsDir: "../../packages/db/src/migrations",
@@ -24,11 +42,18 @@ export const web = await Nextjs("web", {
   cwd: "../../apps/web",
   bindings: {
     NEXT_PUBLIC_SERVER_URL: alchemy.env.NEXT_PUBLIC_SERVER_URL!,
+    ...(siteUrl ? { NEXT_PUBLIC_SITE_URL: siteUrl } : {}),
     NEXT_PUBLIC_TURNSTILE_SITE_KEY:
       alchemy.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "",
     CORS_ORIGIN: alchemy.env.CORS_ORIGIN!,
     BETTER_AUTH_SECRET: alchemy.secret.env.BETTER_AUTH_SECRET!,
     BETTER_AUTH_URL: alchemy.env.BETTER_AUTH_URL!,
+    APP_STAGE: stage,
+  },
+  domains: webDomain ? [webDomain] : undefined,
+  url: true,
+  observability: {
+    enabled: true,
   },
   dev: {
     env: {
@@ -52,6 +77,12 @@ export const server = await Worker("server", {
     TURNSTILE_ENABLED: alchemy.env.TURNSTILE_ENABLED ?? "true",
     POSTHOG_API_KEY: alchemy.secret.env.POSTHOG_API_KEY!,
     POSTHOG_HOST: alchemy.env.POSTHOG_HOST ?? "https://eu.posthog.com",
+    APP_STAGE: stage,
+  },
+  domains: serverDomain ? [serverDomain] : undefined,
+  url: true,
+  observability: {
+    enabled: true,
   },
   dev: {
     port: 3000,
@@ -59,8 +90,11 @@ export const server = await Worker("server", {
   crons: ["0 2 * * *"], // Daily at 2am UTC
 });
 
+console.log(`Stage  -> ${stage}${isProdStage ? " (production)" : ""}`);
 console.log(`Web    -> ${web.url}`);
 console.log(`Server -> ${server.url}`);
-console.log(`Bucket -> images (R2)`);
+console.log(`Bucket -> ${bucket.name}`);
+console.log(`DB     -> ${db.name}`);
+console.log(`KV     -> ${kv.title}`);
 
 await app.finalize();
