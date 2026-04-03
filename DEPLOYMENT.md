@@ -8,8 +8,8 @@ This repo now supports two long-lived deployment stages through Alchemy:
 ## What Was Automated
 
 - Stage-aware Alchemy deployments through `packages/infra/alchemy.run.ts`
-- Shared Alchemy state store for CI/CD via `CloudflareStateStore`
-- Pull request CI check in [`.github/workflows/ci.yml`](C:\Users\Jojo\Desktop\Projects\uni-perks\.github\workflows\ci.yml)
+- Pull request CI check in [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+- Branch deploy workflow in [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)
 - Branch deploy workflow in [`.github/workflows/deploy.yml`](C:\Users\Jojo\Desktop\Projects\uni-perks\.github\workflows\deploy.yml)
 
 ## Branches
