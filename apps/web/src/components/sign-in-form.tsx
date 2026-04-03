@@ -28,15 +28,17 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
         {
           email: value.email,
           password: value.password,
-          turnstileToken,
-        },
-        {
-          onSuccess: () => {
-            toast.success("Sign in successful");
-            router.push("/admin");
-          },
-          onError: (error) => {
-            toast.error(error.error.message || error.error.statusText);
+          fetchOptions: {
+            body: {
+              turnstileToken,
+            },
+            onSuccess: () => {
+              toast.success("Sign in successful");
+              router.push("/admin");
+            },
+            onError: (error) => {
+              toast.error(error.error.message || error.error.statusText);
+            },
           },
         },
       );
