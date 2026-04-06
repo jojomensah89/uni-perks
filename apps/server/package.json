@@ -11,7 +11,7 @@
     "@hono/zod-openapi": "^1.2.2",
     "@react-email/components": "^1.0.8",
     "@react-email/render": "^2.0.4",
-    "@scalar/hono-api-reference": "^0.9.41",
+    "@scalar/hono-api-reference": "^0.10.6",
     "@types/react": "^19.2.14",
     "@uni-perks/agent": "workspace:*",
     "@uni-perks/auth": "workspace:*",
